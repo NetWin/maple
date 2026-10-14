@@ -50,14 +50,18 @@ Each release commits `packages/maple/package.json` and `packages/maple/CHANGELOG
 
 ### Enabling releases
 
-1. **Anchor the version line:** tag the first commit `0.0.0` and push it (`git tag 0.0.0 <sha> && git push origin 0.0.0`).
-   Without it, semantic-release starts at `1.0.0`.
-2. **First npm publish by hand:** npm only allows configuring a trusted publisher on an existing package.
+The initial commit is tagged `0.0.0`, which anchors the version line: without a tag, semantic-release starts at
+`1.0.0`.
+
+1. **First npm publish by hand:** npm only allows configuring a trusted publisher on an existing package.
    `pnpm --filter @netwin/maple build && cd packages/maple && npm publish` — or let CI do it once with an `NPM_TOKEN`
    repo secret.
-3. **Trusted publisher:** on npmjs.com → `@netwin/maple` → Settings → Trusted Publisher → GitHub Actions, repository
+2. **Trusted publisher:** on npmjs.com → `@netwin/maple` → Settings → Trusted Publisher → GitHub Actions, repository
    `NetWin/maple`, workflow `push.yml`.
-4. **Provenance** is only generated for public repositories — make the repo public, or accept publishing without it.
+3. **Provenance** is only generated for public repositories — make the repo public, or accept publishing without it.
+4. **Enable npm publishing:** set `"npmPublish": true` for `@semantic-release/npm` in `.releaserc.json`. It's off until
+   then because the npm plugin verifies npm authentication even in dry-run mode, which fails while the package doesn't
+   exist on npm.
 5. **Go live:** delete `dry_run: true` in `.github/workflows/push.yml`.
 
 ### Graduating to 1.0.0
