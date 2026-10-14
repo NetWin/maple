@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "options": {
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["**/dist/**", "**/.angular/**"],
+  "rules": {
+    "curly": ["error", "all"],
+    "typescript/no-deprecated": "error",
+    // Allow Angular components without a body
+    "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
+    "typescript/array-type": ["error", { "default": "generic" }],
+    "typescript/explicit-function-return-type": "error",
+    "typescript/explicit-member-accessibility": [
+      "error",
+      { "overrides": { "constructors": "off" } }
+    ]
+  }
+}

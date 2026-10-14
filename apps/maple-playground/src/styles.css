@@ -1,0 +1,49 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* The OS scheme applies unless the theme picker set an explicit data-theme on <html>. */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme='light'], [data-theme='light'] *)) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/*
+ * Monaco Editor theme overrides for blending into the pane cards.
+ */
+maple-code-editor .monaco-editor {
+  --vscode-editor-background: var(--color-white);
+  --vscode-editorGutter-background: var(--color-white);
+  --vscode-editorLineNumber-foreground: var(--color-neutral-400);
+  --vscode-editorLineNumber-activeForeground: var(--color-neutral-600);
+
+  @variant dark {
+    --vscode-editor-background: var(--color-neutral-900);
+    --vscode-editorGutter-background: var(--color-neutral-900);
+    --vscode-editorLineNumber-foreground: var(--color-neutral-600);
+    --vscode-editorLineNumber-activeForeground: var(--color-neutral-400);
+  }
+}

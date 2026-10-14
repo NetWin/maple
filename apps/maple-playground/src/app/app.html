@@ -1,0 +1,93 @@
+<header
+  class="flex h-12 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-neutral-900">
+  <div class="flex items-baseline gap-2">
+    <span class="text-lg leading-none">🍁</span>
+    <h1 class="text-sm font-semibold tracking-tight">Maple</h1>
+    <span class="text-sm text-neutral-400 dark:text-neutral-500">Playground</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button
+      type="button"
+      title="Reset playground"
+      class="flex h-7 items-center gap-1 rounded-full border border-neutral-200 px-2.5 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+      (click)="reset()">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        class="size-3.5">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+      Reset
+    </button>
+    <maple-theme-picker />
+  </div>
+</header>
+
+<main class="min-h-0 flex-1 p-3">
+  <maple-split
+    class="h-full"
+    storageKey="maple-playground-panes">
+    <maple-pane
+      slot="pane"
+      title="Context">
+      <maple-badge slot="badge">JSON</maple-badge>
+      <maple-code-editor
+        language="json"
+        [(value)]="contextString">
+      </maple-code-editor>
+    </maple-pane>
+
+    <maple-pane
+      slot="pane"
+      title="Code">
+      <maple-badge slot="badge">JS</maple-badge>
+      <maple-code-editor
+        language="javascript"
+        [(value)]="codeString">
+      </maple-code-editor>
+    </maple-pane>
+
+    <maple-pane
+      slot="pane"
+      title="Output">
+      <maple-tabs
+        slot="tabs"
+        label="Output view"
+        [options]="outputTabs"
+        [(value)]="outputTab">
+      </maple-tabs>
+      <maple-status-chip
+        slot="badge"
+        [status]="status()">
+      </maple-status-chip>
+      <!-- Both viewers stay alive, so each tab keeps its own folds and scroll position. -->
+      <div
+        class="h-full"
+        [class.hidden]="outputTab() !== 'result' || outputMissing()">
+        <maple-code-editor
+          language="json"
+          readOnly
+          [value]="resultDocument()">
+        </maple-code-editor>
+      </div>
+      <div
+        class="h-full"
+        [class.hidden]="outputTab() !== 'ast' || outputMissing()">
+        <maple-code-editor
+          language="json"
+          readOnly
+          [value]="astDocument()">
+        </maple-code-editor>
+      </div>
+      @if (outputMissing()) {
+        <p class="p-4 text-sm text-neutral-400 dark:text-neutral-600">{{ outputPlaceholder() }}</p>
+      }
+    </maple-pane>
+  </maple-split>
+</main>

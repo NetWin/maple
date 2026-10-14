@@ -1,0 +1,61 @@
+name: Push
+
+on:
+  push:
+    branches: ['**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
+        with:
+          cache: true
+          require-lockfile: true
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  release:
+    name: Release
+    needs: check
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push release commit + tag, create GitHub release
+      issues: write # comment on released issues
+      pull-requests: write # comment on released PRs
+      id-token: write # npm trusted publishing (OIDC) + provenance
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/setup@v3
+        with:
+          cache: true
+          require-lockfile: true
+      - run: pnpm --filter @netwin/maple build
+      - uses: cycjimmy/semantic-release-action@v8
+        with:
+          semantic_version: 25
+          # TODO: remove to enable real releases (see README → "Enabling releases")
+          dry_run: true
+          extra_plugins: |
+            @semantic-release/changelog@7
+            @semantic-release/git@11
+            conventional-changelog-conventionalcommits@10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

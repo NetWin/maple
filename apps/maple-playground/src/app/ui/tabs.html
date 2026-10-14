@@ -1,0 +1,18 @@
+<!-- The highlight is a pseudo-element anchored to whichever label holds the checked radio. -->
+<fieldset
+  [attr.aria-label]="label()"
+  class="relative flex gap-0.5 rounded-md bg-neutral-100 p-0.5 [anchor-scope:--tab-active] before:absolute before:top-[anchor(top)] before:left-[anchor(left)] before:h-[anchor-size(height)] before:w-[anchor-size(width)] before:rounded before:bg-white before:shadow-sm before:transition-[left,width] before:duration-200 before:ease-out before:content-[''] before:[position-anchor:--tab-active] dark:bg-neutral-800 dark:before:bg-neutral-700">
+  @for (option of options(); track option.value) {
+    <label
+      class="relative cursor-pointer rounded px-2 py-0.5 text-xs font-medium text-neutral-500 transition-colors select-none hover:text-neutral-800 has-checked:text-neutral-800 has-checked:[anchor-name:--tab-active] has-focus-visible:outline-2 has-focus-visible:outline-offset-1 has-focus-visible:outline-neutral-400 dark:text-neutral-400 dark:hover:text-neutral-100 dark:has-checked:text-neutral-100">
+      <input
+        type="radio"
+        class="sr-only"
+        [name]="name"
+        [value]="option.value"
+        [checked]="value() === option.value"
+        (change)="value.set(option.value)" />
+      {{ option.label }}
+    </label>
+  }
+</fieldset>

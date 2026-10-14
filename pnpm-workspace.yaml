@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - apps/*
+
+allowBuilds:
+  '@parcel/watcher': false
+  esbuild: true
+  lefthook: true
+  lmdb: false
+  msgpackr-extract: false

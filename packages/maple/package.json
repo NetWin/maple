@@ -1,0 +1,47 @@
+{
+  "name": "@netwin/maple",
+  "version": "0.0.1",
+  "description": "Maple",
+  "homepage": "https://github.com/NetWin/maple#readme",
+  "bugs": {
+    "url": "https://github.com/NetWin/maple/issues"
+  },
+  "license": "MIT",
+  "author": "NetWin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NetWin/maple.git",
+    "directory": "packages/maple"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "tsdown": "^0.23.1",
+    "vitest": "^5.0.4"
+  },
+  "peerDependencies": {
+    "acorn": "^8.19.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

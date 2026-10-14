@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["**/dist/**", "packages/maple/CHANGELOG.md"],
+  "associations": [{ "files": ["**/*.html"], "language": "angular-html" }],
+  "bracketSameLine": true,
+  "jsdoc": { "lineWrappingStyle": "balance" },
+  "singleAttributePerLine": true,
+  "printWidth": 100,
+  "proseWrap": "preserve",
+  "quoteProps": "preserve",
+  "sortTailwindcss": { "stylesheet": "./apps/maple-playground/src/styles.css" },
+  "singleQuote": true,
+  "sortImports": { "newlinesBetween": false },
+  "sortPackageJson": { "sortScripts": false },
+  "trailingComma": "none"
+}

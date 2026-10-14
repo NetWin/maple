@@ -1,0 +1,42 @@
+@for (preference of preferences; track preference) {
+  <button
+    type="button"
+    role="radio"
+    class="rounded-full p-1 text-neutral-400 transition-colors hover:text-neutral-700 aria-checked:bg-neutral-100 aria-checked:text-neutral-800 dark:text-neutral-500 dark:hover:text-neutral-200 dark:aria-checked:bg-neutral-800 dark:aria-checked:text-neutral-100"
+    [attr.aria-checked]="selected() === preference"
+    [attr.aria-label]="labels[preference]"
+    [title]="labels[preference]"
+    (click)="select(preference)">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="size-3.5">
+      @switch (preference) {
+        @case ('system') {
+          <svg:rect
+            x="2"
+            y="3"
+            width="20"
+            height="14"
+            rx="2" />
+          <svg:path d="M8 21h8M12 17v4" />
+        }
+        @case ('light') {
+          <svg:circle
+            cx="12"
+            cy="12"
+            r="4" />
+          <svg:path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        }
+        @case ('dark') {
+          <svg:path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        }
+      }
+    </svg>
+  </button>
+}

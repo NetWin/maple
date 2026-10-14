@@ -1,0 +1,11 @@
+<header
+  class="flex h-10 shrink-0 items-center justify-between border-b border-neutral-100 px-3 dark:border-neutral-800">
+  <div class="flex items-center gap-3">
+    <h2 class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ title() }}</h2>
+    <ng-content select="[slot='tabs']" />
+  </div>
+  <ng-content select="[slot='badge']" />
+</header>
+<div class="min-h-0 flex-1">
+  <ng-content />
+</div>

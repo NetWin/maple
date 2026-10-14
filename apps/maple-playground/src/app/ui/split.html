@@ -1,0 +1,18 @@
+<ng-content select="[slot='pane']" />
+
+<!-- Dividers sit in the even grid columns; the panes auto-place into the free odd ones. -->
+@for (index of dividers(); track index) {
+  <div
+    role="separator"
+    aria-orientation="vertical"
+    class="group relative row-start-1 hidden cursor-col-resize touch-none md:block"
+    [style.grid-column-start]="index * 2 + 2"
+    [attr.data-dragging]="drag()?.index === index ? '' : null"
+    (pointerdown)="startDrag($event, index)"
+    (pointermove)="moveDrag($event)"
+    (lostpointercapture)="endDrag()"
+    (dblclick)="reset()">
+    <div
+      class="absolute top-1/2 left-1/2 h-10 w-1 -translate-1/2 rounded-full bg-neutral-300 opacity-0 transition-opacity delay-0 group-hover:opacity-100 group-hover:delay-75 group-data-dragging:opacity-100 group-data-dragging:delay-0 dark:bg-neutral-600"></div>
+  </div>
+}

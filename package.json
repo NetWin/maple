@@ -1,0 +1,29 @@
+{
+  "name": "@netwin/maple-source",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "pnpm dev",
+    "dev": "pnpm --filter @netwin/maple-playground start",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "lefthook": "^2.2.2",
+    "oxfmt": "^0.73.0",
+    "oxlint": "^1.88.0",
+    "oxlint-tsgolint": "^7.0.2004",
+    "typescript": "~6.0.3"
+  },
+  "packageManager": "pnpm@12.11.2"
+}
