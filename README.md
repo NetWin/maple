@@ -1,14 +1,30 @@
 # maple
 
-pnpm workspace for [`@netwin/maple`](packages/maple) and its Angular debug app.
+Maple is a secure JavaScript interpreter written in TypeScript. It parses a string of JavaScript and interprets it
+itself instead of handing it to `eval`, so a script only ever sees the values you pass in. Scripts must `return`
+their result explicitly.
 
-| Path                    | Package                    | Description                                             |
-| ----------------------- | -------------------------- | ------------------------------------------------------- |
-| `packages/maple`        | `@netwin/maple`            | The published library (ESM, Node >= 22)                 |
-| `apps/maple-playground` | `@netwin/maple-playground` | Private Angular app for local debugging (not published) |
+```ts
+import { execute } from '@netwin/maple';
 
-The playground resolves `@netwin/maple` straight to `packages/maple/src/index.ts` (tsconfig `paths`), so library edits
-show up live and anything not exported from the entry point is invisible to the app.
+const result = execute('return "Hello " + name;', { name: 'Steve' });
+//    ^ 'Hello Steve'
+```
+
+## Repository layout
+
+This is a pnpm workspace:
+
+| Path                    | Package                                             | Description                                                |
+| ----------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| `packages/maple`        | [`@netwin/maple`](packages/maple)                   | The published library (ESM, Node >= 22, peer dep: `acorn`) |
+| `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Private Angular app for trying out the interpreter         |
+
+The playground has editors for code and a JSON context and shows the result and the AST live. It runs Maple in a web
+worker and stops runs after 1 s, so an endless loop can't freeze the page.
+
+It resolves `@netwin/maple` straight to `packages/maple/src/index.ts` (tsconfig `paths`), so library edits show up
+live. Anything not exported from the entry point is invisible to the app.
 
 ## Setup
 
@@ -29,16 +45,14 @@ pnpm install    # also installs the lefthook git hooks
 | `pnpm lint`      | oxlint (type-aware)                      |
 | `pnpm format`    | Format with oxfmt (`format:check` in CI) |
 
+CI (`.github/workflows/push.yml`) runs `format:check`, `lint`, `typecheck`, `test` and `build` on every push.
+
 ## Commits & releases
 
-Commits must follow [Conventional Commits](https://www.conventionalcommits.org) (enforced by commitlint in the
-`commit-msg` hook). [semantic-release](https://semantic-release.gitbook.io) derives the version of `@netwin/maple` from
-them, via `cycjimmy/semantic-release-action` in `.github/workflows/push.yml` (config: `.releaserc.json`).
-
-Every push runs the `check` job; pushes to `master` additionally run `release` — currently in **dry-run** mode, so the
-log shows what would be released without publishing anything.
-
-Tags are plain versions (`1.2.3`). While in 0.x, breaking changes bump the minor version:
+Commits must follow [Conventional Commits](https://www.conventionalcommits.org). commitlint enforces this in the
+`commit-msg` hook. On every push to `master`, [semantic-release](https://semantic-release.gitbook.io) uses them to
+derive the version and changelog of `@netwin/maple`. Tags are plain versions (`1.2.3`). While Maple is on 0.x, breaking
+changes bump the minor version:
 
 | Commit                                 | 0.x   | ≥ 1.0 |
 | -------------------------------------- | ----- | ----- |
@@ -46,33 +60,8 @@ Tags are plain versions (`1.2.3`). While in 0.x, breaking changes bump the minor
 | `feat: …`                              | minor | minor |
 | `feat!: …` / `BREAKING CHANGE:` footer | minor | major |
 
-Each release commits `packages/maple/package.json` and `packages/maple/CHANGELOG.md` back to `master`.
-
-### Enabling releases
-
-The initial commit is tagged `0.0.0`, which anchors the version line: without a tag, semantic-release starts at
-`1.0.0`.
-
-1. **First npm publish by hand:** npm only allows configuring a trusted publisher on an existing package.
-   `pnpm --filter @netwin/maple build && cd packages/maple && npm publish` — or let CI do it once with an `NPM_TOKEN`
-   repo secret.
-2. **Trusted publisher:** on npmjs.com → `@netwin/maple` → Settings → Trusted Publisher → GitHub Actions, repository
-   `NetWin/maple`, workflow `push.yml`.
-3. **Provenance** is only generated for public repositories — make the repo public, or accept publishing without it.
-4. **Enable npm publishing:** set `"npmPublish": true` for `@semantic-release/npm` in `.releaserc.json`. It's off until
-   then because the npm plugin verifies npm authentication even in dry-run mode, which fails while the package doesn't
-   exist on npm.
-5. **Go live:** delete `dry_run: true` in `.github/workflows/push.yml`.
-
-### Graduating to 1.0.0
-
-Remove `"releaseRules": [{ "breaking": true, "release": "minor" }]` from `.releaserc.json`. The next breaking change
-then releases `1.0.0`.
-
-### Branch protection
-
-The release job pushes with `GITHUB_TOKEN`, which can't bypass branch protection. If `master` gets protected, follow the
-commented GitHub App snippet in `push.yml`.
+Releases currently run in **dry-run** mode. [docs/releasing.md](docs/releasing.md) covers how to go live, how to
+graduate to 1.0.0 and what branch protection requires.
 
 ## License
 

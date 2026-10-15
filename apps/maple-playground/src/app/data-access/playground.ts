@@ -4,7 +4,7 @@ import { effect, Service, signal, type WritableSignal } from '@angular/core';
 const DEFAULT_CONTEXT = JSON.stringify({ name: 'Maple' }, null, 2);
 
 /** Default code to be loaded into the editor. */
-const DEFAULT_CODE = ['const greeting = "Hello, " + name;', 'greeting;'].join('\n');
+const DEFAULT_CODE = ['const greeting = "Hello, " + name;', 'return greeting;'].join('\n');
 
 const CONTEXT_STORAGE_KEY = 'maple-playground-context';
 const CODE_STORAGE_KEY = 'maple-playground-code';
