@@ -1,5 +1,11 @@
 import { Service, signal } from '@angular/core';
-import type { RunRequest, RunResponse } from './maple-worker-protocol';
+import type {
+  RunError,
+  RunLimits,
+  RunRequest,
+  RunResponse,
+  RunStats
+} from './maple-worker-protocol';
 
 /** A run that takes longer than this is stopped; in practice that probably means an endless loop. */
 export const RUN_TIMEOUT_MS = 1000;
@@ -32,6 +38,10 @@ export class Runner {
 
   readonly #result = signal<string | undefined>(undefined);
 
+  readonly #error = signal<RunError | undefined>(undefined);
+
+  readonly #stats = signal<RunStats | undefined>(undefined);
+
   public readonly status = this.#status.asReadonly();
 
   /** The AST of the latest run as JSON text, `undefined` if parsing failed. */
@@ -40,11 +50,17 @@ export class Runner {
   /** The result of the latest run as JSON text, `undefined` if it failed or timed out. */
   public readonly result = this.#result.asReadonly();
 
+  /** Why the latest run failed, `undefined` while it runs, when it succeeded or timed out. */
+  public readonly error = this.#error.asReadonly();
+
+  /** What the latest run consumed, `undefined` unless it succeeded. */
+  public readonly stats = this.#stats.asReadonly();
+
   /**
-   * Runs `code` against the JSON `context`. The previous output stays visible until the new run
-   * replaces it, so fast runs don't flicker.
+   * Runs `code` against the JSON `context` within `limits`. The previous output stays visible
+   * until the new run replaces it, so fast runs don't flicker.
    */
-  public run(code: string, context: string): void {
+  public run(code: string, context: string, limits: RunLimits): void {
     if (this.#inFlight) {
       this.stopWorker();
     }
@@ -55,7 +71,7 @@ export class Runner {
     this.#status.set('running');
     this.#timeout = setTimeout(() => this.onTimeout(id), RUN_TIMEOUT_MS);
 
-    const request: RunRequest = { id, code, context };
+    const request: RunRequest = { id, code, context, limits };
     // Worker.postMessage has no targetOrigin; the rule only applies to window.postMessage.
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
     this.getWorker().postMessage(request);
@@ -79,9 +95,6 @@ export class Runner {
     }
 
     const { outcome } = response;
-    if (!outcome.ok) {
-      console.error(outcome.error?.stack ?? outcome.error?.message);
-    }
     const value = outcome.ok ? outcome.value : undefined;
 
     if (response.step === 'ast') {
@@ -92,6 +105,8 @@ export class Runner {
 
     this.finish();
     this.#result.set(value);
+    this.#error.set(outcome.ok ? undefined : outcome.error);
+    this.#stats.set(outcome.ok ? outcome.stats : undefined);
     this.#status.set(outcome.ok ? 'ok' : 'error');
   }
 
@@ -101,6 +116,8 @@ export class Runner {
     }
     this.stopWorker();
     this.#result.set(undefined);
+    this.#error.set(undefined);
+    this.#stats.set(undefined);
     if (!this.#astArrived) {
       this.#ast.set(undefined);
     }
@@ -112,6 +129,8 @@ export class Runner {
     console.error(event.error ?? event.message);
     this.stopWorker();
     this.#result.set(undefined);
+    this.#error.set({ message: event.message });
+    this.#stats.set(undefined);
     this.#status.set('error');
   }
 

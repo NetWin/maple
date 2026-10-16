@@ -4,6 +4,7 @@ import { Playground } from './data-access/playground';
 import { RUN_TIMEOUT_MS, Runner } from './data-access/runner';
 import { Badge } from './ui/badge';
 import { Pane } from './ui/pane';
+import { SettingsMenu } from './ui/settings-menu';
 import { Split } from './ui/split';
 import { StatusChip } from './ui/status-chip';
 import { type TabOption, Tabs } from './ui/tabs';
@@ -19,7 +20,7 @@ type OutputTab = 'result' | 'ast';
 
 @Component({
   selector: 'maple-root',
-  imports: [Badge, CodeEditor, Pane, Split, StatusChip, Tabs, ThemePicker],
+  imports: [Badge, CodeEditor, Pane, SettingsMenu, Split, StatusChip, Tabs, ThemePicker],
   templateUrl: './app.html',
   host: { class: 'flex h-full flex-col' }
 })
@@ -40,6 +41,15 @@ export class App {
     return output === undefined;
   });
 
+  /** The error of the latest run, shown in place of whichever output it took away. */
+  protected readonly outputError = computed(() => this.#runner.error()?.message);
+
+  /** Ops and wall-clock time of the latest successful run, for the status chip. */
+  protected readonly statusDetail = computed(() => {
+    const stats = this.#runner.stats();
+    return stats ? `${stats.ops} ops · ${stats.durationMs.toFixed(2)} ms` : undefined;
+  });
+
   protected readonly outputPlaceholder = computed(() => {
     return this.outputTab() === 'result' && this.status() === 'timeout'
       ? TIMEOUT_MESSAGE
@@ -54,8 +64,16 @@ export class App {
 
   protected readonly codeString = this.#playground.codeString;
 
+  protected readonly maxOps = this.#playground.maxOps;
+
+  protected readonly maxDepth = this.#playground.maxDepth;
+
   protected readonly debouncedInput = debounced(
-    () => ({ code: this.codeString(), context: this.contextString() }),
+    () => ({
+      code: this.codeString(),
+      context: this.contextString(),
+      limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() }
+    }),
     RUN_DELAY_MS
   );
 
@@ -65,12 +83,12 @@ export class App {
   ];
 
   constructor() {
-    // Re-runs shortly after the last edit to either editor.
+    // Re-runs shortly after the last edit to either editor or to the limits.
     effect(() => {
-      const { code, context } = this.debouncedInput.hasValue()
+      const { code, context, limits } = this.debouncedInput.hasValue()
         ? this.debouncedInput.value()
-        : { code: '', context: '' };
-      this.#runner.run(code, context);
+        : { code: '', context: '', limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() } };
+      this.#runner.run(code, context, limits);
     });
   }
 

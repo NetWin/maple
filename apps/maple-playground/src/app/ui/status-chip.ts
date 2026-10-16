@@ -4,7 +4,7 @@ import { RUN_TIMEOUT_MS, type RunStatus } from '../data-access/runner';
 const STATUS_LABEL: Record<RunStatus, string> = {
   running: 'Running',
   ok: 'Ready',
-  error: 'Error, see console',
+  error: 'Error',
   timeout: `Timed out after ${RUN_TIMEOUT_MS / 1000} s`
 };
 
@@ -22,6 +22,9 @@ const STATUS_DOT: Record<RunStatus, string> = {
 })
 export class StatusChip {
   public readonly status = input.required<RunStatus>();
+
+  /** Shown after the label, for the run's stats. */
+  public readonly detail = input<string | undefined>(undefined);
 
   protected readonly label = computed(() => STATUS_LABEL[this.status()]);
 
