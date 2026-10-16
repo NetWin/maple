@@ -54,9 +54,10 @@ function convert(
       throw unsupported(path, 'function');
     }
     const name = value.name === '' ? path : value.name;
+    // No length, so the script sees no properties on a host function
     const native = isIntrinsic(value)
-      ? new NativeFunction(name, (args, context) => context.invokeIntrinsic(value, args))
-      : new NativeFunction(name, (args, context) => context.invokeHost(value, args));
+      ? new NativeFunction(name, undefined, (args, context) => context.invokeIntrinsic(value, args))
+      : new NativeFunction(name, undefined, (args, context) => context.invokeHost(value, args));
     copies.set(value, native);
     return native;
   }

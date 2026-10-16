@@ -1,6 +1,6 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { type Fail, readMember } from '../values/members.ts';
-import { type Method, NativeFunction } from '../values/native.ts';
+import { isCallable, type Method, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
 import {
   DateWrapper,
@@ -10,8 +10,10 @@ import {
   SetWrapper
 } from '../values/wrappers.ts';
 import { ARRAY_METHODS } from './array-methods.ts';
+import { BOOLEAN_METHODS } from './boolean-methods.ts';
 import { DATE_METHODS } from './date-methods.ts';
 import { ERROR_METHODS } from './error-methods.ts';
+import { FUNCTION_METHODS } from './function-methods.ts';
 import { ITERATOR_METHODS } from './iterator-methods.ts';
 import { MAP_METHODS } from './map-methods.ts';
 import { NUMBER_METHODS } from './number-methods.ts';
@@ -35,6 +37,9 @@ export function resolveMethod(receiver: unknown, key: string): NativeFunction | 
   }
   if (typeof receiver === 'number') {
     return bind(receiver, key, NUMBER_METHODS.get(key));
+  }
+  if (typeof receiver === 'boolean') {
+    return bind(receiver, key, BOOLEAN_METHODS.get(key));
   }
   if (Array.isArray(receiver)) {
     return bind(receiver, key, ARRAY_METHODS.get(key));
@@ -60,6 +65,9 @@ export function resolveMethod(receiver: unknown, key: string): NativeFunction | 
   if (receiver instanceof IteratorWrapper) {
     return bind(receiver, key, ITERATOR_METHODS.get(key));
   }
+  if (isCallable(receiver)) {
+    return bind(receiver, key, FUNCTION_METHODS.get(key));
+  }
   return undefined;
 }
 
@@ -68,5 +76,10 @@ function bind<Receiver>(
   key: string,
   method: Method<Receiver> | undefined
 ): NativeFunction | undefined {
-  return method && new NativeFunction(key, (args, context) => method(receiver, args, context));
+  if (!method) {
+    return undefined;
+  }
+  return new NativeFunction(key, method.length, (args, context) => {
+    return method.call(receiver, args, context);
+  });
 }

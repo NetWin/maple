@@ -7,8 +7,8 @@ import { IteratorWrapper } from '../values/wrappers.ts';
  * The `Iterator.*` functions. `from` takes Maple's own iterables only; an object with a script
  * `next` method is refused, so the host never calls script code.
  */
-export const ITERATOR_STATICS: Readonly<Record<string, unknown>> = {
-  from: new NativeFunction('from', ([source], { fail }) => {
+export const ITERATOR_STATICS: Readonly<Record<string, NativeFunction>> = {
+  from: new NativeFunction('from', Iterator.from.length, ([source], { fail }) => {
     if (source instanceof IteratorWrapper) {
       return source;
     }

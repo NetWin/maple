@@ -20,23 +20,41 @@ export interface CallContext {
 
 export type NativeImplementation = (args: ReadonlyArray<unknown>, context: CallContext) => unknown;
 
-/** A built-in function as a value, such as `Math.max` or `trim` read off a string. */
+/**
+ * A built-in or host function as a value, such as `Math.max`, `trim` read off a string, or a
+ * function from `globals`. A built-in shows its `name` and `length` to the script; a host
+ * function has an `undefined` length and shows no properties at all, since its name and arity
+ * are the host's business.
+ */
 export class NativeFunction {
   public readonly name: string;
+  /** What the language gives the built-in as `length`, read off the host's own function. */
+  public readonly length: number | undefined;
   public readonly invoke: NativeImplementation;
 
-  constructor(name: string, invoke: NativeImplementation) {
+  constructor(name: string, length: number | undefined, invoke: NativeImplementation) {
     this.name = name;
+    this.length = length;
     this.invoke = invoke;
   }
 }
 
-/** A dispatch-table entry: a method of one receiver type. */
-export type Method<Receiver> = (
+export type MethodCall<Receiver> = (
   receiver: Receiver,
   args: ReadonlyArray<unknown>,
   context: CallContext
 ) => unknown;
+
+/** A dispatch-table entry: a method of one receiver type and the `length` the language gives it. */
+export interface Method<Receiver> {
+  readonly length: number;
+  readonly call: MethodCall<Receiver>;
+}
+
+/** Writes a dispatch-table entry, as `method(String.prototype.trim.length, (s) => s.trim())`. */
+export function method<Receiver>(length: number, call: MethodCall<Receiver>): Method<Receiver> {
+  return { length, call };
+}
 
 export function isCallable(value: unknown): boolean {
   return (

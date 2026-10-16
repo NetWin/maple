@@ -186,6 +186,78 @@ describe('array methods', () => {
   });
 });
 
+describe('holes', () => {
+  it('are skipped by the callback methods', () => {
+    const code =
+      'const seen = []; const a = [1, , 3]; a.forEach((x, i) => seen.push(i)); a.some((x, i) => { seen.push(i); }); a.every((x, i) => seen.push(i)); a.reduce((acc, x, i) => seen.push(i), 0); a.reduceRight((acc, x, i) => seen.push(i), 0); return seen;';
+    expect(run(code)).toEqual([0, 2, 0, 2, 0, 2, 0, 2, 2, 0]);
+    expect(run('return [[1, , 3].filter(() => true), [1, , [2]].flatMap((x) => x)];')).toEqual([
+      [1, 3],
+      [1, 2]
+    ]);
+  });
+
+  it('are kept by map, which never calls back for them', () => {
+    expect(
+      run(
+        'let n = 0; const r = [1, , 3].map((x) => { n++; return x * 2; }); return [n, r.length, 1 in r, r[2]];'
+      )
+    ).toEqual([2, 3, false, 6]);
+  });
+
+  it('are visited as undefined by the find methods', () => {
+    expect(
+      run('const seen = []; [1, , 3].find((x, i) => { seen.push(x); }); return seen;')
+    ).toEqual([1, undefined, 3]);
+    expect(
+      run(
+        'return [[1, , 3].findIndex((x) => x === undefined), [, 1].findLastIndex((x) => x === undefined)];'
+      )
+    ).toEqual([1, 0]);
+  });
+
+  it('are not found by indexOf, but count as undefined for includes', () => {
+    expect(
+      run(
+        'return [[1, , 3].indexOf(undefined), [1, , 3].lastIndexOf(undefined), [1, , 3].includes(undefined)];'
+      )
+    ).toEqual([-1, -1, true]);
+  });
+
+  it('leave reduce without a first value to start from', () => {
+    expect(run('return [, 1].reduce((a, b) => a + b);')).toBe(1);
+    expect(runAndCatch(maple, '[, ,].reduce((a, b) => a + b);').sandboxError?.name).toBe(
+      'TypeError'
+    );
+  });
+});
+
+describe('Array as a function and a constructor', () => {
+  it('makes an array of its arguments', () => {
+    expect(run('return [Array(1, 2), new Array("a"), Array(), new Array()];')).toEqual([
+      [1, 2],
+      ['a'],
+      [],
+      []
+    ]);
+  });
+
+  it('makes holes for a single number, one operation each', () => {
+    expect(
+      run('const a = new Array(3); return [a.length, 0 in a, 1 in a, 2 in a, typeof Array];')
+    ).toEqual([3, false, false, false, 'function']);
+    expect(opsWith('return Array(1000);', []) - opsWith('return Array(0);', [])).toBe(1000);
+  });
+
+  it('refuses a length that is no array length', () => {
+    expect(runAndCatch(maple, 'Array(-1);').sandboxError).toMatchObject({
+      name: 'RangeError',
+      message: 'Invalid array length'
+    });
+    expect(runAndCatch(maple, 'new Array(1.5);').sandboxError?.name).toBe('RangeError');
+  });
+});
+
 describe('Array statics', () => {
   it('isArray, of and from', () => {
     expect(run('return [Array.isArray([]), Array.isArray({}), Array.isArray("a")];')).toEqual([

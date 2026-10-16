@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Scope } from './scope.ts';
 
 describe('Scope', () => {
@@ -46,5 +46,54 @@ describe('Scope', () => {
 
     expect(inner.lookup('a')?.value).toBe(2);
     expect(outer.lookup('a')?.value).toBe(1);
+  });
+
+  describe('defineLazy', () => {
+    it('defines an initialized var binding without creating its value', () => {
+      const scope = new Scope();
+      const create = vi.fn<() => unknown>(() => 1);
+      scope.defineLazy('a', create);
+
+      expect(scope.lookup('a')).toMatchObject({ kind: 'var', initialized: true });
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('creates the value on the first read and keeps it for every later one', () => {
+      const scope = new Scope();
+      const create = vi.fn<() => unknown>(() => ({ created: true }));
+      scope.defineLazy('a', create);
+
+      const first = scope.lookup('a')?.value;
+
+      expect(first).toEqual({ created: true });
+      expect(scope.lookup('a')?.value).toBe(first);
+      expect(create).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets an assignment replace the value without ever creating it', () => {
+      const scope = new Scope();
+      const create = vi.fn<() => unknown>(() => 1);
+      scope.defineLazy('a', create);
+      const binding = scope.lookup('a');
+      if (!binding) {
+        throw new Error('expected a binding');
+      }
+
+      binding.value = 2;
+
+      expect(binding.value).toBe(2);
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('creates the value once when read through a child scope', () => {
+      const outer = new Scope();
+      const inner = new Scope(outer);
+      const create = vi.fn<() => unknown>(() => 1);
+      outer.defineLazy('a', create);
+
+      expect(inner.lookup('a')?.value).toBe(1);
+      expect(outer.lookup('a')?.value).toBe(1);
+      expect(create).toHaveBeenCalledTimes(1);
+    });
   });
 });

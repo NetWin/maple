@@ -4,11 +4,35 @@ import { type CallContext, isCallable, NativeFunction } from '../values/native.t
 import { getMember } from './method-dispatch.ts';
 
 /** The `Array.*` functions. */
-export const ARRAY_STATICS: Readonly<Record<string, unknown>> = {
-  isArray: new NativeFunction('isArray', ([value]) => Array.isArray(value)),
-  of: new NativeFunction('of', (items) => [...items]),
-  from: new NativeFunction('from', ([source, mapper], context) => from(source, mapper, context))
+export const ARRAY_STATICS: Readonly<Record<string, NativeFunction>> = {
+  isArray: new NativeFunction('isArray', Array.isArray.length, ([value]) => Array.isArray(value)),
+  of: new NativeFunction('of', Array.of.length, (items) => [...items]),
+  from: new NativeFunction('from', Array.from.length, ([source, mapper], context) =>
+    from(source, mapper, context)
+  )
 };
+
+/** The largest length an array can have, as in the language. */
+const MAX_ARRAY_LENGTH = 2 ** 32 - 1;
+
+/**
+ * `Array(...)` and `new Array(...)`, which do the same: one number is a length, which leaves that
+ * many holes and costs one operation per slot like any other growth; anything else is the list
+ * of elements.
+ */
+export function constructArray(args: ReadonlyArray<unknown>, context: CallContext): Array<unknown> {
+  const [length] = args;
+  if (args.length !== 1 || typeof length !== 'number') {
+    return [...args];
+  }
+  if (!Number.isInteger(length) || length < 0 || length > MAX_ARRAY_LENGTH) {
+    return context.fail('RangeError', 'Invalid array length');
+  }
+  context.charge(length);
+  const array: Array<unknown> = [];
+  array.length = length;
+  return array;
+}
 
 /** Iterables first; otherwise an array-like object is read by `length` and index. */
 function from(source: unknown, mapper: unknown, context: CallContext): Array<unknown> {

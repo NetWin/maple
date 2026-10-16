@@ -5,7 +5,7 @@ import { NativeFunction } from '../values/native.ts';
  * Every `Math` function takes numbers only, so the arguments convert hook-free and the host does
  * the rest.
  */
-export const MATH_STATICS: Readonly<Record<string, unknown>> = {
+export const MATH_STATICS: Readonly<Record<string, number | NativeFunction>> = {
   E: Math.E,
   LN10: Math.LN10,
   LN2: Math.LN2,
@@ -52,5 +52,5 @@ export const MATH_STATICS: Readonly<Record<string, unknown>> = {
 };
 
 function numeric(name: string, host: (...values: Array<number>) => number): NativeFunction {
-  return new NativeFunction(name, (args) => host(...args.map(toNumber)));
+  return new NativeFunction(name, host.length, (args) => host(...args.map(toNumber)));
 }

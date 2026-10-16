@@ -60,6 +60,11 @@ describe('array literals', () => {
     expect(run('return [1, "a", [2]];')).toEqual([1, 'a', [2]]);
     expect(run('return [1, , 3];')).toEqual([1, undefined, 3]);
     expect(run('return [1, , 3].length;')).toBe(3);
+    expect(run('const a = [1, , 3]; return [0 in a, 1 in a, Object.keys(a)];')).toEqual([
+      true,
+      false,
+      ['0', '2']
+    ]);
   });
 
   it('spread iterables', () => {
@@ -97,17 +102,20 @@ describe('member access', () => {
     expect(run('return "abc"[3];')).toBeUndefined();
   });
 
-  it('sees nothing on numbers, booleans and functions', () => {
+  it('sees only methods on numbers and booleans, and length and name on functions', () => {
     expect(run('return (5).foo;')).toBeUndefined();
-    expect(run('return true.valueOf;')).toBeUndefined();
-    expect(run('const f = () => 1; return f.length;')).toBeUndefined();
-    expect(run('const f = () => 1; return f.name;')).toBeUndefined();
+    expect(run('return true.foo;')).toBeUndefined();
+    expect(run('const f = (a, b) => 1; return [f.length, f.name];')).toEqual([2, 'f']);
     expect(run('const f = () => 1; return f.call;')).toBeUndefined();
   });
 
   it('never reaches a prototype, only the dispatch tables', () => {
-    expect(run('return obj.toString;', data)).toBeUndefined();
-    expect(run('return obj.valueOf;', data)).toBeUndefined();
+    expect(run('return [typeof obj.toString, obj.toString()];', data)).toEqual([
+      'function',
+      '[object Object]'
+    ]);
+    expect(run('return obj.valueOf() === obj;', data)).toBe(true);
+    expect(run('return obj.isPrototypeOf;', data)).toBeUndefined();
     expect(run('return list.foo;', data)).toBeUndefined();
     expect(run('return typeof list.map;', data)).toBe('function');
     expect(run('return typeof obj.hasOwnProperty;', data)).toBe('function');

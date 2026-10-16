@@ -1,5 +1,5 @@
 import { toString } from '../values/coercion.ts';
-import { type CallContext, isCallable, type Method } from '../values/native.ts';
+import { type CallContext, isCallable, type Method, method } from '../values/native.ts';
 import { asMutableOrThrow, IteratorWrapper, MapWrapper, SetWrapper } from '../values/wrappers.ts';
 
 type SetMethod = Method<SetWrapper>;
@@ -11,22 +11,35 @@ type SetMethod = Method<SetWrapper>;
 export const SET_METHODS: ReadonlyMap<string, SetMethod> = new Map<string, SetMethod>([
   [
     'add',
-    (s, [value], { fail }) => {
+    method(Set.prototype.add.length, (s, [value], { fail }) => {
       asMutableOrThrow(s, fail, 'add').set.add(value);
       return s;
-    }
+    })
   ],
-  ['clear', (s, _args, { fail }) => asMutableOrThrow(s, fail, 'clear').set.clear()],
-  ['delete', (s, [value], { fail }) => asMutableOrThrow(s, fail, 'delete').set.delete(value)],
+  [
+    'clear',
+    method(Set.prototype.clear.length, (s, _args, { fail }) =>
+      asMutableOrThrow(s, fail, 'clear').set.clear()
+    )
+  ],
+  [
+    'delete',
+    method(Set.prototype.delete.length, (s, [value], { fail }) =>
+      asMutableOrThrow(s, fail, 'delete').set.delete(value)
+    )
+  ],
   [
     'difference',
-    (s, [other], { fail }) =>
-      new SetWrapper(s.set.difference(asSetLikeOrThrow(other, fail, 'difference')))
+    method(
+      Set.prototype.difference.length,
+      (s, [other], { fail }) =>
+        new SetWrapper(s.set.difference(asSetLikeOrThrow(other, fail, 'difference')))
+    )
   ],
-  ['entries', (s) => new IteratorWrapper(s.set.entries())],
+  ['entries', method(Set.prototype.entries.length, (s) => new IteratorWrapper(s.set.entries()))],
   [
     'forEach',
-    (s, [fn], context) => {
+    method(Set.prototype.forEach.length, (s, [fn], context) => {
       if (!isCallable(fn)) {
         return context.fail('TypeError', `${toString(fn)} is not a function`);
       }
@@ -34,47 +47,62 @@ export const SET_METHODS: ReadonlyMap<string, SetMethod> = new Map<string, SetMe
         context.call(fn, [value, value, s]);
       }
       return undefined;
-    }
+    })
   ],
-  ['has', (s, [value]) => s.set.has(value)],
+  ['has', method(Set.prototype.has.length, (s, [value]) => s.set.has(value))],
   [
     'intersection',
-    (s, [other], { fail }) =>
-      new SetWrapper(s.set.intersection(asSetLikeOrThrow(other, fail, 'intersection')))
+    method(
+      Set.prototype.intersection.length,
+      (s, [other], { fail }) =>
+        new SetWrapper(s.set.intersection(asSetLikeOrThrow(other, fail, 'intersection')))
+    )
   ],
   [
     'isDisjointFrom',
-    (s, [other], { fail }) => s.set.isDisjointFrom(asSetLikeOrThrow(other, fail, 'isDisjointFrom'))
+    method(Set.prototype.isDisjointFrom.length, (s, [other], { fail }) =>
+      s.set.isDisjointFrom(asSetLikeOrThrow(other, fail, 'isDisjointFrom'))
+    )
   ],
   [
     'isSubsetOf',
-    (s, [other], { fail }) => s.set.isSubsetOf(asSetLikeOrThrow(other, fail, 'isSubsetOf'))
+    method(Set.prototype.isSubsetOf.length, (s, [other], { fail }) =>
+      s.set.isSubsetOf(asSetLikeOrThrow(other, fail, 'isSubsetOf'))
+    )
   ],
   [
     'isSupersetOf',
-    (s, [other], { fail }) => s.set.isSupersetOf(asSetLikeOrThrow(other, fail, 'isSupersetOf'))
+    method(Set.prototype.isSupersetOf.length, (s, [other], { fail }) =>
+      s.set.isSupersetOf(asSetLikeOrThrow(other, fail, 'isSupersetOf'))
+    )
   ],
 
-  ['keys', (s) => new IteratorWrapper(s.set.values())],
+  ['keys', method(Set.prototype.keys.length, (s) => new IteratorWrapper(s.set.values()))],
   [
     'symmetricDifference',
-    (s, [other], { fail }) =>
-      new SetWrapper(
-        s.set.symmetricDifference(asSetLikeOrThrow(other, fail, 'symmetricDifference'))
-      )
+    method(
+      Set.prototype.symmetricDifference.length,
+      (s, [other], { fail }) =>
+        new SetWrapper(
+          s.set.symmetricDifference(asSetLikeOrThrow(other, fail, 'symmetricDifference'))
+        )
+    )
   ],
   [
     'union',
-    (s, [other], { fail }) => new SetWrapper(s.set.union(asSetLikeOrThrow(other, fail, 'union')))
+    method(
+      Set.prototype.union.length,
+      (s, [other], { fail }) => new SetWrapper(s.set.union(asSetLikeOrThrow(other, fail, 'union')))
+    )
   ],
-  ['values', (s) => new IteratorWrapper(s.set.values())]
+  ['values', method(Set.prototype.values.length, (s) => new IteratorWrapper(s.set.values()))]
 ]);
 
 /** The language accepts any object with `size`, `has` and `keys`; Maple only its own collections. */
 function asSetLikeOrThrow(
   other: unknown,
   fail: CallContext['fail'],
-  method: string
+  methodName: string
 ): ReadonlySetLike<unknown> {
   if (other instanceof SetWrapper) {
     return other.set;
@@ -82,5 +110,5 @@ function asSetLikeOrThrow(
   if (other instanceof MapWrapper) {
     return other.map;
   }
-  return fail('TypeError', `Set.prototype.${method} expects a Set or a Map`);
+  return fail('TypeError', `Set.prototype.${methodName} expects a Set or a Map`);
 }

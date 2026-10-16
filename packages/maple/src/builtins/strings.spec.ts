@@ -129,6 +129,29 @@ describe('string methods', () => {
   });
 });
 
+describe('String as a function', () => {
+  it('converts hook-free', () => {
+    expect(run('return String(123);')).toBe('123');
+    expect(run('return String();')).toBe('');
+    expect(run('return String(undefined);')).toBe('undefined');
+    expect(run('return String(null);')).toBe('null');
+    expect(run('return String(obj);', { obj: { toString: 1 } })).toBe('[object Object]');
+    expect(run('return String(() => 1);')).toBe('[function]');
+  });
+
+  it('cannot be constructed, as there are no wrapper objects', () => {
+    expect(runAndCatch(maple, 'new String("x");').code).toBe('DISALLOWED_SYNTAX');
+  });
+
+  it('exposes its statics', () => {
+    expect(run('return String.fromCharCode(72, 105);')).toBe('Hi');
+    expect(run('return String.fromCodePoint(0x1f600);')).toBe('😀');
+    expect(run('try { String.fromCodePoint(-1); } catch (e) { return e.name; }')).toBe(
+      'RangeError'
+    );
+  });
+});
+
 describe('ES2024 and legacy string methods', () => {
   it('check and repair well-formedness', () => {
     expect(run('return ["ab".isWellFormed(), "a\\uD800".isWellFormed()];')).toEqual([true, false]);

@@ -6,8 +6,8 @@ import { asHostIterable, iterate } from '../values/iteration.ts';
 import {
   type Fail,
   hasMember,
-  ownPropertyNames,
   ownEntries,
+  ownPropertyNames,
   setMember,
   toArrayIndex,
   toPropertyKey
@@ -18,40 +18,46 @@ import { isWrapper, IteratorWrapper } from '../values/wrappers.ts';
 import { getMember } from './method-dispatch.ts';
 
 /** The `Object.*` functions; all of them see own enumerable properties and nothing else. */
-export const OBJECT_STATICS: Readonly<Record<string, unknown>> = {
-  keys: new NativeFunction('keys', ([target], { fail }) =>
+export const OBJECT_STATICS: Readonly<Record<string, NativeFunction>> = {
+  keys: new NativeFunction('keys', Object.keys.length, ([target], { fail }) =>
     Array.from(ownEntries(asObjectCoercibleOrThrow(target, fail)), ([key]) => key)
   ),
-  values: new NativeFunction('values', ([target], { fail }) =>
+  values: new NativeFunction('values', Object.values.length, ([target], { fail }) =>
     Array.from(ownEntries(asObjectCoercibleOrThrow(target, fail)), ([, value]) => value)
   ),
-  entries: new NativeFunction('entries', ([target], { fail }) =>
+  entries: new NativeFunction('entries', Object.entries.length, ([target], { fail }) =>
     Array.from(ownEntries(asObjectCoercibleOrThrow(target, fail)))
   ),
-  fromEntries: new NativeFunction('fromEntries', ([iterable], context) =>
+  fromEntries: new NativeFunction('fromEntries', Object.fromEntries.length, ([iterable], context) =>
     fromEntries(iterable, context)
   ),
-  assign: new NativeFunction('assign', ([target, ...sources], { fail, charge }) => {
-    if (typeof target !== 'object' || target === null) {
-      return fail('TypeError', 'Object.assign needs an object as its target');
-    }
-    for (const source of sources) {
-      for (const [key, value] of ownEntries(source)) {
-        setMember(target, key, value, fail, charge);
+  assign: new NativeFunction(
+    'assign',
+    Object.assign.length,
+    ([target, ...sources], { fail, charge }) => {
+      if (typeof target !== 'object' || target === null) {
+        return fail('TypeError', 'Object.assign needs an object as its target');
       }
+      for (const source of sources) {
+        for (const [key, value] of ownEntries(source)) {
+          setMember(target, key, value, fail, charge);
+        }
+      }
+      return target;
     }
-    return target;
-  }),
-  hasOwn: new NativeFunction('hasOwn', ([target, key], { fail }) =>
+  ),
+  hasOwn: new NativeFunction('hasOwn', Object.hasOwn.length, ([target, key], { fail }) =>
     hasOwn(asObjectCoercibleOrThrow(target, fail), toPropertyKey(key), fail)
   ),
-  is: new NativeFunction('is', ([left, right]) => Object.is(left, right)),
-  getOwnPropertyNames: new NativeFunction('getOwnPropertyNames', ([target], { fail }) =>
-    ownPropertyNames(asObjectCoercibleOrThrow(target, fail))
+  is: new NativeFunction('is', Object.is.length, ([left, right]) => Object.is(left, right)),
+  getOwnPropertyNames: new NativeFunction(
+    'getOwnPropertyNames',
+    Object.getOwnPropertyNames.length,
+    ([target], { fail }) => ownPropertyNames(asObjectCoercibleOrThrow(target, fail))
   ),
-  freeze: new NativeFunction('freeze', ([target]) => freeze(target)),
-  isFrozen: new NativeFunction('isFrozen', ([target]) => isFrozen(target)),
-  groupBy: new NativeFunction('groupBy', ([items, callback], context) => {
+  freeze: new NativeFunction('freeze', Object.freeze.length, ([target]) => freeze(target)),
+  isFrozen: new NativeFunction('isFrozen', Object.isFrozen.length, ([target]) => isFrozen(target)),
+  groupBy: new NativeFunction('groupBy', Object.groupBy.length, ([items, callback], context) => {
     const iterable = asHostIterable(items);
     if (!iterable) {
       return context.fail('TypeError', `${toString(items)} is not iterable`);
@@ -65,6 +71,25 @@ export const OBJECT_STATICS: Readonly<Record<string, unknown>> = {
     );
   })
 };
+
+/**
+ * `Object(...)` and `new Object(...)`, which do the same: a fresh object for nothing, `null` or
+ * `undefined`, and the value itself when it already is an object. A primitive would need a
+ * wrapper object, which the value model does not have.
+ */
+export function constructObject(args: ReadonlyArray<unknown>, { fail }: CallContext): unknown {
+  const [value] = args;
+  if (value === undefined || value === null) {
+    return {};
+  }
+  if (typeof value === 'object' || isCallable(value)) {
+    return value;
+  }
+  return fail(
+    'TypeError',
+    `Object(${typeof value}) is not supported: there are no wrapper objects`
+  );
+}
 
 function asObjectCoercibleOrThrow(value: unknown, fail: Fail): unknown {
   if (value === undefined || value === null) {

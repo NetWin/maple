@@ -4,6 +4,11 @@ export type BuiltinCall = (args: ReadonlyArray<unknown>, context: CallContext) =
 
 export interface BuiltinOptions {
   name: string;
+  /**
+   * What the language gives a callable global as `length`,
+   * read off the host's own; `Math` has none.
+   */
+  length?: number;
   /** Static members such as `Math.max`; read through member access, never written. */
   members?: Record<string, unknown>;
   /** What a plain call does, as in `Error('x')` or `String(1)`. */
@@ -17,6 +22,7 @@ export interface BuiltinOptions {
 /** A standard global such as `Error`, `Array` or `Math`: a namespace the script can only read. */
 export class Builtin {
   public readonly name: string;
+  public readonly length: number | undefined;
   public readonly members: ReadonlyMap<string, unknown>;
   public readonly call: BuiltinCall | undefined;
   public readonly construct: BuiltinCall | undefined;
@@ -24,6 +30,7 @@ export class Builtin {
 
   constructor(options: BuiltinOptions) {
     this.name = options.name;
+    this.length = options.length;
     this.members = new Map(Object.entries(options.members ?? {}));
     this.call = options.call;
     this.construct = options.construct;

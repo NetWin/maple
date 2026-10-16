@@ -22,6 +22,30 @@ export class Scope {
     this.#bindings.set(name, { kind, initialized: !lexical, value });
   }
 
+  /**
+   * A `var` binding whose value `create` makes on the first read, so a value that is costly to
+   * build and rarely needed is only built when it is. An assignment replaces it unread.
+   */
+  public defineLazy(name: string, create: () => unknown): void {
+    let created = false;
+    let value: unknown;
+    this.#bindings.set(name, {
+      kind: 'var',
+      initialized: true,
+      get value(): unknown {
+        if (!created) {
+          value = create();
+          created = true;
+        }
+        return value;
+      },
+      set value(next: unknown) {
+        value = next;
+        created = true;
+      }
+    });
+  }
+
   /** Gives the nearest binding its value; for `var` that is the scope it hoisted to. */
   public initialize(name: string, value: unknown): void {
     const binding = this.lookup(name);

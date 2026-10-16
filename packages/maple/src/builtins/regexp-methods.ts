@@ -1,15 +1,20 @@
 import { defineOwn } from '../support/own-property.ts';
 import { toString } from '../values/coercion.ts';
-import { type CallContext, guardHostErrors, type Method } from '../values/native.ts';
+import { type CallContext, guardHostErrors, type Method, method } from '../values/native.ts';
 import { RegExpWrapper } from '../values/wrappers.ts';
 
 type RegExpMethod = Method<RegExpWrapper>;
 
 /** Matching runs natively; `lastIndex` on the wrapped regexp gives `g` and `y` their real semantics. */
 export const REGEXP_METHODS: ReadonlyMap<string, RegExpMethod> = new Map<string, RegExpMethod>([
-  ['exec', (r, [text]) => matchToSandbox(matcherOf(r).exec(toString(text)))],
-  ['test', (r, [text]) => matcherOf(r).test(toString(text))],
-  ['toString', (r) => String(r.regexp)]
+  [
+    'exec',
+    method(RegExp.prototype.exec.length, (r, [text]) =>
+      matchToSandbox(matcherOf(r).exec(toString(text)))
+    )
+  ],
+  ['test', method(RegExp.prototype.test.length, (r, [text]) => matcherOf(r).test(toString(text)))],
+  ['toString', method(RegExp.prototype.toString.length, (r) => String(r.regexp))]
 ]);
 
 /**

@@ -7,9 +7,19 @@ export type FunctionNode = FunctionDeclaration | FunctionExpression | ArrowFunct
 export class Closure {
   public readonly node: FunctionNode;
   public readonly scope: Scope;
+  /** Its own name, or the one an anonymous function takes from the binding it is assigned to. */
+  public readonly name: string;
 
-  constructor(node: FunctionNode, scope: Scope) {
+  constructor(node: FunctionNode, scope: Scope, inferredName: string = '') {
     this.node = node;
     this.scope = scope;
+    this.name = node.type !== 'ArrowFunctionExpression' && node.id ? node.id.name : inferredName;
+  }
+
+  public get length(): number {
+    const index = this.node.params.findIndex((param) => {
+      return param.type === 'AssignmentPattern' || param.type === 'RestElement';
+    });
+    return index === -1 ? this.node.params.length : index;
   }
 }

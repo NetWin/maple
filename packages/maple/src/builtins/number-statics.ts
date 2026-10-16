@@ -6,15 +6,7 @@ import { NativeFunction } from '../values/native.ts';
  * The `Number.*` functions and constants. `parseInt` and `parseFloat` are the same functions as
  * the globals, as in the language; the predicates take the value as is and never coerce.
  */
-export const NUMBER_STATICS: Readonly<Record<string, unknown>> = {
-  isInteger: new NativeFunction('isInteger', ([value]) => Number.isInteger(value)),
-  isFinite: new NativeFunction('isFinite', ([value]) => Number.isFinite(value)),
-  isNaN: new NativeFunction('isNaN', ([value]) => Number.isNaN(value)),
-  isSafeInteger: new NativeFunction('isSafeInteger', ([value]) => Number.isSafeInteger(value)),
-  parseFloat: new NativeFunction('parseFloat', ([text]) => parseFloat(toString(text))),
-  parseInt: new NativeFunction('parseInt', ([text, radix]) =>
-    parseInt(toString(text), optionalNumber(radix))
-  ),
+export const NUMBER_STATICS: Readonly<Record<string, number | NativeFunction>> = {
   MAX_SAFE_INTEGER: Number.MAX_SAFE_INTEGER,
   MIN_SAFE_INTEGER: Number.MIN_SAFE_INTEGER,
   MAX_VALUE: Number.MAX_VALUE,
@@ -22,5 +14,21 @@ export const NUMBER_STATICS: Readonly<Record<string, unknown>> = {
   EPSILON: Number.EPSILON,
   POSITIVE_INFINITY: Number.POSITIVE_INFINITY,
   NEGATIVE_INFINITY: Number.NEGATIVE_INFINITY,
-  NaN: Number.NaN
+  NaN: Number.NaN,
+  isInteger: new NativeFunction('isInteger', Number.isInteger.length, ([value]) =>
+    Number.isInteger(value)
+  ),
+  isFinite: new NativeFunction('isFinite', Number.isFinite.length, ([value]) =>
+    Number.isFinite(value)
+  ),
+  isNaN: new NativeFunction('isNaN', Number.isNaN.length, ([value]) => Number.isNaN(value)),
+  isSafeInteger: new NativeFunction('isSafeInteger', Number.isSafeInteger.length, ([value]) =>
+    Number.isSafeInteger(value)
+  ),
+  parseFloat: new NativeFunction('parseFloat', Number.parseFloat.length, ([text]) =>
+    parseFloat(toString(text))
+  ),
+  parseInt: new NativeFunction('parseInt', Number.parseInt.length, ([text, radix]) =>
+    parseInt(toString(text), optionalNumber(radix))
+  )
 };

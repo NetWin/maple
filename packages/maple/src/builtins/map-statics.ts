@@ -4,8 +4,8 @@ import { type CallContext, isCallable, NativeFunction } from '../values/native.t
 import { MapWrapper } from '../values/wrappers.ts';
 
 /** The `Map.*` functions; keys keep their identity, as in a Map built by hand. */
-export const MAP_STATICS: Readonly<Record<string, unknown>> = {
-  groupBy: new NativeFunction('groupBy', ([items, callback], context) => {
+export const MAP_STATICS: Readonly<Record<string, NativeFunction>> = {
+  groupBy: new NativeFunction('groupBy', Map.groupBy.length, ([items, callback], context) => {
     const iterable = asHostIterable(items);
     if (!iterable) {
       return context.fail('TypeError', `${toString(items)} is not iterable`);

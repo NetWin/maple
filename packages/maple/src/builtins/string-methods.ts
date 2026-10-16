@@ -5,7 +5,13 @@ import {
   optionalString
 } from '../values/arguments.ts';
 import { toNumber, toString } from '../values/coercion.ts';
-import { type CallContext, guardHostErrors, isCallable, type Method } from '../values/native.ts';
+import {
+  type CallContext,
+  guardHostErrors,
+  isCallable,
+  type Method,
+  method
+} from '../values/native.ts';
 import { IteratorWrapper, RegExpWrapper } from '../values/wrappers.ts';
 import { groupsToSandbox, matcherOf, matchToSandbox, toRegExp } from './regexp-methods.ts';
 
@@ -16,57 +22,109 @@ type StringMethod = Method<string>;
  * object can never run code inside a built-in.
  */
 export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string, StringMethod>([
-  ['at', (s, [index]) => s.at(toNumber(index))],
-  ['charAt', (s, [index]) => s.charAt(toNumber(index))],
-  ['charCodeAt', (s, [index]) => s.charCodeAt(toNumber(index))],
-  ['codePointAt', (s, [index]) => s.codePointAt(toNumber(index))],
-  ['concat', (s, args, { fail }) => guardHostErrors(fail, () => s.concat(...args.map(toString)))],
-  ['endsWith', (s, [search, end]) => s.endsWith(toString(search), optionalNumber(end))],
-  ['isWellFormed', (s) => s.isWellFormed()],
-  ['includes', (s, [search, position]) => s.includes(toString(search), optionalNumber(position))],
-  ['indexOf', (s, [search, position]) => s.indexOf(toString(search), optionalNumber(position))],
+  ['at', method(String.prototype.at.length, (s, [index]) => s.at(toNumber(index)))],
+  ['charAt', method(String.prototype.charAt.length, (s, [index]) => s.charAt(toNumber(index)))],
+  [
+    'charCodeAt',
+    method(String.prototype.charCodeAt.length, (s, [index]) => s.charCodeAt(toNumber(index)))
+  ],
+  [
+    'codePointAt',
+    method(String.prototype.codePointAt.length, (s, [index]) => s.codePointAt(toNumber(index)))
+  ],
+  [
+    'concat',
+    method(String.prototype.concat.length, (s, args, { fail }) =>
+      guardHostErrors(fail, () => s.concat(...args.map(toString)))
+    )
+  ],
+  [
+    'endsWith',
+    method(String.prototype.endsWith.length, (s, [search, end]) =>
+      s.endsWith(toString(search), optionalNumber(end))
+    )
+  ],
+  ['isWellFormed', method(String.prototype.isWellFormed.length, (s) => s.isWellFormed())],
+  [
+    'includes',
+    method(String.prototype.includes.length, (s, [search, position]) =>
+      s.includes(toString(search), optionalNumber(position))
+    )
+  ],
+  [
+    'indexOf',
+    method(String.prototype.indexOf.length, (s, [search, position]) =>
+      s.indexOf(toString(search), optionalNumber(position))
+    )
+  ],
   [
     'lastIndexOf',
-    (s, [search, position]) => s.lastIndexOf(toString(search), optionalNumber(position))
+    method(String.prototype.lastIndexOf.length, (s, [search, position]) =>
+      s.lastIndexOf(toString(search), optionalNumber(position))
+    )
   ],
   [
     'normalize',
-    (s, [form], { fail }) => guardHostErrors(fail, () => s.normalize(optionalString(form)))
+    method(String.prototype.normalize.length, (s, [form], { fail }) =>
+      guardHostErrors(fail, () => s.normalize(optionalString(form)))
+    )
   ],
   [
     'padEnd',
-    (s, [length, fill], { fail }) =>
+    method(String.prototype.padEnd.length, (s, [length, fill], { fail }) =>
       guardHostErrors(fail, () => s.padEnd(toNumber(length), optionalString(fill)))
+    )
   ],
   [
     'padStart',
-    (s, [length, fill], { fail }) =>
+    method(String.prototype.padStart.length, (s, [length, fill], { fail }) =>
       guardHostErrors(fail, () => s.padStart(toNumber(length), optionalString(fill)))
+    )
   ],
-  ['repeat', (s, [count], { fail }) => guardHostErrors(fail, () => s.repeat(toNumber(count)))],
+  [
+    'repeat',
+    method(String.prototype.repeat.length, (s, [count], { fail }) =>
+      guardHostErrors(fail, () => s.repeat(toNumber(count)))
+    )
+  ],
   [
     'replace',
-    (s, [pattern, replacement], context) => replace(s, pattern, replacement, context, false)
+    method(String.prototype.replace.length, (s, [pattern, replacement], context) =>
+      replace(s, pattern, replacement, context, false)
+    )
   ],
   [
     'replaceAll',
-    (s, [pattern, replacement], context) => replace(s, pattern, replacement, context, true)
+    method(String.prototype.replaceAll.length, (s, [pattern, replacement], context) =>
+      replace(s, pattern, replacement, context, true)
+    )
   ],
-  ['slice', (s, [start, end]) => s.slice(optionalNumber(start), optionalNumber(end))],
+  [
+    'slice',
+    method(String.prototype.slice.length, (s, [start, end]) =>
+      s.slice(optionalNumber(start), optionalNumber(end))
+    )
+  ],
   [
     'split',
-    (s, [separator, limit]) =>
+    method(String.prototype.split.length, (s, [separator, limit]) =>
       separator === undefined
         ? [s].slice(0, optionalNumber(limit) ?? 1)
         : s.split(
             separator instanceof RegExpWrapper ? matcherOf(separator) : toString(separator),
             optionalNumber(limit)
           )
+    )
   ],
-  ['match', (s, [pattern], context) => matchToSandbox(s.match(toRegExp(pattern, '', context)))],
+  [
+    'match',
+    method(String.prototype.match.length, (s, [pattern], context) =>
+      matchToSandbox(s.match(toRegExp(pattern, '', context)))
+    )
+  ],
   [
     'matchAll',
-    (s, [pattern], context) => {
+    method(String.prototype.matchAll.length, (s, [pattern], context) => {
       const regexp = toRegExp(pattern, 'g', context);
       if (!regexp.global) {
         return context.fail(
@@ -75,41 +133,62 @@ export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string,
         );
       }
       return new IteratorWrapper(matchesToSandbox(s.matchAll(regexp)));
-    }
+    })
   ],
-  ['search', (s, [pattern], context) => s.search(toRegExp(pattern, '', context))],
+  [
+    'search',
+    method(String.prototype.search.length, (s, [pattern], context) =>
+      s.search(toRegExp(pattern, '', context))
+    )
+  ],
   [
     'startsWith',
-    (s, [search, position]) => s.startsWith(toString(search), optionalNumber(position))
+    method(String.prototype.startsWith.length, (s, [search, position]) =>
+      s.startsWith(toString(search), optionalNumber(position))
+    )
   ],
-  ['substr', (s, [start, length]) => substr(s, start, length)],
-  ['substring', (s, [start, end]) => s.substring(toNumber(start), optionalNumber(end))],
+  [
+    'substr',
+    method(2 /* deprecated in TypeScript's lib */, (s, [start, length]) => substr(s, start, length))
+  ],
+  [
+    'substring',
+    method(String.prototype.substring.length, (s, [start, end]) =>
+      s.substring(toNumber(start), optionalNumber(end))
+    )
+  ],
   [
     'localeCompare',
-    (s, [that, locales, options], { fail }) =>
+    method(String.prototype.localeCompare.length, (s, [that, locales, options], { fail }) =>
       guardHostErrors(fail, () =>
         s.localeCompare(toString(that), localesArgument(locales), intlOptionsArgument(options))
       )
+    )
   ],
   [
     'toLocaleLowerCase',
-    (s, [locales], { fail }) =>
+    method(String.prototype.toLocaleLowerCase.length, (s, [locales], { fail }) =>
       guardHostErrors(fail, () => s.toLocaleLowerCase(localesArgument(locales)))
+    )
   ],
   [
     'toLocaleUpperCase',
-    (s, [locales], { fail }) =>
+    method(String.prototype.toLocaleUpperCase.length, (s, [locales], { fail }) =>
       guardHostErrors(fail, () => s.toLocaleUpperCase(localesArgument(locales)))
+    )
   ],
-  ['toLowerCase', (s) => s.toLowerCase()],
-  ['toString', (s) => s],
-  ['toUpperCase', (s) => s.toUpperCase()],
-  ['toWellFormed', (s) => s.toWellFormed()],
-  ['trim', (s) => s.trim()],
-  ['trimEnd', (s) => s.trimEnd()],
-  ['trimLeft', (s) => s.trimStart()],
-  ['trimRight', (s) => s.trimEnd()],
-  ['trimStart', (s) => s.trimStart()]
+  ['toLowerCase', method(String.prototype.toLowerCase.length, (s) => s.toLowerCase())],
+  ['toString', method(String.prototype.toString.length, (s) => s)],
+  ['toUpperCase', method(String.prototype.toUpperCase.length, (s) => s.toUpperCase())],
+  ['toWellFormed', method(String.prototype.toWellFormed.length, (s) => s.toWellFormed())],
+  ['trim', method(String.prototype.trim.length, (s) => s.trim())],
+  ['trimEnd', method(String.prototype.trimEnd.length, (s) => s.trimEnd())],
+  // Aliases of trimStart and trimEnd, which the host's typings mark as deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
+  ['trimLeft', method(String.prototype.trimLeft.length, (s) => s.trimStart())],
+  // oxlint-disable-next-line typescript/no-deprecated
+  ['trimRight', method(String.prototype.trimRight.length, (s) => s.trimEnd())],
+  ['trimStart', method(String.prototype.trimStart.length, (s) => s.trimStart())]
 ]);
 
 /**

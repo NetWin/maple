@@ -66,7 +66,8 @@ describe('escape attempts', () => {
       expect(errorCode('eval("1");')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('globalThis;')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('return this;')).toBe('DISALLOWED_SYNTAX');
-      expect(errorCode('function f() { return arguments; } f();')).toBe('DISALLOWED_SYNTAX');
+      expect(errorCode('return arguments;')).toBe('DISALLOWED_SYNTAX');
+      expect(errorName('function f() { return arguments.callee; } f();')).toBe('TypeError');
       expect(errorCode('Reflect.get({}, "a");')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('new Proxy({}, {});')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('Symbol("x");')).toBe('DISALLOWED_SYNTAX');
@@ -127,8 +128,8 @@ describe('escape attempts', () => {
 
     it('through new on anything but the allowlisted constructors', () => {
       expect(errorCode('function F() {} new F();')).toBe('DISALLOWED_SYNTAX');
-      expect(errorCode('new Object();')).toBe('DISALLOWED_SYNTAX');
-      expect(errorCode('new Array(1e9);')).toBe('DISALLOWED_SYNTAX');
+      expect(errorCode('new String("x");')).toBe('DISALLOWED_SYNTAX');
+      expect(errorCode('new Array(1e9);')).toBe('LIMIT_EXCEEDED');
       expect(errorCode('new host();')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('new (Math.max)();')).toBe('DISALLOWED_SYNTAX');
     });
@@ -226,8 +227,13 @@ describe('escape attempts', () => {
     });
 
     it('cannot be given properties or inspected', () => {
-      expect(run('return (() => 1).length;')).toBeUndefined();
+      expect(run('return [(() => 1).length, (function f(a) {}).name];')).toEqual([0, 'f']);
       expect(run('return host.name;')).toBeUndefined();
+      expect(run('return host.length;')).toBeUndefined();
+      expect(run('return [host.toString(), Math.max.toString()];')).toEqual([
+        '[function]',
+        '[function]'
+      ]);
       expect(run('return Math.max.call;')).toBeUndefined();
       expect(run('return Object.keys(() => 1);')).toEqual([]);
       expect(run('return Object.keys(host);')).toEqual([]);

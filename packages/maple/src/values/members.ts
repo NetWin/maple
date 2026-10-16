@@ -1,4 +1,5 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
+import { isArgumentsObject } from './arguments-object.ts';
 import { Builtin } from './builtin.ts';
 import { Closure } from './closure.ts';
 import { toNumber, toString, typeOf } from './coercion.ts';
@@ -70,7 +71,7 @@ export function readMember(
     return methodLookup(target, key);
   }
   if (target instanceof Closure || target instanceof NativeFunction) {
-    return undefined;
+    return isFunctionProperty(target, key) ? target[key] : methodLookup(target, key);
   }
   if (target instanceof SandboxError) {
     switch (key) {
@@ -85,7 +86,13 @@ export function readMember(
     }
   }
   if (target instanceof Builtin) {
-    return target.members.get(key);
+    if (target.members.has(key)) {
+      return target.members.get(key);
+    }
+    return isFunctionProperty(target, key) ? target[key] : methodLookup(target, key);
+  }
+  if (key === 'callee' && isArgumentsObject(target)) {
+    return fail('TypeError', "'callee' may not be accessed on the arguments object in strict mode");
   }
   if (Array.isArray(target) || isPlainObject(target)) {
     return Object.hasOwn(target, key) ? Reflect.get(target, key) : methodLookup(target, key);
@@ -171,6 +178,11 @@ export function setMember(
     Reflect.set(target, key, value);
     return;
   }
+  if (key === 'length' && isArgumentsObject(target)) {
+    // An assignment keeps `length` non-enumerable, as it is on a real arguments object
+    Reflect.set(target, key, value);
+    return;
+  }
   if (isPlainObject(target)) {
     Object.defineProperty(target, key, {
       value,
@@ -212,13 +224,13 @@ export function hasMember(target: unknown, key: string, fail: Fail): boolean {
     );
   }
   if (target instanceof Closure || target instanceof NativeFunction) {
-    return false;
+    return isFunctionProperty(target, key);
   }
   if (target instanceof SandboxError) {
     return key === 'name' || key === 'message' || key === 'stack';
   }
   if (target instanceof Builtin) {
-    return target.members.has(key);
+    return target.members.has(key) || isFunctionProperty(target, key);
   }
   if (target instanceof RegExpWrapper) {
     return REGEXP_PROPERTIES.has(key);
@@ -241,13 +253,13 @@ export function ownPropertyNames(target: unknown): Array<string> {
     return [];
   }
   if (target instanceof Closure || target instanceof NativeFunction) {
-    return [];
+    return functionProperties(target);
   }
   if (target instanceof SandboxError) {
     return ['name', 'message', 'stack'];
   }
   if (target instanceof Builtin) {
-    return [...target.members.keys()];
+    return [...functionProperties(target), ...target.members.keys()];
   }
   if (target instanceof RegExpWrapper) {
     return [...REGEXP_PROPERTIES.keys()];
@@ -277,6 +289,24 @@ export function* ownEntries(value: unknown): Generator<[string, unknown]> {
       yield [key, Reflect.get(value, key)];
     }
   }
+}
+
+type FunctionProperty = 'length' | 'name';
+
+/**
+ * The properties a function shows: `length` and `name` on a script function, a built-in and a
+ * callable global. A host function and a namespace have no length and show none, since a host
+ * function's name and arity are the host's business.
+ */
+function functionProperties(target: Closure | NativeFunction | Builtin): Array<FunctionProperty> {
+  return target.length === undefined ? [] : ['length', 'name'];
+}
+
+function isFunctionProperty(
+  target: Closure | NativeFunction | Builtin,
+  key: string
+): key is FunctionProperty {
+  return target.length !== undefined && (key === 'length' || key === 'name');
 }
 
 /** The canonical array index a key denotes, if any: `'1'` but not `'01'` or `'1.5'`. */

@@ -1,4 +1,5 @@
 import { MAX_NESTING } from '../support/nesting-limit.ts';
+import { isArgumentsObject } from './arguments-object.ts';
 import { Builtin } from './builtin.ts';
 import { Closure } from './closure.ts';
 import { NativeFunction } from './native.ts';
@@ -12,6 +13,9 @@ export const FUNCTION_PLACEHOLDER = '[function]';
 
 /** What an object converts to when no hooks are involved. */
 export const OBJECT_PLACEHOLDER = '[object Object]';
+
+/** What the `arguments` object converts to, its tag in the language. */
+export const ARGUMENTS_PLACEHOLDER = '[object Arguments]';
 
 /** The ToPrimitive hint; only a Date converts differently for `number` than for the others. */
 export type PrimitiveHint = 'default' | 'number' | 'string';
@@ -53,6 +57,9 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
   }
   if (isWrapper(value)) {
     return `[object ${wrapperKind(value)}]`;
+  }
+  if (isArgumentsObject(value)) {
+    return ARGUMENTS_PLACEHOLDER;
   }
   return OBJECT_PLACEHOLDER;
 }

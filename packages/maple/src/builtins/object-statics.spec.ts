@@ -121,21 +121,56 @@ describe('Object statics', () => {
     expect(run('return Object.hasOwn(5, "x");')).toBe(false);
   });
 
-  it('is a namespace that cannot be called or constructed', () => {
-    expect(runAndCatch(maple, 'Object();').sandboxError?.message).toBe('Object is not a function');
-    expect(runAndCatch(maple, 'new Object();').code).toBe('DISALLOWED_SYNTAX');
+  it('makes or passes on an object when called or constructed', () => {
+    expect(run('return [Object(), new Object(), Object(null), Object(undefined)];')).toEqual([
+      {},
+      {},
+      {},
+      {}
+    ]);
+    expect(
+      run('const o = { a: 1 }; const a = [1]; return [Object(o) === o, new Object(a) === a];')
+    ).toEqual([true, true]);
+    expect(run('return typeof Object;')).toBe('function');
+  });
+
+  it('refuses a primitive, which would need a wrapper object', () => {
+    expect(runAndCatch(maple, 'Object("abc");').sandboxError).toMatchObject({
+      name: 'TypeError',
+      message: 'Object(string) is not supported: there are no wrapper objects'
+    });
+  });
+
+  it('cannot be written to', () => {
     expect(runAndCatch(maple, 'Object.keys = 1;').sandboxError?.name).toBe('TypeError');
   });
 });
 
 describe('hasOwnProperty', () => {
-  it('is the one method of plain objects', () => {
+  it('reports own properties only', () => {
     expect(run('return ({ a: 1 }).hasOwnProperty("a");')).toBe(true);
     expect(run('return ({ a: 1 }).hasOwnProperty("b");')).toBe(false);
     expect(run('return ({ a: 1 }).hasOwnProperty("toString");')).toBe(false);
     expect(run('return obj.hasOwnProperty("b");', { obj: { b: 1 } })).toBe(true);
     expect(run('return ({ hasOwnProperty: 7 }).hasOwnProperty;')).toBe(7);
-    expect(run('return ({}).valueOf;')).toBeUndefined();
+  });
+});
+
+describe('toString, toLocaleString and valueOf', () => {
+  it('convert a plain object the way coercion does', () => {
+    expect(run('return [({ a: 1 }).toString(), ({}).toLocaleString(), String({})];')).toEqual([
+      '[object Object]',
+      '[object Object]',
+      '[object Object]'
+    ]);
+  });
+
+  it('give back the object itself for valueOf', () => {
+    expect(run('const o = { a: 1 }; return o.valueOf() === o;')).toBe(true);
+  });
+
+  it('give way to own properties of the same name', () => {
+    expect(run('return ({ toString: 1 }).toString;')).toBe(1);
   });
 });
 
@@ -156,7 +191,9 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
       'stack'
     ]);
     expect(run('return Object.getOwnPropertyNames(new Map());')).toEqual(['size']);
-    expect(run('return Object.getOwnPropertyNames(() => 1);')).toEqual([]);
+    expect(run('return Object.getOwnPropertyNames(() => 1);')).toEqual(['length', 'name']);
+    expect(run('return Object.getOwnPropertyNames(Math.max);')).toEqual(['length', 'name']);
+    expect(run('return Object.getOwnPropertyNames(host);', { host: () => 1 })).toEqual([]);
     expect(run('return Object.getOwnPropertyNames(5);')).toEqual([]);
     expect(run('return Object.getOwnPropertyNames(/x/).includes("lastIndex");')).toBe(true);
     expect(run('return Object.getOwnPropertyNames(Math).includes("max");')).toBe(true);

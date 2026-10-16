@@ -3,10 +3,10 @@ import { NativeFunction } from '../values/native.ts';
 import { DateWrapper } from '../values/wrappers.ts';
 
 /** The `Date.*` functions. */
-export const DATE_STATICS: Readonly<Record<string, unknown>> = {
-  now: new NativeFunction('now', () => Date.now()),
-  parse: new NativeFunction('parse', ([text]) => Date.parse(toString(text))),
-  UTC: new NativeFunction('UTC', (args) => {
+export const DATE_STATICS: Readonly<Record<string, NativeFunction>> = {
+  now: new NativeFunction('now', Date.now.length, () => Date.now()),
+  parse: new NativeFunction('parse', Date.parse.length, ([text]) => Date.parse(toString(text))),
+  UTC: new NativeFunction('UTC', Date.UTC.length, (args) => {
     const [year, month, day, hours, minutes, seconds, milliseconds] = dateComponents(args);
     return Date.UTC(year, month, day, hours, minutes, seconds, milliseconds);
   })

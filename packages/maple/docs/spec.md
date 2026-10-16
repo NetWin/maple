@@ -132,15 +132,19 @@ yields `undefined`.
 - `var`, `let`, `const`, function declarations
 - `if` / `else`, `switch`, `return`
 - `for`, `for...of`, `for...in`, `while`, `do...while`, `break`, `continue`
+- Labelled statements, with `break label` out of any labelled statement and `continue label` to
+  a labelled loop
 - `try` / `catch` / `finally`, `throw`
 - Expression statements, blocks, the empty statement
 
 ### Expressions
 
 - Literals: numbers, strings, booleans, `null`, template literals, regular expression literals
-- Array and object literals, including shorthand properties, computed keys and spread
+- Array and object literals, including shorthand properties, computed keys and spread; an
+  elision such as `[1, , 3]` leaves a hole, so `1 in [1, , 3]` is `false`
 - Function expressions and arrow functions, with default parameters, rest parameters and
   destructuring parameters
+- `arguments` inside a function (see [Functions](#functions))
 - Destructuring in declarations, parameters, assignments and `for...of` / `for...in` heads
 - Member access `a.b`, `a[b]`, optional chaining `a?.b`, `a?.[b]`, `a?.()`
 - Calls, spread arguments, `new` for the constructors listed below
@@ -154,8 +158,8 @@ yields `undefined`.
 Reaching any of these throws `DISALLOWED_SYNTAX`:
 
 `this`, `class`, `super`, `async` / `await`, generators and `yield`, getters and setters,
-`arguments`, labels, `debugger`, tagged templates, `import` / `export`, `import.meta`, `new.target`,
-and `new` on anything that is not in the constructor list.
+`debugger`, tagged templates, `import` / `export`, `import.meta`, `new.target`, `arguments` at the
+script level, which is no function, and `new` on anything that is not in the constructor list.
 
 Strict-mode grammar is a parse rule, not an evaluator rule: `with`, legacy octal literals such as
 `010`, duplicate parameter names and `delete` of a plain name throw `PARSE_ERROR`.
@@ -171,7 +175,10 @@ Reading one of these names also throws `DISALLOWED_SYNTAX`, unless the script or
   `postMessage`, `structuredClone`, `setTimeout`, `setInterval`, `setImmediate`, `queueMicrotask`,
   `requestAnimationFrame`
 
-Every other unbound name is a catchable `ReferenceError`; `typeof` on any of them is `'undefined'`.
+Every other unbound name is a catchable `ReferenceError`. `typeof` never throws for a name that is
+not bound: it is `'undefined'` for the names above as well, `arguments` at the script level
+included, as at the top level of a module, so a check such as `typeof window !== 'undefined'`
+works.
 
 An `async` or generator function throws when the closure is created, not when it is called. For a
 function declaration that is hoisting time, so the script fails before its first statement runs.
@@ -179,11 +186,36 @@ function declaration that is hoisting time, so the script fails before its first
 ### Constructors
 
 `new` is allowed for `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`,
-`URIError`, `EvalError`, `Date`, `RegExp`, `Map` and `Set`. The error constructors also work
-without `new`. Any other `new` target, including a script function, is `DISALLOWED_SYNTAX`.
+`URIError`, `EvalError`, `Date`, `RegExp`, `Map`, `Set`, `Array` and `Object`. The error
+constructors, `Array` and `Object` also work without `new`. Any other `new` target, including a
+script function, is `DISALLOWED_SYNTAX`. `String`, `Number` and `Boolean` are conversion
+functions only: there are no primitive wrapper objects, so `new String('a')` is rejected too.
 
-`instanceof` accepts those eleven plus `Array`, `Object` and `Iterator` on the right-hand side.
-Any other right-hand side, a script function included, throws a `TypeError`.
+`instanceof` accepts those thirteen plus `Iterator` on the right-hand side. Any other right-hand
+side, a script function or `String` included, throws a `TypeError`.
+
+### Functions
+
+A script function has two read-only properties: `length`, the number of parameters before the
+first default or rest parameter, and `name`. An anonymous function or arrow takes the name of the
+binding it is assigned to, as in the language: `const f = () => 1`, `f = function () {}`,
+`f ??= () => 1` (and `||=`, `&&=`), `{ f: () => 1 }` and a default parameter `f = () => 1` all
+name it `f`; an assignment to a member such as `o.f = () => 1` names nothing. A built-in function and
+a callable global such as `Array` have the `length` and `name` the language gives them, so
+`'a'.replace.length` is `2` and `Math.max.name` is `'max'`; each length is read once from the
+host's own function. A host function has no properties at all: its name and arity are the
+host's business. `Math`, `JSON` and the other namespaces have no `length` or `name` either.
+
+Every function answers to `toString`, which gives the same `[function]` that coercion gives (see
+[Coercion](#coercion)), and `valueOf`, which gives the function itself. There is no `call`,
+`apply` or `bind`, since there is no `this` for them to set.
+
+Inside a function that is not an arrow, `arguments` is the strict-mode arguments object: an
+ordinary object with the arguments as indexed properties and a non-enumerable `length`, so
+`Object.keys` and `JSON.stringify` see the indices only. It is not an array, it is a copy that
+parameter assignments do not change, it is iterable, it converts to `[object Arguments]`, and
+reading its `callee` throws a `TypeError`. An arrow function sees the `arguments` of the function
+around it. The object is built the first time a call reads `arguments`, not before.
 
 ## Globals
 
@@ -290,8 +322,10 @@ holds only its limits and its frozen globals, and everything else is created ins
 functions and intrinsics are the one channel through which the host may share state between
 runs, and that is the host's decision.
 
-Closures, host functions and intrinsics have no properties: reading one yields `undefined`,
-writing one throws a `TypeError`. There is no `call`, `apply` or `bind`.
+Closures and built-in functions have only their read-only `length` and `name`, and host
+functions and intrinsics have no properties at all: reading anything else yields `undefined` and
+writing throws a `TypeError`.
+Their methods are listed under [Functions](#functions).
 
 ### Methods
 
@@ -299,7 +333,9 @@ A method call such as `s.trim()` is resolved by the receiver's type through a di
 through a host prototype. Reading the member without calling it yields the method bound to that
 receiver, so `typeof s.trim` is `'function'` and `const t = s.trim; t()` works; such a value has
 no properties of its own. Own data properties win: `obj.toString()` where `obj` has an own key
-`toString` calls that value. Plain objects have exactly one dispatched method, `hasOwnProperty`.
+`toString` calls that value. Plain objects have four dispatched methods: `hasOwnProperty`,
+`toString` and `toLocaleString`, which give what coercion gives, and `valueOf`, which gives the
+object itself. Booleans have `toString` and `valueOf`.
 Calling a member that is missing or not callable is a `TypeError` that names the member path, as
 in `o.g is not a function`.
 
@@ -307,9 +343,9 @@ in `o.g is not a function`.
 
 Implicit conversions (`+`, template literals, `==`, comparison, `String(x)`, `Number(x)`) follow
 the ECMAScript algorithms, with one deliberate difference: they never call script-defined
-`toString` or `valueOf`. A plain object converts to `'[object Object]'` and `NaN`, an array joins
-its elements, a Date wrapper converts like a native Date, a closure or host function converts to
-the fixed string `[function]`. `typeof` of an undeclared name is `'undefined'` and does not
+`toString` or `valueOf`. A plain object converts to `'[object Object]'` and `NaN`, an arguments
+object to `'[object Arguments]'`, an array joins its elements, a Date wrapper converts like a
+native Date, a closure or host function converts to the fixed string `[function]`. `typeof` of an undeclared name is `'undefined'` and does not
 throw. Number-to-string conversion is the host's and is therefore exact
 (`0.1 + 0.2`, `1e21`, `-0` behave as in the host).
 
@@ -349,6 +385,14 @@ Instance: `length`, `at`, `concat`, `copyWithin`, `entries`, `every`, `fill`, `f
 Static: `Array.isArray`, `Array.from` (iterable or array-like, optional map function),
 `Array.of`.
 
+`Array(...)` and `new Array(...)` do the same: a single number is a length and leaves that many
+holes, which is a `RangeError` unless it is a valid array length; any other arguments become the
+elements.
+
+Holes behave as in the language: `forEach`, `filter`, `flatMap`, `every`, `some`, `reduce` and
+`reduceRight` skip them, `map` skips them and keeps them in its result, `indexOf` and
+`lastIndexOf` never find them, and the `find` methods and `includes` see them as `undefined`.
+
 The comparator of `sort` and `toSorted` and every other callback run through the interpreter, so
 they stay under the budget and the host never holds a script function. Without a comparator the
 order is by the hook-free string form with `undefined` last. `join` and `toString` convert elements
@@ -377,6 +421,10 @@ script owns read-only and returns it; for anything else it changes nothing. `isF
 for primitives, functions and namespaces, which cannot be written to, and for collections that came
 in with the input. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
 `create`, …) and `seal` / `preventExtensions` are not available.
+
+`Object(...)` and `new Object(...)` do the same: a fresh object for no argument, `null` or
+`undefined`, and the argument itself when it is an object, array or function. A primitive would
+need a wrapper object, so it is a `TypeError`.
 
 `Object.groupBy(items, callback)` takes any iterable and calls `callback(item, index)` under the
 budget. Its result converts to a key hook-free, like any property key, so a script object always
@@ -611,8 +659,10 @@ included.
   array and object rest, each key a `for...in` visits, each element `Array.from` collects, and
   each element `flat` and `flatMap` visit, nested arrays included, so an array reached through
   several slots is paid for once per slot.
-  Growing an array costs one operation per slot it gains, whether through `length` or through an
-  index past the end, so `a.length = 1e9` cannot buy a billion holes for one operation. Exceeding
+  Growing an array costs one operation per slot it gains, whether through `length`, through an
+  index past the end or through `Array(n)`, so `a.length = 1e9` cannot buy a billion holes for
+  one operation. The first read of `arguments` in a call costs one more operation per argument,
+  which the arguments object copies. Exceeding
   `maxOps` throws `LIMIT_EXCEEDED`.
 - **Depth.** Each closure call, each callback invoked by a built-in and each nested `sandbox.run`
   adds one level. Exceeding `maxDepth` throws `LIMIT_EXCEEDED`.
@@ -720,9 +770,12 @@ behind `durationMs`, and `atob` and `btoa`.
 ## Adding a built-in
 
 1. Add a row to the dispatch table of the receiver type (`builtins/string-methods.ts`,
-   `builtins/array-methods.ts`, …) in the form `name: (receiver, args, context) => value`, or a
-   `NativeFunction` to the `members` of the namespace (`builtins/array-statics.ts`,
-   `builtins/object-statics.ts`, `builtins/json-statics.ts`).
+   `builtins/array-methods.ts`, …) in the form
+   `['name', method(String.prototype.name.length, (receiver, args, context) => value)]`, or a
+   `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` to the `members` of
+   the namespace (`builtins/array-statics.ts`, `builtins/object-statics.ts`, …). The length is
+   read off the host's own function, so it is the language's; only where TypeScript's `lib` has
+   no typing for it (Annex B, deprecated members) is it written out, with a comment saying why.
 2. Convert every argument hook-free first (`toString`, `toNumber`, `optionalNumber`, …) so the host
    only ever sees primitives. If the method takes a callback, invoke it through `context.call` so
    it runs under the budget. Never hand a script closure to a host implementation.

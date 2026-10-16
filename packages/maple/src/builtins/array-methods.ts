@@ -1,7 +1,13 @@
 import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { intlOptionsArgument, localesArgument, optionalNumber } from '../values/arguments.ts';
 import { joinValues, toNumber, toString } from '../values/coercion.ts';
-import { type CallContext, guardHostErrors, isCallable, type Method } from '../values/native.ts';
+import {
+  type CallContext,
+  guardHostErrors,
+  isCallable,
+  type Method,
+  method
+} from '../values/native.ts';
 import { DateWrapper, IteratorWrapper } from '../values/wrappers.ts';
 
 type ArrayMethod = Method<Array<unknown>>;
@@ -12,55 +18,92 @@ type Callback = (...args: Array<unknown>) => unknown;
  * holds a script function. Methods that mutate refuse read-only input arrays.
  */
 export const ARRAY_METHODS: ReadonlyMap<string, ArrayMethod> = new Map<string, ArrayMethod>([
-  ['at', (a, [index]) => a.at(toNumber(index))],
-  ['concat', (a, items, { fail }) => guardHostErrors(fail, () => a.concat(...items))],
+  ['at', method(Array.prototype.at.length, (a, [index]) => a.at(toNumber(index)))],
+  [
+    'concat',
+    method(Array.prototype.concat.length, (a, items, { fail }) =>
+      guardHostErrors(fail, () => a.concat(...items))
+    )
+  ],
   [
     'copyWithin',
-    (a, [target, start, end], context) =>
+    method(Array.prototype.copyWithin.length, (a, [target, start, end], context) =>
       asMutableOrThrow(a, context, 'copyWithin').copyWithin(
         toNumber(target),
         toNumber(start),
         optionalNumber(end)
       )
+    )
   ],
-  ['entries', (a) => new IteratorWrapper(a.entries())],
-  ['every', (a, [fn], context) => findIndexBy(a, callback(fn, context), false, false) === -1],
+  ['entries', method(Array.prototype.entries.length, (a) => new IteratorWrapper(a.entries()))],
+  [
+    'every',
+    method(
+      Array.prototype.every.length,
+      (a, [fn], context) => findIndexBy(a, presentEntries(a), callback(fn, context), false) === -1
+    )
+  ],
   [
     'fill',
-    (a, [value, start, end], context) =>
+    method(Array.prototype.fill.length, (a, [value, start, end], context) =>
       asMutableOrThrow(a, context, 'fill').fill(value, optionalNumber(start), optionalNumber(end))
+    )
   ],
   [
     'filter',
-    (a, [fn], context) => {
+    method(Array.prototype.filter.length, (a, [fn], context) => {
       const call = callback(fn, context);
       const result: Array<unknown> = [];
-      for (const [index, element] of indexedEntries(a)) {
+      for (const [index, element] of presentEntries(a)) {
         if (call(element, index, a)) {
           result.push(element);
         }
       }
       return result;
-    }
+    })
   ],
-  ['find', (a, [fn], context) => a[findIndexBy(a, callback(fn, context), true, false)]],
-  ['findIndex', (a, [fn], context) => findIndexBy(a, callback(fn, context), true, false)],
-  ['findLast', (a, [fn], context) => a[findIndexBy(a, callback(fn, context), true, true)]],
-  ['findLastIndex', (a, [fn], context) => findIndexBy(a, callback(fn, context), true, true)],
+  // The find family visits holes as undefined, unlike the other callback methods
+  [
+    'find',
+    method(
+      Array.prototype.find.length,
+      (a, [fn], context) => a[findIndexBy(a, indexedEntries(a), callback(fn, context), true)]
+    )
+  ],
+  [
+    'findIndex',
+    method(Array.prototype.findIndex.length, (a, [fn], context) =>
+      findIndexBy(a, indexedEntries(a), callback(fn, context), true)
+    )
+  ],
+  [
+    'findLast',
+    method(
+      Array.prototype.findLast.length,
+      (a, [fn], context) =>
+        a[findIndexBy(a, indexedEntries(a).toReversed(), callback(fn, context), true)]
+    )
+  ],
+  [
+    'findLastIndex',
+    method(Array.prototype.findLastIndex.length, (a, [fn], context) =>
+      findIndexBy(a, indexedEntries(a).toReversed(), callback(fn, context), true)
+    )
+  ],
   [
     'flat',
-    (a, [depth], context) => {
+    method(Array.prototype.flat.length, (a, [depth], context) => {
       const result: Array<unknown> = [];
       flattenInto(result, a, depth === undefined ? 1 : Math.trunc(toNumber(depth)) || 0, context);
       return result;
-    }
+    })
   ],
   [
     'flatMap',
-    (a, [fn], context) => {
+    method(Array.prototype.flatMap.length, (a, [fn], context) => {
       const call = callback(fn, context);
       const result: Array<unknown> = [];
-      for (const [index, element] of indexedEntries(a)) {
+      for (const [index, element] of presentEntries(a)) {
         const mapped = call(element, index, a);
         if (Array.isArray(mapped)) {
           flattenInto(result, mapped, 0, context);
@@ -69,91 +112,151 @@ export const ARRAY_METHODS: ReadonlyMap<string, ArrayMethod> = new Map<string, A
         }
       }
       return result;
-    }
+    })
   ],
   [
     'forEach',
-    (a, [fn], context) => {
+    method(Array.prototype.forEach.length, (a, [fn], context) => {
       const call = callback(fn, context);
-      for (const [index, element] of indexedEntries(a)) {
+      for (const [index, element] of presentEntries(a)) {
         call(element, index, a);
       }
       return undefined;
-    }
+    })
   ],
-  ['includes', (a, [value, from]) => a.includes(value, optionalNumber(from))],
-  ['indexOf', (a, [value, from]) => a.indexOf(value, optionalNumber(from))],
+  [
+    'includes',
+    method(Array.prototype.includes.length, (a, [value, from]) =>
+      a.includes(value, optionalNumber(from))
+    )
+  ],
+  [
+    'indexOf',
+    method(Array.prototype.indexOf.length, (a, [value, from]) =>
+      a.indexOf(value, optionalNumber(from))
+    )
+  ],
   [
     'join',
-    (a, [separator], { fail }) =>
+    method(Array.prototype.join.length, (a, [separator], { fail }) =>
       guardHostErrors(fail, () =>
         joinValues(a, separator === undefined ? ',' : toString(separator))
       )
+    )
   ],
-  ['keys', (a) => new IteratorWrapper(a.keys())],
+  ['keys', method(Array.prototype.keys.length, (a) => new IteratorWrapper(a.keys()))],
   [
     'lastIndexOf',
-    (a, args) =>
+    method(Array.prototype.lastIndexOf.length, (a, args) =>
       args.length < 2 ? a.lastIndexOf(args[0]) : a.lastIndexOf(args[0], toNumber(args[1]))
+    )
   ],
   [
     'map',
-    (a, [fn], context) => {
+    method(Array.prototype.map.length, (a, [fn], context) => {
       const call = callback(fn, context);
-      return indexedEntries(a).map(([index, element]) => call(element, index, a));
-    }
+      // The result keeps the holes of the source, which the callback never sees
+      const result: Array<unknown> = [];
+      result.length = a.length;
+      for (const [index, element] of presentEntries(a)) {
+        result[index] = call(element, index, a);
+      }
+      return result;
+    })
   ],
-  ['pop', (a, _args, context) => asMutableOrThrow(a, context, 'pop').pop()],
+  [
+    'pop',
+    method(Array.prototype.pop.length, (a, _args, context) =>
+      asMutableOrThrow(a, context, 'pop').pop()
+    )
+  ],
   [
     'push',
-    (a, items, context) =>
+    method(Array.prototype.push.length, (a, items, context) =>
       guardHostErrors(context.fail, () => asMutableOrThrow(a, context, 'push').push(...items))
+    )
   ],
-  ['reduce', (a, args, context) => reduce(a, args, context, false)],
-  ['reduceRight', (a, args, context) => reduce(a, args, context, true)],
+  [
+    'reduce',
+    method(Array.prototype.reduce.length, (a, args, context) => reduce(a, args, context, false))
+  ],
+  [
+    'reduceRight',
+    method(Array.prototype.reduceRight.length, (a, args, context) => reduce(a, args, context, true))
+  ],
   [
     'reverse',
-    (a, _args, context) => replaceContents(asMutableOrThrow(a, context, 'reverse'), a.toReversed())
+    method(Array.prototype.reverse.length, (a, _args, context) =>
+      replaceContents(asMutableOrThrow(a, context, 'reverse'), a.toReversed())
+    )
   ],
-  ['shift', (a, _args, context) => asMutableOrThrow(a, context, 'shift').shift()],
-  ['slice', (a, [start, end]) => a.slice(optionalNumber(start), optionalNumber(end))],
-  ['some', (a, [fn], context) => findIndexBy(a, callback(fn, context), true, false) !== -1],
+  [
+    'shift',
+    method(Array.prototype.shift.length, (a, _args, context) =>
+      asMutableOrThrow(a, context, 'shift').shift()
+    )
+  ],
+  [
+    'slice',
+    method(Array.prototype.slice.length, (a, [start, end]) =>
+      a.slice(optionalNumber(start), optionalNumber(end))
+    )
+  ],
+  [
+    'some',
+    method(
+      Array.prototype.some.length,
+      (a, [fn], context) => findIndexBy(a, presentEntries(a), callback(fn, context), true) !== -1
+    )
+  ],
   [
     'sort',
-    (a, [fn], context) =>
+    method(Array.prototype.sort.length, (a, [fn], context) =>
       replaceContents(asMutableOrThrow(a, context, 'sort'), a.toSorted(comparator(fn, context)))
+    )
   ],
   [
     'splice',
-    (a, args, context) =>
+    method(Array.prototype.splice.length, (a, args, context) =>
       splice(asMutableOrThrow(a, context, 'splice'), args, (start, count, items) =>
         count === undefined ? a.splice(start) : a.splice(start, count, ...items)
       )
+    )
   ],
-  ['toReversed', (a) => a.toReversed()],
-  ['toSorted', (a, [fn], context) => a.toSorted(comparator(fn, context))],
+  ['toReversed', method(Array.prototype.toReversed.length, (a) => a.toReversed())],
+  [
+    'toSorted',
+    method(Array.prototype.toSorted.length, (a, [fn], context) =>
+      a.toSorted(comparator(fn, context))
+    )
+  ],
   [
     'toSpliced',
-    (a, args) =>
+    method(Array.prototype.toSpliced.length, (a, args) =>
       splice(a, args, (start, count, items) =>
         count === undefined ? a.toSpliced(start) : a.toSpliced(start, count, ...items)
       )
+    )
   ],
   [
     'toLocaleString',
-    (a, [locales, options], context) =>
+    method(Array.prototype.toLocaleString.length, (a, [locales, options], context) =>
       a.map((element) => elementToLocaleString(element, locales, options, context)).join(',')
+    )
   ],
-  ['toString', (a) => joinValues(a, ',')],
+  ['toString', method(Array.prototype.toString.length, (a) => joinValues(a, ','))],
   [
     'unshift',
-    (a, items, context) =>
+    method(Array.prototype.unshift.length, (a, items, context) =>
       guardHostErrors(context.fail, () => asMutableOrThrow(a, context, 'unshift').unshift(...items))
+    )
   ],
-  ['values', (a) => new IteratorWrapper(a.values())],
+  ['values', method(Array.prototype.values.length, (a) => new IteratorWrapper(a.values()))],
   [
     'with',
-    (a, [index, value], { fail }) => guardHostErrors(fail, () => a.with(toNumber(index), value))
+    method(Array.prototype.with.length, (a, [index, value], { fail }) =>
+      guardHostErrors(fail, () => a.with(toNumber(index), value))
+    )
   ]
 ]);
 
@@ -203,10 +306,10 @@ function replaceContents(array: Array<unknown>, contents: ReadonlyArray<unknown>
 function asMutableOrThrow(
   array: Array<unknown>,
   context: CallContext,
-  method: string
+  methodName: string
 ): Array<unknown> {
   if (Object.isFrozen(array)) {
-    return context.fail('TypeError', `Cannot call ${method} on a read-only array`);
+    return context.fail('TypeError', `Cannot call ${methodName} on a read-only array`);
   }
   return array;
 }
@@ -244,7 +347,10 @@ function flattenInto(
   }
 }
 
-/** The length is fixed when the loop starts, as the language specifies for these methods. */
+/**
+ * Every index below `length` with its element, holes included as `undefined`. The length is fixed
+ * when the loop starts, as the language specifies for these methods.
+ */
 function indexedEntries(array: ReadonlyArray<unknown>): Array<[number, unknown]> {
   const entries: Array<[number, unknown]> = [];
   for (let index = 0; index < array.length; index++) {
@@ -253,17 +359,18 @@ function indexedEntries(array: ReadonlyArray<unknown>): Array<[number, unknown]>
   return entries;
 }
 
-/** The first index whose callback result has truthiness `truthy`, searching from either end. */
+/** The elements that are there, which is what most callback methods visit: holes are skipped. */
+function presentEntries(array: ReadonlyArray<unknown>): Array<[number, unknown]> {
+  return indexedEntries(array).filter(([index]) => Object.hasOwn(array, index));
+}
+
+/** The first index among `entries` whose callback result has truthiness `truthy`. */
 function findIndexBy(
   array: ReadonlyArray<unknown>,
+  entries: ReadonlyArray<[number, unknown]>,
   call: Callback,
-  truthy: boolean,
-  fromEnd: boolean
+  truthy: boolean
 ): number {
-  const entries = indexedEntries(array);
-  if (fromEnd) {
-    entries.reverse();
-  }
   for (const [index, element] of entries) {
     if (Boolean(call(element, index, array)) === truthy) {
       return index;
@@ -279,7 +386,7 @@ function reduce(
   fromEnd: boolean
 ): unknown {
   const call = callback(args[0], context);
-  const entries = indexedEntries(array);
+  const entries = presentEntries(array);
   if (fromEnd) {
     entries.reverse();
   }

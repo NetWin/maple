@@ -198,8 +198,8 @@ describe('errors', () => {
         message: "'new F' is not supported"
       });
       expect(runAndCatch(maple, 'new (() => 1)();').message).toBe("'new value' is not supported");
-      expect(runAndCatch(maple, 'new Array(3);').message).toBe("'new Array' is not supported");
-      expect(runAndCatch(maple, 'new Object();').message).toBe("'new Object' is not supported");
+      expect(runAndCatch(maple, 'new String("x");').message).toBe("'new String' is not supported");
+      expect(runAndCatch(maple, 'new Number(1);').message).toBe("'new Number' is not supported");
     });
   });
 
@@ -229,7 +229,10 @@ describe('errors', () => {
         ].join('\n')
       );
       expect(run('const g = () => new Error("a"); return g().stack;')).toBe(
-        ['Error: a', '    at <anonymous> (1:16)', '    at <script> (1:39)'].join('\n')
+        ['Error: a', '    at g (1:16)', '    at <script> (1:39)'].join('\n')
+      );
+      expect(run('return (() => new Error("a"))().stack;')).toBe(
+        ['Error: a', '    at <anonymous> (1:14)', '    at <script> (1:7)'].join('\n')
       );
       expect(run('return new Error("t").stack;')).toBe('Error: t\n    at <script> (1:7)');
       expect(run('return new Error().stack;')).toBe('Error\n    at <script> (1:7)');

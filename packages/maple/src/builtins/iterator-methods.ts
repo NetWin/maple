@@ -1,6 +1,12 @@
 import { toBoolean, toNumber, toString } from '../values/coercion.ts';
 import { asHostIterable } from '../values/iteration.ts';
-import { type CallContext, guardHostErrors, isCallable, type Method } from '../values/native.ts';
+import {
+  type CallContext,
+  guardHostErrors,
+  isCallable,
+  type Method,
+  method
+} from '../values/native.ts';
 import { IteratorWrapper } from '../values/wrappers.ts';
 
 type IteratorMethod = Method<IteratorWrapper>;
@@ -17,81 +23,93 @@ export const ITERATOR_METHODS: ReadonlyMap<string, IteratorMethod> = new Map<
 >([
   [
     'drop',
-    (i, [count], { fail }) =>
-      new IteratorWrapper(guardHostErrors(fail, () => helpers(i).drop(toNumber(count))))
+    method(
+      Iterator.prototype.drop.length,
+      (i, [count], { fail }) =>
+        new IteratorWrapper(guardHostErrors(fail, () => helpers(i).drop(toNumber(count))))
+    )
   ],
   [
     'every',
-    (i, [fn], context) => {
+    method(Iterator.prototype.every.length, (i, [fn], context) => {
       const call = callback(fn, context);
       return helpers(i).every((value, index) => toBoolean(call(value, index)));
-    }
+    })
   ],
   [
     'filter',
-    (i, [fn], context) => {
+    method(Iterator.prototype.filter.length, (i, [fn], context) => {
       const call = callback(fn, context);
       return new IteratorWrapper(
         helpers(i).filter((value, index) => toBoolean(call(value, index)))
       );
-    }
+    })
   ],
   [
     'find',
-    (i, [fn], context) => {
+    method(Iterator.prototype.find.length, (i, [fn], context) => {
       const call = callback(fn, context);
       return helpers(i).find((value, index) => toBoolean(call(value, index)));
-    }
+    })
   ],
   [
     'flatMap',
-    (i, [fn], context) => {
+    method(Iterator.prototype.flatMap.length, (i, [fn], context) => {
       const call = callback(fn, context);
       return new IteratorWrapper(
         helpers(i).flatMap((value, index) => innerIterable(call(value, index), context))
       );
-    }
+    })
   ],
   [
     'forEach',
-    (i, [fn], context) => {
+    method(Iterator.prototype.forEach.length, (i, [fn], context) => {
       const call = callback(fn, context);
       helpers(i).forEach((value, index) => {
         call(value, index);
       });
       return undefined;
-    }
+    })
   ],
   [
     'map',
-    (i, [fn], context) => {
+    method(Iterator.prototype.map.length, (i, [fn], context) => {
       const call = callback(fn, context);
       return new IteratorWrapper(helpers(i).map((value, index) => call(value, index)));
-    }
+    })
   ],
   [
     'next',
-    (i) => {
-      const step = i.iterator.next();
-      return step.done === true
-        ? { value: undefined, done: true }
-        : { value: step.value, done: false };
-    }
+    method(
+      0 /* every concrete iterator brings its own next; Iterator.prototype has none */,
+      (i) => {
+        const step = i.iterator.next();
+        return step.done === true
+          ? { value: undefined, done: true }
+          : { value: step.value, done: false };
+      }
+    )
   ],
-  ['reduce', (i, args, context) => reduce(i, args, context)],
+  [
+    'reduce',
+    method(Iterator.prototype.reduce.length, (i, args, context) => reduce(i, args, context))
+  ],
   [
     'some',
-    (i, [fn], context) => {
+    method(Iterator.prototype.some.length, (i, [fn], context) => {
       const call = callback(fn, context);
       return helpers(i).some((value, index) => toBoolean(call(value, index)));
-    }
+    })
   ],
   [
     'take',
-    (i, [count], { fail }) =>
-      new IteratorWrapper(guardHostErrors(fail, () => helpers(i).take(toNumber(count))))
+    method(
+      Iterator.prototype.take.length,
+      (i, [count], { fail }) =>
+        new IteratorWrapper(guardHostErrors(fail, () => helpers(i).take(toNumber(count))))
+    )
   ],
-  ['toArray', (i) => helpers(i).toArray()]
+  ['toArray', method(Iterator.prototype.toArray.length, (i) => helpers(i).toArray())]
 ]);
 
 /** The wrapped iterator with the host's helper methods, whatever kind of iterator it is. */

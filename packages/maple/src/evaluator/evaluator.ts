@@ -37,6 +37,7 @@ import { getMember } from '../builtins/method-dispatch.ts';
 import type { MapleRunResult, RunOptions } from '../maple.ts';
 import { assertNever } from '../support/assert-never.ts';
 import { defineOwn } from '../support/own-property.ts';
+import { createArgumentsObject } from '../values/arguments-object.ts';
 import { Builtin } from '../values/builtin.ts';
 import { Closure, type FunctionNode } from '../values/closure.ts';
 import { toBoolean, toNumber, toString, typeOf } from '../values/coercion.ts';
@@ -64,7 +65,10 @@ import {
 import { applyBinary, applyUnary, COMPOUND_OPERATORS } from './operators.ts';
 import { Scope } from './scope.ts';
 
-/** Host globals that must never resolve; reading one is reported as unsupported, not undefined. */
+/**
+ * Host globals that must never resolve; reading one is reported as unsupported, not undefined.
+ * `arguments` is among them for the script level, which is no function and has none.
+ */
 const HOST_ONLY_NAMES: ReadonlySet<string> = new Set([
   'eval',
   'arguments',
@@ -122,7 +126,6 @@ const NODE_NAMES: Partial<Record<Node['type'], string>> = {
   Super: 'super',
   AwaitExpression: 'await',
   YieldExpression: 'yield',
-  LabeledStatement: 'labels',
   DebuggerStatement: 'debugger',
   TaggedTemplateExpression: 'tagged templates',
   ImportDeclaration: 'import',
@@ -140,6 +143,11 @@ const NODE_NAMES: Partial<Record<Node['type'], string>> = {
 const SHORT_CIRCUIT: unique symbol = Symbol('short-circuit');
 
 type StatementList = ReadonlyArray<Statement | ModuleDeclaration>;
+
+/** The labels a loop bears, which a labelled `continue` may name. */
+type Labels = ReadonlyArray<string>;
+
+const NO_LABELS: Labels = [];
 
 /** How a pattern binds its names: a declaration, a parameter, or an assignment to existing targets. */
 type BindMode = 'initialize' | 'parameter' | 'assign';
@@ -216,7 +224,12 @@ export class Evaluator {
     return NORMAL;
   }
 
-  private evaluateStatement(node: Statement | ModuleDeclaration, scope: Scope): Completion {
+  /** `labels` are the labels directly on this statement, which only a loop has a use for. */
+  private evaluateStatement(
+    node: Statement | ModuleDeclaration,
+    scope: Scope,
+    labels: Labels = NO_LABELS
+  ): Completion {
     this.tick(node);
     switch (node.type) {
       case 'EmptyStatement':
@@ -243,19 +256,25 @@ export class Evaluator {
         }
         return node.alternate ? this.evaluateStatement(node.alternate, scope) : NORMAL;
       case 'WhileStatement':
-        return this.evaluateWhile(node, scope);
+        return this.evaluateWhile(node, scope, labels);
       case 'DoWhileStatement':
-        return this.evaluateDoWhile(node, scope);
+        return this.evaluateDoWhile(node, scope, labels);
       case 'ForStatement':
-        return this.evaluateFor(node, scope);
+        return this.evaluateFor(node, scope, labels);
       case 'ForOfStatement':
-        return this.evaluateForOf(node, scope);
+        return this.evaluateForOf(node, scope, labels);
       case 'ForInStatement':
-        return this.evaluateForIn(node, scope);
+        return this.evaluateForIn(node, scope, labels);
+      case 'LabeledStatement': {
+        const name = node.label.name;
+        const completion = this.evaluateStatement(node.body, scope, [...labels, name]);
+        // A break to this label ends here; anything else travels on to its own target
+        return completion.type === 'break' && completion.label === name ? NORMAL : completion;
+      }
       case 'BreakStatement':
-        return node.label ? this.unsupported(node, 'labels') : BREAK;
+        return node.label ? { type: 'break', label: node.label.name } : BREAK;
       case 'ContinueStatement':
-        return node.label ? this.unsupported(node, 'labels') : CONTINUE;
+        return node.label ? { type: 'continue', label: node.label.name } : CONTINUE;
       case 'SwitchStatement':
         return this.evaluateSwitch(node, scope);
       case 'ThrowStatement': {
@@ -335,7 +354,9 @@ export class Evaluator {
       if (!declarator.init && kind === 'var') {
         continue;
       }
-      const value = declarator.init ? this.evaluateExpression(declarator.init, scope) : undefined;
+      const value = declarator.init
+        ? this.evaluateNamed(declarator.init, scope, patternName(declarator.id))
+        : undefined;
       const source = declarator.init ? this.describe(declarator.init) : 'undefined';
       this.bindPattern(declarator.id, value, scope, 'initialize', source);
     }
@@ -360,7 +381,10 @@ export class Evaluator {
         this.resolveMember(pattern, scope).set(value);
         return;
       case 'AssignmentPattern': {
-        const bound = value === undefined ? this.evaluateExpression(pattern.right, scope) : value;
+        const bound =
+          value === undefined
+            ? this.evaluateNamed(pattern.right, scope, patternName(pattern.left))
+            : value;
         this.bindPattern(pattern.left, bound, scope, mode);
         return;
       }
@@ -451,31 +475,23 @@ export class Evaluator {
     }
   }
 
-  private evaluateWhile(node: WhileStatement, scope: Scope): Completion {
+  private evaluateWhile(node: WhileStatement, scope: Scope, labels: Labels): Completion {
     while (toBoolean(this.evaluateExpression(node.test, scope))) {
       this.tick(node);
-      const completion = this.evaluateStatement(node.body, scope);
-      const outcome = this.endIteration(completion);
-      if (outcome === 'break') {
-        break;
-      }
-      if (outcome === 'return') {
-        return completion;
+      const exit = this.evaluateLoopBody(node.body, scope, labels);
+      if (exit) {
+        return exit;
       }
     }
     return NORMAL;
   }
 
-  private evaluateDoWhile(node: DoWhileStatement, scope: Scope): Completion {
+  private evaluateDoWhile(node: DoWhileStatement, scope: Scope, labels: Labels): Completion {
     do {
       this.tick(node);
-      const completion = this.evaluateStatement(node.body, scope);
-      const outcome = this.endIteration(completion);
-      if (outcome === 'break') {
-        break;
-      }
-      if (outcome === 'return') {
-        return completion;
+      const exit = this.evaluateLoopBody(node.body, scope, labels);
+      if (exit) {
+        return exit;
       }
     } while (toBoolean(this.evaluateExpression(node.test, scope)));
     return NORMAL;
@@ -485,7 +501,7 @@ export class Evaluator {
    * A `let` or `const` in the head gets a fresh binding per iteration, so closures see their own
    * `i`.
    */
-  private evaluateFor(node: ForStatement, scope: Scope): Completion {
+  private evaluateFor(node: ForStatement, scope: Scope, labels: Labels): Completion {
     const loopScope = new Scope(scope);
     let perIteration = false;
     if (node.init?.type === 'VariableDeclaration') {
@@ -501,13 +517,9 @@ export class Evaluator {
       if (node.test && !toBoolean(this.evaluateExpression(node.test, iterationScope))) {
         break;
       }
-      const completion = this.evaluateStatement(node.body, iterationScope);
-      const outcome = this.endIteration(completion);
-      if (outcome === 'break') {
-        break;
-      }
-      if (outcome === 'return') {
-        return completion;
+      const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
+      if (exit) {
+        return exit;
       }
       if (perIteration) {
         iterationScope = iterationScope.copy();
@@ -519,7 +531,7 @@ export class Evaluator {
     return NORMAL;
   }
 
-  private evaluateForOf(node: ForOfStatement, scope: Scope): Completion {
+  private evaluateForOf(node: ForOfStatement, scope: Scope, labels: Labels): Completion {
     if (node.await) {
       return this.unsupported(node, 'for await');
     }
@@ -528,30 +540,22 @@ export class Evaluator {
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
       this.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, step.value, scope);
-      const completion = this.evaluateStatement(node.body, iterationScope);
-      const outcome = this.endIteration(completion);
-      if (outcome === 'break') {
-        break;
-      }
-      if (outcome === 'return') {
-        return completion;
+      const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
+      if (exit) {
+        return exit;
       }
     }
     return NORMAL;
   }
 
-  private evaluateForIn(node: ForInStatement, scope: Scope): Completion {
+  private evaluateForIn(node: ForInStatement, scope: Scope, labels: Labels): Completion {
     const keys = enumerableKeys(this.evaluateExpression(node.right, scope));
     for (const key of keys) {
       this.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, key, scope);
-      const completion = this.evaluateStatement(node.body, iterationScope);
-      const outcome = this.endIteration(completion);
-      if (outcome === 'break') {
-        break;
-      }
-      if (outcome === 'return') {
-        return completion;
+      const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
+      if (exit) {
+        return exit;
       }
     }
     return NORMAL;
@@ -581,18 +585,24 @@ export class Evaluator {
   }
 
   /**
-   * What a loop does after its body finished with `completion`; `return` is handed up by the
-   * caller.
+   * Runs one iteration of a loop's body and says how the loop goes on: `undefined` to the next
+   * iteration, `NORMAL` once a `break` ended it, or the completion itself for the loop to hand
+   * up: a `return`, a `continue` to an outer loop, or a labelled `break`, which the labelled
+   * statement it names turns back into a normal completion.
    */
-  private endIteration(completion: Completion): 'next' | 'break' | 'return' {
+  private evaluateLoopBody(body: Statement, scope: Scope, labels: Labels): Completion | undefined {
+    const completion = this.evaluateStatement(body, scope);
     switch (completion.type) {
       case 'normal':
+        return undefined;
       case 'continue':
-        return 'next';
+        return completion.label === undefined || labels.includes(completion.label)
+          ? undefined
+          : completion;
       case 'break':
-        return 'break';
+        return completion.label === undefined ? NORMAL : completion;
       case 'return':
-        return 'return';
+        return completion;
       default:
         return assertNever(completion, 'completion');
     }
@@ -621,7 +631,7 @@ export class Evaluator {
     }
     for (const switchCase of node.cases.slice(start)) {
       const completion = this.evaluateStatements(switchCase.consequent, switchScope);
-      if (completion.type === 'break') {
+      if (completion.type === 'break' && completion.label === undefined) {
         return NORMAL;
       }
       if (completion.type !== 'normal') {
@@ -755,7 +765,7 @@ export class Evaluator {
       }
       const key = this.propertyKey(property.key, property.computed, scope);
       assertAllowedKey(key, this.failAt(property));
-      defineOwn(object, key, this.evaluateExpression(property.value, scope));
+      defineOwn(object, key, this.evaluateNamed(property.value, scope, key));
     }
     return object;
   }
@@ -764,7 +774,8 @@ export class Evaluator {
     const array: Array<unknown> = [];
     for (const element of node.elements) {
       if (element === null) {
-        array.push(undefined);
+        // An elision leaves a hole, so `1 in [1, , 3]` is false
+        array.length++;
       } else if (element.type === 'SpreadElement') {
         this.spreadInto(array, element, scope);
       } else {
@@ -850,7 +861,7 @@ export class Evaluator {
     const reference = this.resolveTarget(target, scope);
     const { operator } = node;
     if (operator === '=') {
-      const value = this.evaluateExpression(node.right, scope);
+      const value = this.evaluateNamed(node.right, scope, patternName(target));
       reference.set(value);
       return value;
     }
@@ -861,19 +872,19 @@ export class Evaluator {
         if (!toBoolean(current)) {
           return current;
         }
-        value = this.evaluateExpression(node.right, scope);
+        value = this.evaluateNamed(node.right, scope, patternName(target));
         break;
       case '||=':
         if (toBoolean(current)) {
           return current;
         }
-        value = this.evaluateExpression(node.right, scope);
+        value = this.evaluateNamed(node.right, scope, patternName(target));
         break;
       case '??=':
         if (current !== null && current !== undefined) {
           return current;
         }
-        value = this.evaluateExpression(node.right, scope);
+        value = this.evaluateNamed(node.right, scope, patternName(target));
         break;
       default:
         const right = this.evaluateExpression(node.right, scope);
@@ -937,14 +948,29 @@ export class Evaluator {
   }
 
   /** Async and generator functions fail here, at creation, even if they are never called. */
-  private createClosure(node: FunctionNode, scope: Scope): Closure {
+  private createClosure(node: FunctionNode, scope: Scope, name?: string): Closure {
     if (node.async) {
       return this.unsupported(node, 'async');
     }
     if (node.generator) {
       return this.unsupportedFeature(node, 'generators');
     }
-    return new Closure(node, scope);
+    return new Closure(node, scope, name);
+  }
+
+  /**
+   * Evaluates the value of a binding, property or default; an anonymous function there takes
+   * `name` as its own, as `var f = function () {}` names `f` in the language.
+   */
+  private evaluateNamed(node: Expression, scope: Scope, name: string | undefined): unknown {
+    if (
+      name !== undefined &&
+      (node.type === 'ArrowFunctionExpression' || (node.type === 'FunctionExpression' && !node.id))
+    ) {
+      this.tick(node);
+      return this.createClosure(node, scope, name);
+    }
+    return this.evaluateExpression(node, scope);
   }
 
   private evaluateCall(node: CallExpression, scope: Scope): unknown {
@@ -1169,10 +1195,16 @@ export class Evaluator {
       );
     }
     const { node: fn } = closure;
-    const name = fn.type === 'ArrowFunctionExpression' ? undefined : fn.id?.name;
-    this.#frames.push({ name: name ?? '<anonymous>', calledFrom: node });
+    this.#frames.push({ name: closure.name || '<anonymous>', calledFrom: node });
     try {
       const scope = new Scope(this.scopeForNamedFunction(closure));
+      if (fn.type !== 'ArrowFunctionExpression') {
+        // Built on the first read only; copying the arguments costs one operation per argument
+        scope.defineLazy('arguments', () => {
+          this.charge(args.length, node);
+          return createArgumentsObject(args);
+        });
+      }
       this.bindParameters(fn.params, args, scope);
       const { body } = fn;
       if (body.type !== 'BlockStatement') {
@@ -1333,4 +1365,9 @@ export class Evaluator {
       cause
     });
   }
+}
+
+/** The name a function assigned to `pattern` takes: only a plain identifier gives one. */
+function patternName(pattern: Pattern): string | undefined {
+  return pattern.type === 'Identifier' ? pattern.name : undefined;
 }

@@ -9,14 +9,14 @@ import {
   RegExpWrapper,
   SetWrapper
 } from '../values/wrappers.ts';
-import { ARRAY_STATICS } from './array-statics.ts';
+import { ARRAY_STATICS, constructArray } from './array-statics.ts';
 import { constructDate, DATE_STATICS } from './date-statics.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
 import { JSON_STATICS } from './json-statics.ts';
 import { constructMap, MAP_STATICS } from './map-statics.ts';
 import { MATH_STATICS } from './math-statics.ts';
 import { NUMBER_STATICS } from './number-statics.ts';
-import { OBJECT_STATICS } from './object-statics.ts';
+import { constructObject, OBJECT_STATICS } from './object-statics.ts';
 import { constructRegExp } from './regexp-statics.ts';
 import { constructSet } from './set-statics.ts';
 import { STRING_STATICS } from './string-statics.ts';
@@ -32,8 +32,10 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   Infinity: Number.POSITIVE_INFINITY,
   parseInt: NUMBER_STATICS['parseInt'],
   parseFloat: NUMBER_STATICS['parseFloat'],
-  isNaN: new NativeFunction('isNaN', ([value]) => Number.isNaN(toNumber(value))),
-  isFinite: new NativeFunction('isFinite', ([value]) => Number.isFinite(toNumber(value))),
+  isNaN: new NativeFunction('isNaN', isNaN.length, ([value]) => Number.isNaN(toNumber(value))),
+  isFinite: new NativeFunction('isFinite', isFinite.length, ([value]) =>
+    Number.isFinite(toNumber(value))
+  ),
   encodeURIComponent: uriFunction('encodeURIComponent', encodeURIComponent),
   decodeURIComponent: uriFunction('decodeURIComponent', decodeURIComponent),
   encodeURI: uriFunction('encodeURI', encodeURI),
@@ -42,32 +44,49 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   btoa: base64Function('btoa', btoa),
   String: new Builtin({
     name: 'String',
+    length: String.length,
     call: (args) => (args.length === 0 ? '' : toString(args[0])),
     members: STRING_STATICS
   }),
   Number: new Builtin({
     name: 'Number',
+    length: Number.length,
     call: (args) => (args.length === 0 ? 0 : toNumber(args[0])),
     members: NUMBER_STATICS
   }),
-  Boolean: new Builtin({ name: 'Boolean', call: ([value]) => toBoolean(value) }),
+  Boolean: new Builtin({
+    name: 'Boolean',
+    length: Boolean.length,
+    call: ([value]) => toBoolean(value)
+  }),
   Math: new Builtin({ name: 'Math', members: MATH_STATICS }),
-  Error: errorConstructor('Error'),
-  TypeError: errorConstructor('TypeError'),
-  RangeError: errorConstructor('RangeError'),
-  ReferenceError: errorConstructor('ReferenceError'),
-  SyntaxError: errorConstructor('SyntaxError'),
-  URIError: errorConstructor('URIError'),
-  EvalError: errorConstructor('EvalError'),
-  Array: new Builtin({ name: 'Array', isInstance: Array.isArray, members: ARRAY_STATICS }),
+  Error: errorConstructor('Error', Error.length),
+  TypeError: errorConstructor('TypeError', TypeError.length),
+  RangeError: errorConstructor('RangeError', RangeError.length),
+  ReferenceError: errorConstructor('ReferenceError', ReferenceError.length),
+  SyntaxError: errorConstructor('SyntaxError', SyntaxError.length),
+  URIError: errorConstructor('URIError', URIError.length),
+  EvalError: errorConstructor('EvalError', EvalError.length),
+  Array: new Builtin({
+    name: 'Array',
+    length: Array.length,
+    call: constructArray,
+    construct: constructArray,
+    isInstance: Array.isArray,
+    members: ARRAY_STATICS
+  }),
   Object: new Builtin({
     name: 'Object',
+    length: Object.length,
+    call: constructObject,
+    construct: constructObject,
     isInstance: (value) => typeof value === 'object' && value !== null,
     members: OBJECT_STATICS
   }),
   JSON: new Builtin({ name: 'JSON', members: JSON_STATICS }),
   Date: new Builtin({
     name: 'Date',
+    length: Date.length,
     call: () => new Date().toString(),
     construct: (args) => constructDate(args),
     members: DATE_STATICS,
@@ -75,12 +94,14 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   }),
   RegExp: new Builtin({
     name: 'RegExp',
+    length: RegExp.length,
     call: constructRegExp,
     construct: constructRegExp,
     isInstance: (value) => value instanceof RegExpWrapper
   }),
   Map: new Builtin({
     name: 'Map',
+    length: Map.length,
     call: (_args, { fail }) => fail('TypeError', "Constructor Map requires 'new'"),
     construct: constructMap,
     members: MAP_STATICS,
@@ -88,12 +109,14 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   }),
   Set: new Builtin({
     name: 'Set',
+    length: Set.length,
     call: (_args, { fail }) => fail('TypeError', "Constructor Set requires 'new'"),
     construct: constructSet,
     isInstance: (value) => value instanceof SetWrapper
   }),
   Iterator: new Builtin({
     name: 'Iterator',
+    length: Iterator.length,
     call: (_args, { fail }) => fail('TypeError', "Constructor Iterator requires 'new'"),
     members: ITERATOR_STATICS,
     isInstance: (value) => value instanceof IteratorWrapper
@@ -105,7 +128,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
  * catchable error under the host's name, `InvalidCharacterError`.
  */
 function base64Function(name: string, host: (text: string) => string): NativeFunction {
-  return new NativeFunction(name, ([text], { fail }) => {
+  return new NativeFunction(name, host.length, ([text], { fail }) => {
     try {
       return host(toString(text));
     } catch (error) {
@@ -119,13 +142,13 @@ function base64Function(name: string, host: (text: string) => string): NativeFun
 
 /** The URI functions throw `URIError` on malformed input, which the script may catch. */
 function uriFunction(name: string, host: (text: string) => string): NativeFunction {
-  return new NativeFunction(name, ([text], { fail }) =>
+  return new NativeFunction(name, host.length, ([text], { fail }) =>
     guardHostErrors(fail, () => host(toString(text)))
   );
 }
 
 /** `Error` matches every error; the subtypes match by the constructor they were made with. */
-function errorConstructor(kind: string): Builtin {
+function errorConstructor(kind: string, length: number): Builtin {
   const create = (args: ReadonlyArray<unknown>, context: { stackTrace(): string }): SandboxError =>
     new SandboxError(
       kind,
@@ -135,6 +158,7 @@ function errorConstructor(kind: string): Builtin {
     );
   return new Builtin({
     name: kind,
+    length,
     call: create,
     construct: create,
     isInstance: (value) =>

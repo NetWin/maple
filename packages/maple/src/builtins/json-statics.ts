@@ -13,8 +13,8 @@ import { DateWrapper, isWrapper } from '../values/wrappers.ts';
  * Maple's, so that sandbox values serialize the way their native counterparts would and no
  * `toJSON` hook is ever consulted.
  */
-export const JSON_STATICS: Readonly<Record<string, unknown>> = {
-  parse: new NativeFunction('parse', ([text, reviver], context) => {
+export const JSON_STATICS: Readonly<Record<string, NativeFunction>> = {
+  parse: new NativeFunction('parse', JSON.parse.length, ([text, reviver], context) => {
     const parsed: unknown = guardHostErrors(context.fail, () => JSON.parse(toString(text)));
     if (!isCallable(reviver)) {
       return parsed;
@@ -23,8 +23,10 @@ export const JSON_STATICS: Readonly<Record<string, unknown>> = {
     defineOwn(root, '', parsed);
     return revive(root, '', reviver, context);
   }),
-  stringify: new NativeFunction('stringify', ([value, replacer, space], context) =>
-    stringify(value, replacer, space, context)
+  stringify: new NativeFunction(
+    'stringify',
+    JSON.stringify.length,
+    ([value, replacer, space], context) => stringify(value, replacer, space, context)
   )
 };
 

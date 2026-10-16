@@ -78,14 +78,66 @@ describe('control flow', () => {
       expect(run('for (let i = 0; i < 2; i++) { return i; }')).toBe(0);
     });
 
-    it('reject labels', () => {
-      expect(runAndCatch(maple, 'a: for (;;) { break a; }').message).toBe(
-        "'labels' is not supported"
-      );
-    });
-
     it('reject debugger', () => {
       expect(runAndCatch(maple, 'debugger;').message).toBe("'debugger' is not supported");
+    });
+  });
+
+  describe('labels', () => {
+    it('break out of an outer loop', () => {
+      const code =
+        'const seen = []; outer: for (let i = 0; i < 3; i++) { for (let j = 0; j < 3; j++) { if (j === 1) { break outer; } seen.push([i, j]); } } return seen;';
+      expect(run(code)).toEqual([[0, 0]]);
+    });
+
+    it('continue an outer loop', () => {
+      const code =
+        'const seen = []; outer: for (let i = 0; i < 3; i++) { for (let j = 0; j < 3; j++) { if (j === 1) { continue outer; } seen.push([i, j]); } } return seen;';
+      expect(run(code)).toEqual([
+        [0, 0],
+        [1, 0],
+        [2, 0]
+      ]);
+    });
+
+    it('continue every kind of loop by its label', () => {
+      expect(run('let n = 0; a: while (n < 3) { n++; continue a; } return n;')).toBe(3);
+      expect(run('let n = 0; a: do { n++; continue a; } while (n < 3); return n;')).toBe(3);
+      expect(run('let n = 0; a: for (const x of [1, 2]) { n += x; continue a; } return n;')).toBe(
+        3
+      );
+      expect(
+        run('let s = ""; a: for (const k in { x: 1, y: 2 }) { s += k; continue a; } return s;')
+      ).toBe('xy');
+    });
+
+    it('break out of a labelled block', () => {
+      expect(run('let n = 1; a: { n = 2; break a; } return n;')).toBe(2);
+      expect(run('let n = 1; a: { b: { break a; } n = 2; } return n;')).toBe(1);
+    });
+
+    it('carry a labelled continue through a switch', () => {
+      const code =
+        'const seen = []; a: for (let i = 0; i < 3; i++) { switch (i) { case 1: continue a; default: seen.push(i); } } return seen;';
+      expect(run(code)).toEqual([0, 2]);
+    });
+
+    it('carry a labelled break through finally, which still runs', () => {
+      const code =
+        'const seen = []; a: for (;;) { try { break a; } finally { seen.push("finally"); } } return seen;';
+      expect(run(code)).toEqual(['finally']);
+    });
+
+    it('let a loop bear several labels', () => {
+      expect(
+        run('let n = 0; a: b: for (;;) { n++; if (n === 2) { break a; } continue b; } return n;')
+      ).toBe(2);
+    });
+
+    it('cost one operation as a statement', () => {
+      expect(maple.run('a: { } return 1;').stats.ops).toBe(
+        maple.run('{ } return 1;').stats.ops + 1
+      );
     });
   });
 

@@ -1,4 +1,5 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
+import { isArgumentsObject } from './arguments-object.ts';
 import { IteratorWrapper, MapWrapper, SetWrapper } from './wrappers.ts';
 
 /**
@@ -11,6 +12,9 @@ export function iterate(value: unknown): Iterator<unknown> | undefined {
   }
   if (Array.isArray(value)) {
     return arrayIterator(value);
+  }
+  if (isArgumentsObject(value)) {
+    return argumentsIterator(value);
   }
   if (value instanceof MapWrapper) {
     return value.map.entries();
@@ -43,6 +47,13 @@ export function* enumerableKeys(value: unknown): Generator<string> {
   }
   if (Array.isArray(value) || isPlainObject(value)) {
     yield* Object.keys(value);
+  }
+}
+
+/** Visits the indices below `length`, as the array iterator an arguments object has does. */
+function* argumentsIterator(args: Record<string, unknown>): Iterator<unknown> {
+  for (let index = 0; index < Number(args['length']); index++) {
+    yield args[String(index)];
   }
 }
 

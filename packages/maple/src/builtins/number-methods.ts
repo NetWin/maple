@@ -1,5 +1,5 @@
 import { intlOptionsArgument, localesArgument, optionalNumber } from '../values/arguments.ts';
-import { guardHostErrors, type Method } from '../values/native.ts';
+import { guardHostErrors, type Method, method } from '../values/native.ts';
 
 type NumberMethod = Method<number>;
 
@@ -7,26 +7,34 @@ type NumberMethod = Method<number>;
 export const NUMBER_METHODS: ReadonlyMap<string, NumberMethod> = new Map<string, NumberMethod>([
   [
     'toExponential',
-    (n, [digits], { fail }) => guardHostErrors(fail, () => n.toExponential(optionalNumber(digits)))
+    method(Number.prototype.toExponential.length, (n, [digits], { fail }) =>
+      guardHostErrors(fail, () => n.toExponential(optionalNumber(digits)))
+    )
   ],
   [
     'toFixed',
-    (n, [digits], { fail }) => guardHostErrors(fail, () => n.toFixed(optionalNumber(digits)))
+    method(Number.prototype.toFixed.length, (n, [digits], { fail }) =>
+      guardHostErrors(fail, () => n.toFixed(optionalNumber(digits)))
+    )
   ],
   [
     'toLocaleString',
-    (n, [locales, options], { fail }) =>
+    method(Number.prototype.toLocaleString.length, (n, [locales, options], { fail }) =>
       guardHostErrors(fail, () =>
         n.toLocaleString(localesArgument(locales), intlOptionsArgument(options))
       )
+    )
   ],
   [
     'toPrecision',
-    (n, [precision], { fail }) =>
+    method(Number.prototype.toPrecision.length, (n, [precision], { fail }) =>
       guardHostErrors(fail, () => n.toPrecision(optionalNumber(precision)))
+    )
   ],
   [
     'toString',
-    (n, [radix], { fail }) => guardHostErrors(fail, () => n.toString(optionalNumber(radix)))
+    method(Number.prototype.toString.length, (n, [radix], { fail }) =>
+      guardHostErrors(fail, () => n.toString(optionalNumber(radix)))
+    )
   ]
 ]);
