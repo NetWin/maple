@@ -43,11 +43,22 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 - Maple runs in `maple.worker.ts`, and for the Benchmark tab in `benchmark.worker.ts`. Values cross either worker
   boundary as JSON text (`maple-worker-protocol.ts`, `benchmark-protocol.ts`).
 - `@netwin/js-interpreter` is a dev dependency used only to compare against; `js-interpreter-engine.ts` is the one
-  place that calls it.
+  place in the app that calls it.
 - `scripts/` holds Node-only tools such as `measure-memory.ts`. Node ignores the `paths` mapping, so they import
   `packages/maple/src/index.ts` by relative path.
 - Use standalone components and signals, styled with Tailwind. Don't add `.component` / `.service` suffixes to file
   names.
+
+## Parity (`packages/maple-parity`)
+
+- Everything `@netwin/js-interpreter` runs must work in Maple; Maple may do more, never less. `src/engines.ts` is the
+  one place in the package that calls js-interpreter.
+- Write each case as an explicit `it`: `expect(parity(code)).toEqual(value)` runs both engines, requires the same
+  result and returns it; `expect(bothThrow(code)).toBe('TypeError')` requires a script error from both and returns
+  the name of Maple's.
+- What Maple rejects on purpose goes in `src/divergences.spec.ts` as `expect(divergence(code)).toBe(code)`, which
+  asserts both sides, and in the README with its reason. Add one only after discussing it.
+- `@netwin/maple` maps to `packages/maple/src/index.ts` through tsconfig `paths`, which Vitest reads too.
 
 ## Conventions
 

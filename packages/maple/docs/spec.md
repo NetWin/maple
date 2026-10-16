@@ -762,6 +762,11 @@ Tests live next to the code as `*.spec.ts`. Four groups cover the contract:
   `-0`). Date tests pin `TZ` so local-time output is identical everywhere.
 - **Error tests.** Each code with its expected message, line and column.
 
+Next to these, the private package `packages/maple-parity` runs the same scripts in Maple and in
+`@netwin/js-interpreter` and requires the same result, so everything js-interpreter runs works in
+Maple too. What Maple rejects on purpose is listed there as a divergence, each with a test that
+asserts both sides.
+
 The library compiles against `lib: ["ES2024", "ES2025.Collection", "ES2025.Iterator"]`, the parts
 of ES2025 that the minimum Node version implements, with neither DOM nor Node type definitions, so a
 host API cannot be used by accident. The declared exceptions are the guarded `performance.now()`

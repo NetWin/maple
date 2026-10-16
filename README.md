@@ -19,6 +19,7 @@ This is a pnpm workspace:
 | ----------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
 | `packages/maple`        | [`@netwin/maple`](packages/maple)                   | The published library (ESM, Node >= 22, peer dep: `acorn`) |
 | `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Private Angular app for trying out the interpreter         |
+| `packages/maple-parity` | [`@netwin/maple-parity`](packages/maple-parity)     | Private tests: Maple runs everything js-interpreter runs   |
 
 The playground has editors for code and a JSON context and shows the result and the AST live. It runs Maple in a web
 worker and stops runs after 1 s, so an endless loop can't freeze the page.

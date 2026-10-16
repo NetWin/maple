@@ -1,0 +1,16 @@
+{
+  "name": "@netwin/maple-parity",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Checks that Maple runs everything js-interpreter runs, apart from the listed divergences",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@netwin/js-interpreter": "^2.6.1",
+    "vitest": "^5.0.4"
+  }
+}
