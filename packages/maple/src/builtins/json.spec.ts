@@ -169,6 +169,30 @@ describe('JSON.stringify', () => {
     );
   });
 
+  it("writes an array replacer's keys in its order, own properties only", () => {
+    expect(run('return JSON.stringify({ a: 1, b: 2 }, ["b", "a", "b"]);')).toBe('{"b":2,"a":1}');
+    expect(run('return JSON.stringify({ a: 1 }, ["a", "missing", "toString"]);')).toBe('{"a":1}');
+    expect(
+      run('function f() { return JSON.stringify(arguments, ["length", "0"]); } return f("x");')
+    ).toBe('{"length":1,"0":"x"}');
+  });
+
+  it('converts a Date before the replacer sees it, and not one the replacer returns', () => {
+    expect(run('return JSON.stringify(new Date(0), (k, v) => typeof v);')).toBe('"string"');
+    expect(
+      run('return JSON.stringify({ d: new Date(NaN) }, (k, v) => (k === "d" ? [v] : v));')
+    ).toBe('{"d":[null]}');
+    expect(run('return JSON.stringify(1, (k, v) => new Date(0));')).toBe('{}');
+  });
+
+  it('serializes an array up to the length it had when reached', () => {
+    expect(
+      run(
+        'const a = [1]; return JSON.stringify(a, (k, v) => { if (k === "0") a.push(2); return v; });'
+      )
+    ).toBe('[1]');
+  });
+
   it('rejects cycles and runs replacers under the budget', () => {
     expect(
       run('const a = []; a.push(a); try { JSON.stringify(a); } catch (e) { return e.message; }')

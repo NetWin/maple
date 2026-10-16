@@ -56,6 +56,11 @@ export class Scope {
     binding.value = value;
   }
 
+  /** Whether this scope itself, not one of its parents, binds `name`. */
+  public hasOwn(name: string): boolean {
+    return this.#bindings.has(name);
+  }
+
   public lookup(name: string): Binding | undefined {
     return this.#bindings.get(name) ?? this.#parent?.lookup(name);
   }

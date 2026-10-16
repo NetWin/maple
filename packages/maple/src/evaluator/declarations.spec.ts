@@ -18,6 +18,14 @@ describe('declarations and identifiers', () => {
       expect(maple.run('var a = 1; var a; return a;').value).toBe(1);
     });
 
+    it('keeps the value of a parameter it redeclares', () => {
+      expect(maple.run('function f(a) { var a; return a; } return f(7);').value).toBe(7);
+      expect(maple.run('function f(a) { var a = a + 1; return a; } return f(7);').value).toBe(8);
+      expect(
+        maple.run('const a = "outer"; function f() { return a; var a; } return f();').value
+      ).toBeUndefined();
+    });
+
     it('can be reassigned', () => {
       expect(maple.run('var a = 1; a = 2; return a;').value).toBe(2);
     });

@@ -3,6 +3,7 @@ import { toNumber } from '../values/coercion.ts';
 import {
   type CallContext,
   guardHostErrors,
+  guardIntlErrors,
   type Method,
   method,
   type MethodCall
@@ -171,27 +172,27 @@ export const DATE_METHODS: ReadonlyMap<string, DateMethod> = new Map<string, Dat
   ],
   [
     'toLocaleDateString',
-    method(Date.prototype.toLocaleDateString.length, (d, [locales, options], { fail }) =>
-      guardHostErrors(fail, () =>
-        d.date.toLocaleDateString(localesArgument(locales), intlOptionsArgument(options))
-      )
-    )
+    method(Date.prototype.toLocaleDateString.length, (d, [locales, options], { fail }) => {
+      const tags = localesArgument(locales);
+      const intlOptions = intlOptionsArgument(options);
+      return guardIntlErrors(fail, () => d.date.toLocaleDateString(tags, intlOptions));
+    })
   ],
   [
     'toLocaleString',
-    method(Date.prototype.toLocaleString.length, (d, [locales, options], { fail }) =>
-      guardHostErrors(fail, () =>
-        d.date.toLocaleString(localesArgument(locales), intlOptionsArgument(options))
-      )
-    )
+    method(Date.prototype.toLocaleString.length, (d, [locales, options], { fail }) => {
+      const tags = localesArgument(locales);
+      const intlOptions = intlOptionsArgument(options);
+      return guardIntlErrors(fail, () => d.date.toLocaleString(tags, intlOptions));
+    })
   ],
   [
     'toLocaleTimeString',
-    method(Date.prototype.toLocaleTimeString.length, (d, [locales, options], { fail }) =>
-      guardHostErrors(fail, () =>
-        d.date.toLocaleTimeString(localesArgument(locales), intlOptionsArgument(options))
-      )
-    )
+    method(Date.prototype.toLocaleTimeString.length, (d, [locales, options], { fail }) => {
+      const tags = localesArgument(locales);
+      const intlOptions = intlOptionsArgument(options);
+      return guardIntlErrors(fail, () => d.date.toLocaleTimeString(tags, intlOptions));
+    })
   ],
   ['toString', method(Date.prototype.toString.length, (d) => d.date.toString())],
   ['toTimeString', method(Date.prototype.toTimeString.length, (d) => d.date.toTimeString())],

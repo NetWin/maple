@@ -259,7 +259,9 @@ accepts:
 
 - Primitives, unchanged: `undefined`, `NaN`, `Infinity` and `-0` survive.
 - Plain objects (prototype `Object.prototype` or `null`) and arrays, copied recursively from their
-  own enumerable properties. Cycles are preserved.
+  own enumerable properties, so an array keeps its holes and named properties such as the `index`,
+  `input` and `groups` of a match result. Cycles and shared references are preserved, also for a
+  `Date` or `RegExp` reached twice.
 - `Date`, `RegExp`, `Map` and `Set`, copied into wrappers with converted contents.
 - Functions, which become host function values, or intrinsics if they carry the `intrinsic` mark.
   They may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
@@ -382,8 +384,8 @@ Instance: `length`, `at`, `concat`, `copyWithin`, `entries`, `every`, `fill`, `f
 `slice`, `some`, `sort`, `splice`, `toReversed`, `toSorted`, `toSpliced`, `toString`, `unshift`,
 `values`, `with`.
 
-Static: `Array.isArray`, `Array.from` (iterable or array-like, optional map function),
-`Array.of`.
+Static: `Array.isArray`, `Array.from` (iterable or array-like, whose `length` is truncated and
+clamped as ToLength does; an optional map function runs as each item is read), `Array.of`.
 
 `Array(...)` and `new Array(...)` do the same: a single number is a length and leaves that many
 holes, which is a `RangeError` unless it is a valid array length; any other arguments become the
@@ -446,7 +448,11 @@ All functions and constants of ES2023 `Math`: `abs`, `acos`, `acosh`, `asin`, `a
 
 `JSON.parse(text)` and `JSON.stringify(value, replacer?, space?)`. Both are implemented by Maple
 so that wrappers serialize the way their native counterparts would (a Date as its ISO string, a
-Map as `{}`). `replacer` may be an array of keys or a function. `parse` takes a reviver, called
+Map as `{}`). `replacer` may be an array of keys or a function. An array replacer also sets the
+order of the keys and selects own properties only, enumerable or not, such as `arguments.length`.
+A function replacer sees a Date already converted to its ISO string (or `null`), as `toJSON` would
+have left it; a Date the replacer returns serializes as `{}`. An array serializes up to the length
+it had when it was reached. `parse` takes a reviver, called
 bottom-up with `(key, value, holder)` and last for the root under the key `''`; the holder comes as
 a third argument because there is no `this`, and returning `undefined` drops the key. A reviver
 that is not callable is ignored. `JSON.parse` output is a plain sandbox value; a `__proto__` key
@@ -501,7 +507,8 @@ and `localeCompare`, `toLocaleLowerCase` and `toLocaleUpperCase` on String take 
 `locales` and `options` arguments. Like the local-time methods they depend on the host: on its ICU
 data and, when no locale is passed, on its default locale. The `locales` argument converts
 hook-free to a tag or a list of tags; of the `options` object only own properties with primitive
-values reach the host, as a copy. Invalid locales and options are catchable `RangeError`s. An
+values reach the host, as a copy. Invalid locales and options are catchable `RangeError`s, and
+inconsistent options, such as `style: 'currency'` without a `currency`, catchable `TypeError`s. An
 array formats numbers and dates for the locale and converts everything else hook-free. The `Intl`
 namespace itself is not available.
 
@@ -684,9 +691,11 @@ host's responsibility.
 `value` is a fresh copy of the script's return value, never a reference into the sandbox:
 
 - Primitives as they are.
-- Plain objects and arrays rebuilt as normal host objects. A key named `__proto__` is dropped, so
-  host code that copies the result by assignment (`Object.assign`, deep-merge helpers) cannot turn
-  it into a prototype. Cycles are preserved.
+- Plain objects and arrays rebuilt as normal host objects from their own enumerable properties,
+  so an array keeps its holes and named properties. A key named `__proto__` is dropped, so host
+  code that copies the result by assignment (`Object.assign`, deep-merge helpers) cannot turn it
+  into a prototype. Cycles and shared references are preserved, also for errors, Dates and
+  RegExps.
 - `Date`, `RegExp`, `Map` and `Set` wrappers as fresh native instances with converted contents.
 - Closures, host functions, intrinsics and iterators become `undefined`.
 - Sandbox error objects become plain objects with `name`, `message` and `stack`.
@@ -740,6 +749,10 @@ and sees each code's documentation in the editor.
 | `RUNTIME_ERROR`     | A sandbox error was not caught (`TypeError`, `ReferenceError`, a script `throw`) |
 | `LIMIT_EXCEEDED`    | The operation budget or the depth limit was hit                                  |
 | `INTERNAL_ERROR`    | A host function returned an unsupported value, or Maple itself failed            |
+
+An uncaught non-error value is reported as an `Error` whose message is the value's hook-free string
+conversion. When that conversion fails itself, as for an array nested deeper than 1000 levels, the
+message is `A value that cannot be converted to a string was thrown`.
 
 `line` and `column` point into the source of the program that was executing, which for a nested
 run is the nested source. Messages are written for the person debugging the script, for example

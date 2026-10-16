@@ -84,7 +84,9 @@ function stringify(
   const ancestors: Array<object> = [];
 
   const serialize = (key: string, raw: unknown, indent: string): string | undefined => {
-    const current = replace ? replace(key, raw) : raw;
+    // A Date's own toJSON runs before the replacer, which therefore sees the string
+    const json = raw instanceof DateWrapper ? dateToJson(raw) : raw;
+    const current = replace ? replace(key, json) : json;
     if (current === null) {
       return 'null';
     }
@@ -110,10 +112,6 @@ function stringify(
     if (current instanceof Builtin) {
       return current.callable ? undefined : '{}';
     }
-    if (current instanceof DateWrapper) {
-      const time = current.date.getTime();
-      return Number.isNaN(time) ? 'null' : JSON.stringify(current.date.toISOString());
-    }
     if (current instanceof SandboxError || isWrapper(current)) {
       return '{}';
     }
@@ -130,18 +128,21 @@ function stringify(
     const inner = indent + gap;
     let result: string;
     if (Array.isArray(current)) {
-      // Array.from visits holes as undefined, which serialize as null like any undefined element
-      const parts = Array.from(
-        current,
-        (element, index) => serialize(String(index), element, inner) ?? 'null'
-      );
+      // The length is read once, so elements a replacer appends are not serialized; holes read
+      // as undefined, which serializes as null like any undefined element
+      const { length } = current;
+      const parts: Array<string> = [];
+      for (let index = 0; index < length; index++) {
+        parts.push(serialize(String(index), current[index], inner) ?? 'null');
+      }
       result = wrap('[', ']', parts, gap, indent, inner);
     } else if (isPlainObject(current)) {
       const parts: Array<string> = [];
-      for (const propertyKey of Object.keys(current)) {
-        if (allowed && !allowed.has(propertyKey)) {
-          continue;
-        }
+      // An array replacer gives the order too, and selects own properties whether enumerable or not
+      const keys = allowed
+        ? [...allowed].filter((propertyKey) => Object.hasOwn(current, propertyKey))
+        : Object.keys(current);
+      for (const propertyKey of keys) {
         const serialized = serialize(propertyKey, current[propertyKey], inner);
         if (serialized !== undefined) {
           parts.push(`${JSON.stringify(propertyKey)}:${gap ? ' ' : ''}${serialized}`);
@@ -156,6 +157,11 @@ function stringify(
   };
 
   return serialize('', value, '');
+}
+
+/** What `Date.prototype.toJSON` returns: the ISO string, or null for an invalid date. */
+function dateToJson(date: DateWrapper): string | null {
+  return Number.isNaN(date.date.getTime()) ? null : date.date.toISOString();
 }
 
 function wrap(
@@ -186,7 +192,10 @@ function gapOf(space: unknown): string {
   return '';
 }
 
-/** An array replacer lists the property names to keep; numbers count as their string form. */
+/**
+ * An array replacer lists the property names to keep, in the order to write them; numbers count
+ * as their string form and a repeated name counts once.
+ */
 function allowedKeys(replacer: ReadonlyArray<unknown>): Set<string> {
   const keys = new Set<string>();
   for (const entry of replacer) {

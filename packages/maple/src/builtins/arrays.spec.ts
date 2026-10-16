@@ -279,4 +279,22 @@ describe('Array statics', () => {
     );
     expect(run('return Array.foo;')).toBeUndefined();
   });
+
+  it('from reads an array-like length as ToLength does', () => {
+    expect(run('return Array.from({ length: 1.5, 0: "a", 1: "b" });')).toEqual(['a']);
+    expect(run('return Array.from({ length: -1, 0: "a" });')).toEqual([]);
+    expect(run('return Array.from({ length: "2", 0: "a", 1: "b" });')).toEqual(['a', 'b']);
+    expect(run('return Array.from({ length: NaN, 0: "a" });')).toEqual([]);
+  });
+
+  it('from maps each item as it is read', () => {
+    expect(
+      run('const a = [1, 2]; return Array.from(a, (x, i) => { if (i === 0) a[1] = 9; return x; });')
+    ).toEqual([1, 9]);
+    expect(
+      run(
+        'const o = { length: 2, 0: 1, 1: 2 }; return Array.from(o, (x, i) => { if (i === 0) o[1] = 9; return x; });'
+      )
+    ).toEqual([1, 9]);
+  });
 });

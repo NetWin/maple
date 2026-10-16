@@ -73,6 +73,12 @@ export function toNumber(value: unknown): number {
   return Number(toPrimitive(value, 'number'));
 }
 
+/** ToLength: a length an array-like may have, truncated and clamped to `0 ... 2^53 - 1`. */
+export function toLength(value: unknown): number {
+  const length = Math.trunc(toNumber(value));
+  return Number.isNaN(length) ? 0 : Math.min(Math.max(length, 0), Number.MAX_SAFE_INTEGER);
+}
+
 export function toBoolean(value: unknown): boolean {
   return Boolean(value);
 }

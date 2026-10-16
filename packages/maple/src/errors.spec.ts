@@ -31,6 +31,19 @@ describe('errors', () => {
       expect(runAndCatch(maple, 'throw [1, 2];').sandboxError?.message).toBe('1,2');
       expect(runAndCatch(maple, 'throw undefined;').sandboxError?.message).toBe('undefined');
     });
+
+    it('still reports a thrown value whose string conversion throws', () => {
+      const error = runAndCatch(
+        maple,
+        'let a = []; for (let i = 0; i < 1100; i++) { a = [a]; } throw a;'
+      );
+
+      expect(error.code).toBe('RUNTIME_ERROR');
+      expect(error.sandboxError).toMatchObject({
+        name: 'Error',
+        message: 'A value that cannot be converted to a string was thrown'
+      });
+    });
   });
 
   describe('error constructors', () => {

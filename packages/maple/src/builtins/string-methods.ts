@@ -8,6 +8,7 @@ import { toNumber, toString } from '../values/coercion.ts';
 import {
   type CallContext,
   guardHostErrors,
+  guardIntlErrors,
   isCallable,
   type Method,
   method
@@ -159,11 +160,12 @@ export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string,
   ],
   [
     'localeCompare',
-    method(String.prototype.localeCompare.length, (s, [that, locales, options], { fail }) =>
-      guardHostErrors(fail, () =>
-        s.localeCompare(toString(that), localesArgument(locales), intlOptionsArgument(options))
-      )
-    )
+    method(String.prototype.localeCompare.length, (s, [that, locales, options], { fail }) => {
+      const other = toString(that);
+      const tags = localesArgument(locales);
+      const intlOptions = intlOptionsArgument(options);
+      return guardIntlErrors(fail, () => s.localeCompare(other, tags, intlOptions));
+    })
   ],
   [
     'toLocaleLowerCase',

@@ -183,6 +183,20 @@ describe('functions', () => {
       ).toEqual([1, ['0', '1']]);
     });
 
+    it('iterates up to its length as ToLength reads it on every step', () => {
+      expect(
+        run('function f() { arguments.length = 1.5; return [...arguments]; } return f("a", "b");')
+      ).toEqual(['a']);
+      expect(
+        run('function f() { arguments.length = -1; return [...arguments]; } return f("a");')
+      ).toEqual([]);
+      expect(
+        run(
+          'function f() { const seen = []; for (const x of arguments) { seen.push(x); arguments.length = 1; } return seen; } return f("a", "b");'
+        )
+      ).toEqual(['a']);
+    });
+
     it("is the enclosing function's inside an arrow function", () => {
       expect(run('function f() { const g = () => arguments[0]; return g(2); } return f(1);')).toBe(
         1

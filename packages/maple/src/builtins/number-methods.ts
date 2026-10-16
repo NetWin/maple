@@ -1,9 +1,12 @@
 import { intlOptionsArgument, localesArgument, optionalNumber } from '../values/arguments.ts';
-import { guardHostErrors, type Method, method } from '../values/native.ts';
+import { guardHostErrors, guardIntlErrors, type Method, method } from '../values/native.ts';
 
 type NumberMethod = Method<number>;
 
-/** The host throws `RangeError` for digits or a radix out of range; the script can catch it. */
+/**
+ * The host throws `RangeError` for digits or a radix out of range, and `Intl` also `TypeError` for
+ * inconsistent options; the script can catch either.
+ */
 export const NUMBER_METHODS: ReadonlyMap<string, NumberMethod> = new Map<string, NumberMethod>([
   [
     'toExponential',
@@ -19,11 +22,11 @@ export const NUMBER_METHODS: ReadonlyMap<string, NumberMethod> = new Map<string,
   ],
   [
     'toLocaleString',
-    method(Number.prototype.toLocaleString.length, (n, [locales, options], { fail }) =>
-      guardHostErrors(fail, () =>
-        n.toLocaleString(localesArgument(locales), intlOptionsArgument(options))
-      )
-    )
+    method(Number.prototype.toLocaleString.length, (n, [locales, options], { fail }) => {
+      const tags = localesArgument(locales);
+      const intlOptions = intlOptionsArgument(options);
+      return guardIntlErrors(fail, () => n.toLocaleString(tags, intlOptions));
+    })
   ],
   [
     'toPrecision',

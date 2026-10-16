@@ -1,4 +1,6 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
+import { defineOwn } from '../support/own-property.ts';
+import { toArrayIndex } from '../values/members.ts';
 import { NativeFunction } from '../values/native.ts';
 import { DateWrapper, MapWrapper, RegExpWrapper, SetWrapper } from '../values/wrappers.ts';
 import { isHostFunction, isIntrinsic } from './host.ts';
@@ -64,10 +66,14 @@ function convert(
   const { freeze } = settings;
 
   if (Array.isArray(value)) {
+    // Own keys rather than the iterator keep holes as holes and named properties such as the
+    // `index`, `input` and `groups` of a match result
     const copy: Array<unknown> = [];
+    copy.length = value.length;
     copies.set(value, copy);
-    for (const [index, element] of value.entries()) {
-      copy.push(convert(element, `${path}[${index}]`, copies, settings));
+    for (const key of Object.keys(value)) {
+      const keyPath = toArrayIndex(key) === undefined ? `${path}.${key}` : `${path}[${key}]`;
+      defineOwn(copy, key, convert(Reflect.get(value, key), keyPath, copies, settings));
     }
     return freeze ? Object.freeze(copy) : copy;
   }
@@ -76,24 +82,22 @@ function convert(
     const copy: Record<string, unknown> = {};
     copies.set(value, copy);
     for (const key of Object.keys(value)) {
-      // defineProperty keeps a key named __proto__ an own property instead of a prototype write
-      Object.defineProperty(copy, key, {
-        value: convert(value[key], `${path}.${key}`, copies, settings),
-        enumerable: true,
-        writable: true,
-        configurable: true
-      });
+      defineOwn(copy, key, convert(value[key], `${path}.${key}`, copies, settings));
     }
     return freeze ? Object.freeze(copy) : copy;
   }
 
   if (value instanceof Date) {
-    return new DateWrapper(new Date(value.getTime()), freeze);
+    const wrapper = new DateWrapper(new Date(value.getTime()), freeze);
+    copies.set(value, wrapper);
+    return wrapper;
   }
   if (value instanceof RegExp) {
     const copy = new RegExp(value.source, value.flags);
     copy.lastIndex = value.lastIndex;
-    return new RegExpWrapper(copy, freeze);
+    const wrapper = new RegExpWrapper(copy, freeze);
+    copies.set(value, wrapper);
+    return wrapper;
   }
   if (value instanceof Map) {
     const wrapper = new MapWrapper(new Map(), freeze);

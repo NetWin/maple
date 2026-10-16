@@ -84,6 +84,22 @@ export function guardHostErrors<T>(fail: Fail, run: () => T): T {
   }
 }
 
+/**
+ * `guardHostErrors` for the `Intl`-backed `toLocale*` methods, whose options can also fail with
+ * a `TypeError`, such as a currency style without a currency. Only the host call may run inside,
+ * so that a `TypeError` can only be the one the language specifies.
+ */
+export function guardIntlErrors<T>(fail: Fail, run: () => T): T {
+  try {
+    return guardHostErrors(fail, run);
+  } catch (error) {
+    if (error instanceof TypeError) {
+      return fail(error.name, error.message);
+    }
+    throw error;
+  }
+}
+
 // Engines report an exhausted stack only through the message, as a RangeError in V8 and JSC
 function isStackOverflow(error: RangeError): boolean {
   return /call stack/i.test(error.message);

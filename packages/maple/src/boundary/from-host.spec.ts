@@ -82,6 +82,31 @@ describe('fromHost', () => {
     expect(at(copy, 'a')).not.toBe(shared);
   });
 
+  it('preserves shared Dates and RegExps', () => {
+    const date = new Date(0);
+    const regexp = /a/g;
+    const copy = fromHost({ dates: [date, date], regexps: [regexp, regexp] });
+
+    expect(at(copy, 'dates', '0')).toBe(at(copy, 'dates', '1'));
+    expect(at(copy, 'regexps', '0')).toBe(at(copy, 'regexps', '1'));
+  });
+
+  it('keeps holes and named properties of arrays', () => {
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is what is tested
+    const sparse = fromHost([, 2]);
+    const match = fromHost(/(?<x>b)/.exec('ab'));
+
+    expect(Array.isArray(sparse) && [sparse.length, 0 in sparse, sparse[1]]).toEqual([2, false, 2]);
+    expect([at(match, 'index'), at(match, 'input'), at(match, 'groups', 'x')]).toEqual([
+      1,
+      'ab',
+      'b'
+    ]);
+    expect(() => fromHost(Object.assign([1], { extra: Symbol('s') }), 'data')).toThrow(
+      new TypeError('Unsupported value at data.extra: symbol')
+    );
+  });
+
   it('rejects values outside the model with the path to them', () => {
     class Thing {
       public readonly id = 1;

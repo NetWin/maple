@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Scope } from '../evaluator/scope.ts';
 import { parse } from '../parse.ts';
+import { defineOwn } from '../support/own-property.ts';
 import { Closure } from '../values/closure.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
 import {
@@ -73,6 +74,30 @@ describe('toHost', () => {
 
     expect(at(copy, 'self')).toBe(copy);
     expect(at(copy, 'a')).toBe(at(copy, 'b'));
+  });
+
+  it('preserves shared errors, Dates and RegExps', () => {
+    const date = new DateWrapper(new Date(0), false);
+    const regexp = new RegExpWrapper(/a/g, false);
+    const error = new SandboxError('Error', 'x');
+    const copy = toHost([date, date, regexp, regexp, error, error], true);
+
+    expect(at(copy, '0')).toBe(at(copy, '1'));
+    expect(at(copy, '2')).toBe(at(copy, '3'));
+    expect(at(copy, '4')).toBe(at(copy, '5'));
+    expect(at(copy, '0')).toBeInstanceOf(Date);
+  });
+
+  it('keeps holes and named properties of arrays', () => {
+    const array: Array<unknown> = [];
+    array[1] = 2;
+    defineOwn(array, 'index', 1);
+    defineOwn(array, '__proto__', { polluted: true });
+    const copy = toHost(array);
+
+    expect(Array.isArray(copy) && [copy.length, 0 in copy, copy[1]]).toEqual([2, false, 2]);
+    expect(at(copy, 'index')).toBe(1);
+    expect(isRecord(copy) && Object.hasOwn(copy, '__proto__')).toBe(false);
   });
 
   it('refuses cycles when strict, but not shared references', () => {

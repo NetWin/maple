@@ -6,7 +6,8 @@ type StatementList = ReadonlyArray<Statement | ModuleDeclaration>;
 
 /**
  * Declares every `var` of a function body in `scope`, so reads before the declaration see
- * `undefined`.
+ * `undefined`. A parameter the scope already binds keeps its value, as redeclaring it with `var`
+ * does not reset it.
  */
 export function hoistVarDeclarations(body: StatementList, scope: Scope): void {
   const names: Array<string> = [];
@@ -14,7 +15,9 @@ export function hoistVarDeclarations(body: StatementList, scope: Scope): void {
     collectVarNames(statement, names);
   }
   for (const name of names) {
-    scope.define(name, 'var');
+    if (!scope.hasOwn(name)) {
+      scope.define(name, 'var');
+    }
   }
 }
 

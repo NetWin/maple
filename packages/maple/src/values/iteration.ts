@@ -1,5 +1,6 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
+import { toLength } from './coercion.ts';
 import { IteratorWrapper, MapWrapper, SetWrapper } from './wrappers.ts';
 
 /**
@@ -50,9 +51,12 @@ export function* enumerableKeys(value: unknown): Generator<string> {
   }
 }
 
-/** Visits the indices below `length`, as the array iterator an arguments object has does. */
+/**
+ * Visits the indices below `length`, as the array iterator an arguments object has does: the
+ * length is read and converted on every step.
+ */
 function* argumentsIterator(args: Record<string, unknown>): Iterator<unknown> {
-  for (let index = 0; index < Number(args['length']); index++) {
+  for (let index = 0; index < toLength(args['length']); index++) {
     yield args[String(index)];
   }
 }

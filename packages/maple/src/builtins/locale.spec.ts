@@ -66,6 +66,15 @@ describe('toLocale methods', () => {
     ).toBe('RangeError');
   });
 
+  it('report inconsistent options as catchable TypeErrors', () => {
+    expect(
+      run('try { (1).toLocaleString("en", { style: "currency" }); } catch (e) { return e.name; }')
+    ).toBe('TypeError');
+    expect(runAndCatch(maple, '(1).toLocaleString("en", { style: "currency" });').code).toBe(
+      'RUNTIME_ERROR'
+    );
+  });
+
   it('hand the host only primitive option values', () => {
     expect(
       run(

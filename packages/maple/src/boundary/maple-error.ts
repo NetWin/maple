@@ -69,7 +69,7 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
     const sandboxError =
       error.value instanceof SandboxError
         ? error.value.toInfo()
-        : new SandboxError('Error', toString(error.value), 'Error', error.frames).toInfo();
+        : new SandboxError('Error', describeThrown(error.value), 'Error', error.frames).toInfo();
     return new MapleError(MapleErrorCode.RUNTIME_ERROR, sandboxError.message, {
       line: error.node?.loc?.start.line,
       column: error.node?.loc?.start.column,
@@ -79,4 +79,16 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
   }
   const message = error instanceof Error ? error.message : String(error);
   return new MapleError(MapleErrorCode.INTERNAL_ERROR, message, { cause: error, stats });
+}
+
+/**
+ * The message for a thrown non-error value. Converting it can itself throw, as for an array
+ * nested too deep to join, and that must not escape the handler that reports the first throw.
+ */
+function describeThrown(value: unknown): string {
+  try {
+    return toString(value);
+  } catch {
+    return 'A value that cannot be converted to a string was thrown';
+  }
 }

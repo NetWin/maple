@@ -3,7 +3,6 @@ import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { Builtin } from '../values/builtin.ts';
 import { Closure } from '../values/closure.ts';
-import { toArrayIndex } from '../values/members.ts';
 import { NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
 import {
@@ -65,6 +64,27 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
     }
     return undefined;
   }
+
+  if (walk.strict && walk.open.has(value)) {
+    throw new UnconvertibleValueError('cyclic value');
+  }
+  if (walk.copies.has(value)) {
+    return walk.copies.get(value);
+  }
+  // Errors, Dates and RegExps hold no sandbox values but are cached all the same, so a value
+  // reached twice is still one value outside
+  const leaf = copyLeaf(value);
+  if (leaf !== undefined) {
+    walk.copies.set(value, leaf);
+    return leaf;
+  }
+  walk.open.add(value);
+  const copy = copyContainer(value, walk, depth);
+  walk.open.delete(value);
+  return copy;
+}
+
+function copyLeaf(value: object): object | undefined {
   if (value instanceof SandboxError) {
     return value.toInfo();
   }
@@ -76,17 +96,7 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
     copy.lastIndex = value.regexp.lastIndex;
     return copy;
   }
-
-  if (walk.strict && walk.open.has(value)) {
-    throw new UnconvertibleValueError('cyclic value');
-  }
-  if (walk.copies.has(value)) {
-    return walk.copies.get(value);
-  }
-  walk.open.add(value);
-  const copy = copyContainer(value, walk, depth);
-  walk.open.delete(value);
-  return copy;
+  return undefined;
 }
 
 function copyContainer(value: object, walk: Walk, depth: number): unknown {
@@ -108,14 +118,13 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
   }
 
   if (Array.isArray(value)) {
+    // Own keys rather than the iterator keep holes as holes, and a match result carries `index`,
+    // `input` and `groups` next to its elements
     const copy: Array<unknown> = [];
+    copy.length = value.length;
     walk.copies.set(value, copy);
-    for (const element of value) {
-      copy.push(convert(element, walk, depth + 1));
-    }
-    // A match result carries `index`, `input` and `groups` next to its elements
     for (const key of Object.keys(value)) {
-      if (toArrayIndex(key) === undefined) {
+      if (key !== '__proto__') {
         defineOwn(copy, key, convert(Reflect.get(value, key), walk, depth + 1));
       }
     }
