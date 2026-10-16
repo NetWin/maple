@@ -1,0 +1,62 @@
+<div class="flex items-center gap-3">
+  <button
+    type="button"
+    class="flex h-7 shrink-0 items-center gap-1 rounded-full border border-neutral-200 px-2.5 text-xs font-medium whitespace-nowrap text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+    [disabled]="status() === 'running'"
+    (click)="start.emit()">
+    {{ status() === 'running' ? 'Running…' : 'Run benchmark' }}
+  </button>
+  <p class="text-xs text-neutral-400 dark:text-neutral-500">
+    Same code and context in both engines, each timed end to end
+    @if (response(); as last) {
+      · median of {{ last.runs }} runs after warm-up
+    }
+  </p>
+</div>
+
+@if (status() === 'timeout') {
+  <p class="text-xs text-orange-600 dark:text-orange-400">
+    Stopped after {{ timeoutSeconds }} s. js-interpreter has no operation limit, so an endless loop
+    only ends here.
+  </p>
+}
+@if (status() === 'error') {
+  <p class="text-xs text-rose-600 dark:text-rose-400">
+    The benchmark worker failed; see the console.
+  </p>
+}
+
+@if (rows().length > 0) {
+  <table class="w-full text-left text-xs">
+    <thead class="text-neutral-400 dark:text-neutral-500">
+      <tr>
+        <th class="py-1 font-medium">Engine</th>
+        <th class="py-1 text-right font-medium">Median</th>
+        <th class="py-1 text-right font-medium">Min – max</th>
+        <th class="py-1 pl-4 font-medium"></th>
+      </tr>
+    </thead>
+    <tbody class="font-mono tabular-nums">
+      @for (row of rows(); track row.engine) {
+        <tr class="border-t border-neutral-100 dark:border-neutral-800">
+          <td class="py-1.5 font-sans font-medium">{{ row.label }}</td>
+          @if (row.error) {
+            <td
+              colspan="3"
+              class="py-1.5 font-sans text-rose-600 dark:text-rose-400">
+              {{ row.error }}
+            </td>
+          } @else {
+            <td class="py-1.5 text-right">{{ row.median }}</td>
+            <td class="py-1.5 text-right text-neutral-400 dark:text-neutral-500">
+              {{ row.range }}
+            </td>
+            <td class="py-1.5 pl-4 font-sans text-neutral-500 dark:text-neutral-400">
+              {{ row.note }}
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+}

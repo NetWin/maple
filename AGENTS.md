@@ -40,7 +40,12 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 ## Playground (`apps/maple-playground`)
 
 - `@netwin/maple` maps to `packages/maple/src/index.ts`, so the app only sees what the entry point exports.
-- Maple runs in `maple.worker.ts`. Values cross the worker boundary as JSON text (`maple-worker-protocol.ts`).
+- Maple runs in `maple.worker.ts`, and for the Benchmark tab in `benchmark.worker.ts`. Values cross either worker
+  boundary as JSON text (`maple-worker-protocol.ts`, `benchmark-protocol.ts`).
+- `@netwin/js-interpreter` is a dev dependency used only to compare against; `js-interpreter-engine.ts` is the one
+  place that calls it.
+- `scripts/` holds Node-only tools such as `measure-memory.ts`. Node ignores the `paths` mapping, so they import
+  `packages/maple/src/index.ts` by relative path.
 - Use standalone components and signals, styled with Tailwind. Don't add `.component` / `.service` suffixes to file
   names.
 

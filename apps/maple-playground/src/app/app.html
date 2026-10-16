@@ -90,6 +90,13 @@
           [value]="astDocument()">
         </maple-code-editor>
       </div>
+      @if (outputTab() === 'benchmark') {
+        <maple-benchmark-panel
+          [status]="benchmarkStatus()"
+          [response]="benchmarkResponse()"
+          (start)="runBenchmark()">
+        </maple-benchmark-panel>
+      }
       @if (outputMissing()) {
         @if (outputError(); as error) {
           <p
