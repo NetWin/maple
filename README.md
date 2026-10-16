@@ -58,9 +58,13 @@ changes bump the minor version:
 
 | Commit                                 | 0.x   | ≥ 1.0 |
 | -------------------------------------- | ----- | ----- |
-| `fix: …`                               | patch | patch |
+| `fix: …` / `perf: …` / `refactor: …`   | patch | patch |
+| `build(deps): …`                       | patch | patch |
 | `feat: …`                              | minor | minor |
 | `feat!: …` / `BREAKING CHANGE:` footer | minor | major |
+
+On every pull request, `.github/workflows/changelog-preview.yml` runs semantic-release in dry-run mode against the PR
+branch and posts the changelog it would produce as a sticky comment.
 
 Releases currently run in **dry-run** mode. [docs/releasing.md](docs/releasing.md) covers how to go live, how to
 graduate to 1.0.0 and what branch protection requires.

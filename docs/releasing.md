@@ -34,8 +34,8 @@ The initial commit is tagged `0.0.0`, which anchors the version line. Without a 
 
 ## Graduating to 1.0.0
 
-Remove `"releaseRules": [{ "breaking": true, "release": "minor" }]` from `.releaserc.json`. The next breaking change
-then releases `1.0.0`.
+In `releaseRules` in `.releaserc.json`, change `{ "breaking": true, "release": "minor" }` to
+`{ "breaking": true, "release": "major" }`. The next breaking change then releases `1.0.0`.
 
 ## Branch protection
 
