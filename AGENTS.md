@@ -21,8 +21,21 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 - Scripts return their result with an explicit `return`. The completion value of the last expression is not used.
 - Library code must run on Node >= 22 and in browsers and web workers alike, so don't use Node or DOM APIs.
 - `acorn` is a peer dependency. Don't add runtime dependencies without discussing it first.
-- Use the `.ts` extension in relative imports (`./interpreter.ts`).
+- Use the `.ts` extension in relative imports (`./scope.ts`).
 - Put tests next to the code as `*.spec.ts` (Vitest). Every interpreter feature and every rejected escape needs a test.
+  Specs that exercise a whole language chapter through `Maple.run` live in the directory whose behaviour they cover.
+- `docs/spec.md` is the contract; change it in the same commit as the behaviour.
+- `src/` is laid out by role in the pipeline, and dependencies point downward through this list (`import type` may
+  point anywhere):
+  - root: the public surface (`maple.ts`, `parse.ts`, `index.ts` re-exports only)
+  - `evaluator/`: the tree-walker, scopes, hoisting, completions, operators, budget
+  - `builtins/`: one `<type>-methods.ts` / `<type>-statics.ts` per built-in type, written out entry by entry,
+    assembled in `standard-globals.ts`; `method-dispatch.ts` finds a value's method by its type
+  - `boundary/`: what the host and the sandbox exchange: `from-host.ts` and `to-host.ts`, the only places a value
+    changes sides, plus host functions (`host.ts`) and the errors a run throws (`maple-error.ts`)
+  - `values/`: the sandbox value model (closures, errors, wrappers, builtins, native functions), coercion,
+    property access, iteration
+  - `support/`: tiny helpers with no dependencies
 
 ## Playground (`apps/maple-playground`)
 

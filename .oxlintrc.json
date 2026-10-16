@@ -16,6 +16,7 @@
   "rules": {
     "curly": ["error", "all"],
     "typescript/no-deprecated": "error",
+    "object-shorthand": "error",
     // Allow Angular components without a body
     "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
     "typescript/array-type": ["error", { "default": "generic" }],

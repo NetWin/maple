@@ -1,7 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "lib": ["es2022", "webworker"]
+    "lib": ["es2024", "es2025.collection", "es2025.iterator", "webworker"],
+    // The worker compiles the library sources, which cannot resolve tslib from their own folder
+    "importHelpers": false
   },
   "include": ["src/**/*.worker.ts"]
 }

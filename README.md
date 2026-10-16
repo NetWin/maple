@@ -5,10 +5,10 @@ itself instead of handing it to `eval`, so a script only ever sees the values yo
 their result explicitly.
 
 ```ts
-import { execute } from '@netwin/maple';
+import { Maple } from '@netwin/maple';
 
-const result = execute('return "Hello " + name;', { name: 'Steve' });
-//    ^ 'Hello Steve'
+const { value } = new Maple().run('return "Hello " + name;', { name: 'Steve' });
+//      ^ 'Hello Steve'
 ```
 
 ## Repository layout
@@ -45,7 +45,8 @@ pnpm install    # also installs the lefthook git hooks
 | `pnpm lint`      | oxlint (type-aware)                      |
 | `pnpm format`    | Format with oxfmt (`format:check` in CI) |
 
-CI (`.github/workflows/push.yml`) runs `format:check`, `lint`, `typecheck`, `test` and `build` on every push.
+CI (`.github/workflows/push.yml`) runs `format:check`, `lint`, `typecheck` and `build` on every push, and `test` on
+Node 22, 24 and 26: the minimum from the library's `engines` field and every newer even release.
 
 ## Commits & releases
 

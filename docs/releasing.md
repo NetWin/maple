@@ -2,7 +2,7 @@
 
 [semantic-release](https://semantic-release.gitbook.io) releases `@netwin/maple` from `master` via
 `cycjimmy/semantic-release-action` in `.github/workflows/push.yml`. Its config is `.releaserc.json`. The `release` job
-runs after the `check` job and only on `master`.
+runs after the `check` job and all three `test` jobs (Node 22, 24 and 26) have passed, and only on `master`.
 
 Each release:
 

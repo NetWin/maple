@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "lib": ["ES2024", "ES2025.Collection", "ES2025.Iterator"],
     "isolatedDeclarations": true,
     "declaration": true
   },
-  "include": ["src", "tsdown.config.ts"]
+  "include": ["src", "tsdown.config.ts", "vitest.config.ts"]
 }

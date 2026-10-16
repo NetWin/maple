@@ -1,0 +1,137 @@
+import { isPlainObject } from '../support/is-plain-object.ts';
+import { NativeFunction } from '../values/native.ts';
+import { DateWrapper, MapWrapper, RegExpWrapper, SetWrapper } from '../values/wrappers.ts';
+import { isHostFunction, isIntrinsic } from './host.ts';
+
+export interface FromHostOptions {
+  /** Input and globals are frozen on the way in; a host function's return value is the script's. */
+  freeze?: boolean;
+  /** Functions in input and globals become host functions; a host function may not return one. */
+  functions?: boolean;
+}
+
+interface Settings {
+  freeze: boolean;
+  functions: boolean;
+}
+
+/**
+ * Copies a host value into the sandbox's value model. Throws a `TypeError` naming the path of
+ * the first value the model does not cover.
+ */
+export function fromHost(
+  value: unknown,
+  path: string = 'value',
+  options: FromHostOptions = {}
+): unknown {
+  const settings: Settings = {
+    freeze: options.freeze ?? true,
+    functions: options.functions ?? true
+  };
+  return convert(value, path, new Map(), settings);
+}
+
+function convert(
+  value: unknown,
+  path: string,
+  copies: Map<object, object>,
+  settings: Settings
+): unknown {
+  if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
+    if (typeof value === 'symbol' || typeof value === 'bigint') {
+      throw unsupported(path, typeof value);
+    }
+    return value;
+  }
+
+  const existing = copies.get(value);
+  if (existing) {
+    return existing;
+  }
+
+  if (isHostFunction(value)) {
+    if (!settings.functions) {
+      throw unsupported(path, 'function');
+    }
+    const name = value.name === '' ? path : value.name;
+    const native = isIntrinsic(value)
+      ? new NativeFunction(name, (args, context) => context.invokeIntrinsic(value, args))
+      : new NativeFunction(name, (args, context) => context.invokeHost(value, args));
+    copies.set(value, native);
+    return native;
+  }
+  const { freeze } = settings;
+
+  if (Array.isArray(value)) {
+    const copy: Array<unknown> = [];
+    copies.set(value, copy);
+    for (const [index, element] of value.entries()) {
+      copy.push(convert(element, `${path}[${index}]`, copies, settings));
+    }
+    return freeze ? Object.freeze(copy) : copy;
+  }
+
+  if (isPlainObject(value)) {
+    const copy: Record<string, unknown> = {};
+    copies.set(value, copy);
+    for (const key of Object.keys(value)) {
+      // defineProperty keeps a key named __proto__ an own property instead of a prototype write
+      Object.defineProperty(copy, key, {
+        value: convert(value[key], `${path}.${key}`, copies, settings),
+        enumerable: true,
+        writable: true,
+        configurable: true
+      });
+    }
+    return freeze ? Object.freeze(copy) : copy;
+  }
+
+  if (value instanceof Date) {
+    return new DateWrapper(new Date(value.getTime()), freeze);
+  }
+  if (value instanceof RegExp) {
+    const copy = new RegExp(value.source, value.flags);
+    copy.lastIndex = value.lastIndex;
+    return new RegExpWrapper(copy, freeze);
+  }
+  if (value instanceof Map) {
+    const wrapper = new MapWrapper(new Map(), freeze);
+    copies.set(value, wrapper);
+    for (const [key, entry] of value) {
+      const keyPath = `${path}[${typeof key === 'string' ? JSON.stringify(key) : String(key)}]`;
+      wrapper.map.set(
+        convert(key, `${keyPath} (key)`, copies, settings),
+        convert(entry, keyPath, copies, settings)
+      );
+    }
+    return wrapper;
+  }
+  if (value instanceof Set) {
+    const wrapper = new SetWrapper(new Set(), freeze);
+    copies.set(value, wrapper);
+    for (const [index, entry] of [...value].entries()) {
+      wrapper.set.add(convert(entry, `${path}{${index}}`, copies, settings));
+    }
+    return wrapper;
+  }
+
+  throw unsupported(path, describe(value));
+}
+
+function unsupported(path: string, kind: string): TypeError {
+  return new TypeError(`Unsupported value at ${path}: ${kind}`);
+}
+
+function describe(value: object): string {
+  if (typeof value === 'function') {
+    return 'function';
+  }
+  const prototype: unknown = Object.getPrototypeOf(value);
+  if (typeof prototype === 'object' && prototype !== null && 'constructor' in prototype) {
+    const { constructor } = prototype;
+    if (typeof constructor === 'function' && constructor.name !== '') {
+      return constructor.name;
+    }
+  }
+  return 'object';
+}

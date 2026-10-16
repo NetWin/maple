@@ -1,0 +1,735 @@
+# Maple specification
+
+This document is the contract of `@netwin/maple`. Tests are written against it, and a behavior
+that is not described here is not promised. When the code and this document disagree, one of them
+has a bug.
+
+Maple interprets a restricted subset of JavaScript. A script receives values from the host, computes
+synchronously, and hands one value back with `return`. It can reach nothing else.
+
+## Guarantees
+
+1. **Isolation by construction.** A script sees exactly the values the host passes in. There are no
+   host globals, no `eval`, no `Function`, and no path from a sandbox value to a host object or
+   prototype. Maple never evaluates script code with the host engine.
+2. **Allowlist, never blocklist.** The evaluator implements a fixed set of syntax and built-ins.
+   Anything it does not implement throws when it is reached. There is no separate validation pass;
+   the evaluator is the allowlist.
+3. **Termination.** Every run is bounded by an operation budget and a call depth. Exceeding either
+   aborts the run.
+4. **Host functions are the only opening.** The host decides which functions a script may call.
+   Values cross that boundary as copies, never as references to host state.
+5. **Nothing executable leaves.** A result never contains a closure, a host function or any other
+   value that could run code on the host side.
+
+## Pipeline
+
+Every call to `run` performs the same steps:
+
+1. **Parse.** The source is parsed with Acorn (`ecmaVersion: 'latest'`, `sourceType: 'module'`,
+   `locations: true`, `allowReturnOutsideFunction: true`). Module mode makes the parser enforce
+   strict-mode grammar; `import`, `export` and top-level `await` parse but are rejected by the
+   evaluator. A parse failure throws a `MapleError` with code `PARSE_ERROR`.
+2. **Copy the input.** `data` is converted into a copy owned by Maple by the same walk that
+   converts globals (see [Input conversion](#input-conversion)). A `string` is `JSON.parse`d first.
+   The host's object is never touched, and no intermediate serialization is produced.
+3. **Build the global scope** from the instance globals, the run globals and the data keys (see
+   [Globals](#globals)).
+4. **Evaluate** the program body as a function body under the budget.
+5. **Copy the result out** (see [Output](#output)).
+
+Steps 2 to 5 also run for a nested `sandbox.run` inside an intrinsic, on the shared budget.
+
+## API
+
+```ts
+import { Maple, MapleError, intrinsic, parse } from '@netwin/maple';
+
+const maple = new Maple({
+  globals: { upper: (s: string) => s.toUpperCase() },
+  maxOps: 1_000_000,
+  maxDepth: 100
+});
+
+const {
+  value, // <-- "Maple"
+  stats // <--- { ops: 4, maxDepth: 0, durationMs: 0.08 }
+} = maple.run('return upper(name);', { name: 'maple' });
+```
+
+### `new Maple(options?: MapleOptions)`
+
+| Option     | Default     | Meaning                                                   |
+| ---------- | ----------- | --------------------------------------------------------- |
+| `globals`  | `{}`        | Bindings visible to every run of this instance            |
+| `maxOps`   | `1_000_000` | Operations a single run may perform, nested runs included |
+| `maxDepth` | `100`       | Nesting of function calls, callbacks and nested runs      |
+
+Instance globals are converted once at construction (see [Globals](#globals)). An instance holds
+no state between runs; the budget lives only for the duration of one top-level `run`.
+
+### `maple.run(code: string | Program, data?: unknown, options?: RunOptions): MapleRunResult`
+
+Runs `code` against `data` and returns the copied result together with the run's statistics:
+
+```ts
+interface MapleRunResult {
+  /** The script's return value, copied out (see Output). */
+  value: unknown;
+  stats: MapleRunStats;
+}
+
+interface MapleRunStats {
+  /** Operations consumed, nested runs and host calls included. */
+  ops: number;
+  /** Deepest call nesting reached; zero for a script that never calls a function. */
+  maxDepth: number;
+  /** Wall-clock time from input conversion to the copied-out value, host calls included. */
+  durationMs: number;
+}
+```
+
+`durationMs` uses `performance.now()` where the host provides it (Node, browsers, workers) and
+falls back to `Date.now()`, which is the one host API Maple touches, behind a guard. The envelope
+exists so that further metadata can be added without changing the shape.
+
+`code` is source text or a `Program` returned by `parse`. `data` is `undefined`, a plain object, or a JSON string encoding a plain
+object. Its contents follow the [input conversion](#input-conversion) rules; a value that violates
+them throws a plain `TypeError` before the run starts, because that is a host programming error,
+not a script error. `options.globals` adds bindings for this run only.
+
+`run` is synchronous. It throws a `MapleError` for every failure that originates in the script, the
+budget or a host function (see [Errors](#errors)).
+
+### `parse(code: string): Program`
+
+Parses source text with Maple's parser settings and returns the ESTree `Program`. Throws a
+`MapleError` with code `PARSE_ERROR`. Use it to cache parses or to rewrite the AST before `run`.
+
+### `intrinsic(fn: Intrinsic): Intrinsic`
+
+Marks a function as an intrinsic (see [Intrinsics](#intrinsics)). Without the mark, a function in
+`globals` is an ordinary host function.
+
+### `MapleError`
+
+See [Errors](#errors).
+
+### Exported types
+
+`MapleOptions`, `RunOptions`, `MapleRunResult`, `MapleRunStats`, `HostFunction`, `Intrinsic`,
+`Sandbox`, `MapleErrorCode`, `MapleErrorOptions`, `SandboxErrorInfo`. ESTree node
+types come from `acorn`, which is a peer dependency.
+
+## Language scope
+
+The script is evaluated as the body of a strict-mode function: `return` works at the top level,
+`var` and function declarations hoist to the top of the script, and a script without `return`
+yields `undefined`.
+
+### Statements
+
+- `var`, `let`, `const`, function declarations
+- `if` / `else`, `switch`, `return`
+- `for`, `for...of`, `for...in`, `while`, `do...while`, `break`, `continue`
+- `try` / `catch` / `finally`, `throw`
+- Expression statements, blocks, the empty statement
+
+### Expressions
+
+- Literals: numbers, strings, booleans, `null`, template literals, regular expression literals
+- Array and object literals, including shorthand properties, computed keys and spread
+- Function expressions and arrow functions, with default parameters, rest parameters and
+  destructuring parameters
+- Destructuring in declarations, parameters, assignments and `for...of` / `for...in` heads
+- Member access `a.b`, `a[b]`, optional chaining `a?.b`, `a?.[b]`, `a?.()`
+- Calls, spread arguments, `new` for the constructors listed below
+- Arithmetic (`+ - * / % **`), comparison (`=== !== == != < <= > >=`), logical (`&& || ??`),
+  bitwise (`& | ^ ~ << >> >>>`), conditional, sequence
+- Unary `! - + typeof void delete`, binary `in` and `instanceof`
+- Assignment, compound assignment (including `&&=`, `||=`, `??=`), `++` and `--`
+
+### Not supported
+
+Reaching any of these throws `DISALLOWED_SYNTAX`:
+
+`this`, `class`, `super`, `async` / `await`, generators and `yield`, getters and setters,
+`arguments`, labels, `debugger`, tagged templates, `import` / `export`, `import.meta`, `new.target`,
+and `new` on anything that is not in the constructor list.
+
+Strict-mode grammar is a parse rule, not an evaluator rule: `with`, legacy octal literals such as
+`010`, duplicate parameter names and `delete` of a plain name throw `PARSE_ERROR`.
+
+Reading one of these names also throws `DISALLOWED_SYNTAX`, unless the script or the host binds it:
+
+- Language: `Proxy`, `Reflect`, `Symbol`, `WeakMap`, `WeakSet`, `WeakRef`, `FinalizationRegistry`,
+  `Promise`, `SharedArrayBuffer`, `Atomics`, `WebAssembly`, `Intl`, `globalThis`, `eval`, `Function`
+- Server runtimes: `require`, `module`, `exports`, `process`, `global`, `Buffer`, `__dirname`,
+  `__filename`, `Deno`, `Bun`
+- Browsers and workers: `window`, `self`, `document`, `navigator`, `location`, `localStorage`,
+  `sessionStorage`, `indexedDB`, `fetch`, `XMLHttpRequest`, `WebSocket`, `Worker`, `importScripts`,
+  `postMessage`, `structuredClone`, `setTimeout`, `setInterval`, `setImmediate`, `queueMicrotask`,
+  `requestAnimationFrame`
+
+Every other unbound name is a catchable `ReferenceError`; `typeof` on any of them is `'undefined'`.
+
+An `async` or generator function throws when the closure is created, not when it is called. For a
+function declaration that is hoisting time, so the script fails before its first statement runs.
+
+### Constructors
+
+`new` is allowed for `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`,
+`URIError`, `EvalError`, `Date`, `RegExp`, `Map` and `Set`. The error constructors also work
+without `new`. Any other `new` target, including a script function, is `DISALLOWED_SYNTAX`.
+
+`instanceof` accepts those eleven plus `Array`, `Object` and `Iterator` on the right-hand side.
+Any other right-hand side, a script function included, throws a `TypeError`.
+
+## Globals
+
+The global scope is composed from three layers. A later layer shadows an earlier one:
+
+1. Instance globals (`new Maple({ globals })`)
+2. Run globals (`run(code, data, { globals })`)
+3. The top-level keys of `data`
+
+`data` is nothing but the third layer, converted by the same rules; it exists as its own argument
+so the common call reads naturally.
+
+Every global binding is read-only: assigning to one throws a `TypeError`. A script may declare its
+own `var`, `let`, `const` or function with the same name; the declaration shadows the global for
+the whole script. Assigning to an undeclared name throws a `ReferenceError`.
+
+Keys that are not valid identifiers (`first-name`) are still part of the data and reachable
+through any object the host chooses to expose them on; Maple does not invent aliases.
+
+### Standard globals
+
+These are always present, below the three layers, so a host or data key of the same name shadows
+them:
+
+`undefined`, `NaN`, `Infinity`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`,
+`encodeURIComponent`, `decodeURIComponent`, `encodeURI`, `decodeURI`, `String`, `Number`,
+`Boolean`, `Array`, `Object`, `Math`, `JSON`, `Date`, `RegExp`, `Map`, `Set`, `Iterator`, `Error`,
+`TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError`, `EvalError`, `atob`, `btoa`.
+
+`atob` and `btoa` are web APIs rather than ECMAScript, provided because Node, browsers and workers
+all have them; input outside their alphabet throws an `InvalidCharacterError`.
+
+`String(x)`, `Number(x)` and `Boolean(x)` are conversion functions; `new String()` and friends are
+not allowed.
+
+### Input conversion
+
+Instance globals, run globals and `data` go through one walk that produces copies owned by Maple.
+Instance globals are converted once at construction, run globals and `data` once per run. The walk
+accepts:
+
+- Primitives, unchanged: `undefined`, `NaN`, `Infinity` and `-0` survive.
+- Plain objects (prototype `Object.prototype` or `null`) and arrays, copied recursively from their
+  own enumerable properties. Cycles are preserved.
+- `Date`, `RegExp`, `Map` and `Set`, copied into wrappers with converted contents.
+- Functions, which become host function values, or intrinsics if they carry the `intrinsic` mark.
+  They may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
+
+Anything else (class instances, typed arrays, boxed primitives, symbols, promises) throws a plain
+`TypeError` before the run starts. Nothing is flattened silently.
+
+There is no serialization step, so a large `data` object costs one copy and no intermediate
+string. The converted copies are frozen (see [Input](#input)); the host's own objects are never
+frozen or modified.
+
+## Input
+
+### Read-only data
+
+Every object and array of the copy is frozen as the copy is built, so the script can never
+observe mutable input. Writes, deletes and mutating array methods on a frozen object throw a
+`TypeError`. Wrappers reached through frozen data are read-only as well:
+`Map.set`, `Set.add`, `Date.setHours`, assigning `lastIndex` and every other mutator throw a
+`TypeError`. Values the script creates itself are mutable.
+
+### Own properties only
+
+Property access reads own properties and nothing else, so the prototype of a data object is
+irrelevant, and a data key named `__proto__` is a plain key. `__proto__`, `constructor` and
+`prototype` can never be read, written, deleted or used as a literal key, whether the key is
+static or computed; every attempt is a `TypeError`. `Object.assign` writes key by key and refuses
+them the same way. Operations that build a fresh object or list the keys of a whole object carry
+such a data key along as a plain own key: spread, object rest, `Object.fromEntries`, `JSON.parse`,
+`Object.keys` / `values` / `entries`, `for...in` and `JSON.stringify`. A `__proto__` key is
+dropped when a value leaves the sandbox (see [Output](#output)). The `in` operator answers for own properties
+only, so `'map' in []` is false.
+
+## Value model
+
+Inside the sandbox exactly these values exist:
+
+| Kind           | Representation                                                            | `typeof`     |
+| -------------- | ------------------------------------------------------------------------- | ------------ |
+| Primitives     | Host primitives: `undefined`, `null`, booleans, numbers, strings          | as in JS     |
+| Plain objects  | Host objects created by Maple or by the input copy; own properties only   | `'object'`   |
+| Arrays         | Host arrays created by Maple or by the input copy                         | `'object'`   |
+| Closures       | Maple's own function objects                                              | `'function'` |
+| Host functions | Branded wrappers; the native function is not reachable                    | `'function'` |
+| Intrinsics     | Branded wrappers, same surface as host functions                          | `'function'` |
+| Wrappers       | Branded wrappers around a native `RegExp`, `Date`, `Map`, `Set`, iterator | `'object'`   |
+| Errors         | Maple's own error objects with `name` and `message`                       | `'object'`   |
+
+Wrappers are instances of Maple's own classes, which a script cannot construct, so a plain object
+can never pose as one. The native value inside a wrapper is never exposed; every method goes
+through a dispatch table. A wrapper has no own properties except the few listed with its type
+(`size`, the RegExp flags and `lastIndex`); writes to any other key throw a `TypeError`. Wrappers
+that came in with the input or the globals are read-only: `Map.set`, `Set.add`, the Date setters
+and a `lastIndex` assignment throw a `TypeError` on them, and a read-only regexp matches on a
+fresh copy every time, so its `lastIndex` stays `0` and no state carries from one run to the
+next. A copy (`new Map(input)`, `new Date(input)`, `new RegExp(input)`) is the script's to change.
+
+Nothing a script does in one run is visible to another run of the same instance: the instance
+holds only its limits and its frozen globals, and everything else is created inside `run`. Host
+functions and intrinsics are the one channel through which the host may share state between
+runs, and that is the host's decision.
+
+Closures, host functions and intrinsics have no properties: reading one yields `undefined`,
+writing one throws a `TypeError`. There is no `call`, `apply` or `bind`.
+
+### Methods
+
+A method call such as `s.trim()` is resolved by the receiver's type through a dispatch table, never
+through a host prototype. Reading the member without calling it yields the method bound to that
+receiver, so `typeof s.trim` is `'function'` and `const t = s.trim; t()` works; such a value has
+no properties of its own. Own data properties win: `obj.toString()` where `obj` has an own key
+`toString` calls that value. Plain objects have exactly one dispatched method, `hasOwnProperty`.
+Calling a member that is missing or not callable is a `TypeError` that names the member path, as
+in `o.g is not a function`.
+
+### Coercion
+
+Implicit conversions (`+`, template literals, `==`, comparison, `String(x)`, `Number(x)`) follow
+the ECMAScript algorithms, with one deliberate difference: they never call script-defined
+`toString` or `valueOf`. A plain object converts to `'[object Object]'` and `NaN`, an array joins
+its elements, a Date wrapper converts like a native Date, a closure or host function converts to
+the fixed string `[function]`. `typeof` of an undeclared name is `'undefined'` and does not
+throw. Number-to-string conversion is the host's and is therefore exact
+(`0.1 + 0.2`, `1e21`, `-0` behave as in the host).
+
+### Equality
+
+`===` and `==` follow the specification. Objects compare by identity. `==` between an object and a
+primitive uses the coercion rules above.
+
+## Built-ins
+
+Every entry below is a dispatch-table row with its own test. The set is fixed per release and is
+not configurable; broadening it is an ordinary feature.
+
+### String
+
+Instance: `length`, `at`, `charAt`, `charCodeAt`, `codePointAt`, `concat`, `endsWith`,
+`includes`, `indexOf`, `isWellFormed`, `lastIndexOf`, `match`, `matchAll`, `normalize`, `padEnd`,
+`padStart`, `repeat`, `replace`, `replaceAll`, `search`, `slice`, `split`, `startsWith`, `substr`,
+`substring`, `toLowerCase`, `toUpperCase`, `toString`, `toWellFormed`, `trim`, `trimEnd`,
+`trimLeft`, `trimRight`, `trimStart`. The legacy `substr`, `trimLeft` and `trimRight` are kept
+because older scripts use them; the HTML methods such as `anchor` and `bold` are not.
+
+Static: `String.fromCharCode`, `String.fromCodePoint`.
+
+`replace` and `replaceAll` accept a string or RegExp pattern and a string or function replacement;
+`$1`, `$&`, `$<name>` and the other replacement patterns work. `split` accepts a string or RegExp
+separator and a limit.
+
+### Array
+
+Instance: `length`, `at`, `concat`, `copyWithin`, `entries`, `every`, `fill`, `filter`, `find`,
+`findIndex`, `findLast`, `findLastIndex`, `flat`, `flatMap`, `forEach`, `includes`, `indexOf`,
+`join`, `keys`, `lastIndexOf`, `map`, `pop`, `push`, `reduce`, `reduceRight`, `reverse`, `shift`,
+`slice`, `some`, `sort`, `splice`, `toReversed`, `toSorted`, `toSpliced`, `toString`, `unshift`,
+`values`, `with`.
+
+Static: `Array.isArray`, `Array.from` (iterable or array-like, optional map function),
+`Array.of`.
+
+The comparator of `sort` and `toSorted` and every other callback run through the interpreter, so
+they stay under the budget and the host never holds a script function. Without a comparator the
+order is by the hook-free string form with `undefined` last. `join` and `toString` convert elements
+hook-free as well. Methods that mutate (`push`, `sort`, `splice`, …) throw a `TypeError` on an
+input array; `toSorted`, `map` and the other non-mutating ones work on it. `keys`, `values` and
+`entries` return iterator wrappers and are described with them.
+
+### Number
+
+Instance: `toFixed`, `toPrecision`, `toExponential`, `toString` (with radix).
+
+Static: `Number.isInteger`, `Number.isFinite`, `Number.isNaN`, `Number.isSafeInteger`,
+`Number.parseFloat`, `Number.parseInt`, `Number.MAX_SAFE_INTEGER`, `Number.MIN_SAFE_INTEGER`,
+`Number.MAX_VALUE`, `Number.MIN_VALUE`, `Number.EPSILON`, `Number.POSITIVE_INFINITY`,
+`Number.NEGATIVE_INFINITY`, `Number.NaN`.
+
+### Object
+
+Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, `Object.assign`,
+`Object.hasOwn`, `Object.groupBy`, `Object.is`, `Object.getOwnPropertyNames`, `Object.freeze`,
+`Object.isFrozen`.
+
+`getOwnPropertyNames` lists exactly the names `in` answers for, enumerable or not, so
+`getOwnPropertyNames([1])` is `['0', 'length']`. `freeze` makes an object, array or error the
+script owns read-only and returns it; for anything else it changes nothing. `isFrozen` is `true`
+for primitives, functions and namespaces, which cannot be written to, and for collections that came
+in with the input. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
+`create`, …) and `seal` / `preventExtensions` are not available.
+
+`Object.groupBy(items, callback)` takes any iterable and calls `callback(item, index)` under the
+budget. Its result converts to a key hook-free, like any property key, so a script object always
+groups as `[object Object]`. The groups are mutable arrays in a mutable object.
+
+`Object.fromEntries` accepts any iterable of pairs, which is the way to turn a Map into a result.
+
+### Math
+
+All functions and constants of ES2023 `Math`: `abs`, `acos`, `acosh`, `asin`, `asinh`, `atan`,
+`atan2`, `atanh`, `cbrt`, `ceil`, `clz32`, `cos`, `cosh`, `exp`, `expm1`, `floor`, `fround`,
+`hypot`, `imul`, `log`, `log10`, `log1p`, `log2`, `max`, `min`, `pow`, `random`, `round`, `sign`,
+`sin`, `sinh`, `sqrt`, `tan`, `tanh`, `trunc`, `E`, `LN10`, `LN2`, `LOG10E`, `LOG2E`, `PI`,
+`SQRT1_2`, `SQRT2`.
+
+`Math.random` is non-deterministic by nature and is allowed.
+
+### JSON
+
+`JSON.parse(text)` and `JSON.stringify(value, replacer?, space?)`. Both are implemented by Maple
+so that wrappers serialize the way their native counterparts would (a Date as its ISO string, a
+Map as `{}`). `replacer` may be an array of keys or a function. `parse` takes a reviver, called
+bottom-up with `(key, value, holder)` and last for the root under the key `''`; the holder comes as
+a third argument because there is no `this`, and returning `undefined` drops the key. A reviver
+that is not callable is ignored. `JSON.parse` output is a plain sandbox value; a `__proto__` key
+in the text becomes a
+plain own key. `stringify` refuses a cycle with a `TypeError` and a value nested deeper than 1000
+levels with a `RangeError`, and `parse` with a reviver refuses text nested deeper than 1000 levels
+with a `RangeError`, all catchable.
+
+### RegExp
+
+A regular expression literal or `RegExp(source, flags?)`, with or without `new`, creates a wrapper
+around a native `RegExp`; a literal creates a new one on every evaluation. An invalid pattern is a
+catchable `SyntaxError`. Matching runs natively; Maple adds no backtracking guard, so a
+pathological pattern is bounded only by the host's wall-clock guard.
+
+Instance: `test`, `exec`, `toString`, `lastIndex` (readable and writable, with real `g` / `y`
+semantics), `source`, `flags`, `global`, `ignoreCase`, `multiline`, `sticky`, `unicode`, `dotAll`,
+`hasIndices`, `unicodeSets`. The legacy statics `RegExp.$1` … `$9`, `lastMatch` and their siblings
+are not available: they are process-wide state and would carry data from one run to the next.
+
+The string methods `match`, `matchAll`, `search`, `replace`, `replaceAll` and `split` accept a
+regexp; given a string instead, `match`, `matchAll` and `search` build one from it as the language
+does. A replacement function receives `(match, ...captures, offset, string, groups?)` and runs
+under the budget. `replaceAll` and `matchAll` require the `g` flag.
+
+Match results (`exec`, `match`, `matchAll`) are plain sandbox arrays with `index`, `input` and
+`groups` (an ordinary object or `undefined`) as own properties; a global `match` returns the
+matched strings only.
+
+### Date
+
+`new Date()`, `new Date(ms)`, `new Date(string)`, `new Date(date)` and
+`new Date(y, m, d?, h?, min?, s?, ms?)` create a wrapper around a native `Date`; `Date()` without
+`new` returns the current time as a string, as the language has it. `Date.now`, `Date.parse` and
+`Date.UTC` are available. A Date converts to its string form by default and to its time value for
+arithmetic and comparison, so `date2 - date1` is milliseconds and `date + ''` is readable.
+
+Instance: `getTime`, `valueOf`, `getFullYear`, `getMonth`, `getDate`, `getDay`, `getHours`,
+`getMinutes`, `getSeconds`, `getMilliseconds`, `getTimezoneOffset`, the `getUTC*` counterparts,
+`setTime`, `setFullYear`, `setMonth`, `setDate`, `setHours`, `setMinutes`, `setSeconds`,
+`setMilliseconds`, the `setUTC*` counterparts, `toISOString`, `toJSON`, `toString`,
+`toDateString`, `toTimeString`, `toUTCString`, and the legacy `getYear`, `setYear` and
+`toGMTString` (`setYear` reads `0`–`99` as `1900`–`1999`).
+
+Local-time methods depend on the host's timezone; the same script can produce different results
+on different machines. That is inherent to the API and is not hidden.
+
+### Locale methods
+
+`toLocaleString` on Number, Date and Array, `toLocaleDateString` and `toLocaleTimeString` on Date,
+and `localeCompare`, `toLocaleLowerCase` and `toLocaleUpperCase` on String take the usual
+`locales` and `options` arguments. Like the local-time methods they depend on the host: on its ICU
+data and, when no locale is passed, on its default locale. The `locales` argument converts
+hook-free to a tag or a list of tags; of the `options` object only own properties with primitive
+values reach the host, as a copy. Invalid locales and options are catchable `RangeError`s. An
+array formats numbers and dates for the locale and converts everything else hook-free. The `Intl`
+namespace itself is not available.
+
+### Map and Set
+
+`new Map(iterable?)` and `new Set(iterable?)` create wrappers around native collections, so key
+identity and SameValueZero equality are the native ones. Each entry of a Map's iterable must be an
+array of key and value. Calling either without `new` is a `TypeError`.
+
+Map: `get`, `set`, `has`, `delete`, `clear`, `forEach`, `size`, `keys`, `values`, `entries`.
+Static: `Map.groupBy(items, callback)`, which groups like `Object.groupBy` but keeps each key as
+it is, so objects group by identity.
+Set: `add`, `has`, `delete`, `clear`, `forEach`, `size`, `keys`, `values`, `entries`, and the set
+algebra `union`, `intersection`, `difference`, `symmetricDifference`, `isSubsetOf`,
+`isSupersetOf`, `isDisjointFrom`. Those take a Set or a Map as the other operand; the language's
+other set-like objects are refused with a `TypeError`, so no script `has` or `keys` is ever
+called by the host.
+
+`keys`, `values` and `entries` of arrays, Maps and Sets, and `matchAll`, return iterator wrappers:
+objects with `next()`, which returns a fresh `{ value, done }` each time, and the iterator
+helpers `map`, `filter`, `take`, `drop`, `flatMap`, `reduce`, `toArray`, `forEach`, `some`,
+`every` and `find`. The helpers consume the iterator; `map`, `filter`, `take`, `drop` and
+`flatMap` return a new iterator whose callback runs, under the budget, only when a value is
+pulled. `Iterator.from(iterable)` makes an iterator of any of Maple's iterables; an object with a
+script `next` method is refused. Maps, Sets
+and iterators are iterable in `for...of`, spread, destructuring, `Array.from`, `Object.fromEntries`
+and the Map/Set constructors; a Map yields `[key, value]` arrays. An iterator is consumed once and
+never leaves the sandbox: at the output boundary it becomes `undefined`.
+
+### Errors
+
+`new Error(message?)` and its six subtypes create sandbox error objects with own `name`,
+`message` and `stack` properties and nothing else; a second `options` argument is ignored. `name`
+and `message` can be assigned, `stack` is read-only, adding any other property is a `TypeError`.
+`stack` lists the script's own frames and nothing of the host, innermost first, in the familiar
+shape, and is fixed when the error is created. `toString()` returns the same `Name: message` text
+as converting the error to a string:
+
+```
+TypeError: Cannot read properties of null (reading 'x')
+    at inner (4:12)
+    at outer (2:8)
+    at <script> (7:0)
+```
+
+Function declarations and named function expressions appear by name, arrows and anonymous
+functions as `<anonymous>`, the script body as `<script>`. Errors
+Maple raises itself (`TypeError`, `ReferenceError`, `RangeError`, `SyntaxError` from `JSON.parse`)
+are the same kind of object, so a script can catch and inspect them. `instanceof` checks the
+constructor an error was made with, not its `name`: `instanceof Error` is true for all of them,
+`instanceof TypeError` only for type errors, and renaming an error does not change either.
+
+A string or array longer than the host allows is a catchable `RangeError` (`Invalid string
+length`) wherever it is built: `+` and `+=`, template literals, `concat`, `join`, `padStart` and
+`padEnd`, `push` and `unshift`. Converting an array nested deeper than 1000 levels to a string, or
+flattening one, is a catchable `RangeError` too. The host running out of stack is not a script
+error: the run ends with `INTERNAL_ERROR`, and no `catch` sees it.
+
+An uncaught `throw` of a value that is not an error object reaches the host as an `Error` whose
+message is the value converted to a string and whose `stack` lists the frames at the `throw`.
+
+### Iteration
+
+All iteration goes through one internal protocol that understands arrays, strings, Map, Set and
+iterator wrappers. Plain objects are not iterable; `for...in` and `Object.keys` enumerate own
+enumerable keys in insertion order.
+
+## Host functions
+
+A host function is any function found in `globals` that is not marked as an intrinsic. A script
+can call it, store it and pass it around, but never reach the native function.
+
+### Arguments: sandbox to host
+
+Each argument is deep-copied with JSON semantics into normal host objects: plain objects and
+arrays are rebuilt (a `__proto__` key is dropped, as in the [output](#output)), `NaN` and `Infinity` stay numbers (this is a value copy, not a serialization),
+`undefined` is preserved, a value reached twice stays shared in the copy, and a cycle throws a
+`TypeError` in the script (`A cyclic value cannot be passed to the host`). A RegExp wrapper is unwrapped to a fresh
+native `RegExp`, a Date wrapper to a fresh native `Date`, Map and Set wrappers to fresh native
+collections with converted contents. A closure, host function, intrinsic or iterator as an
+argument, at any depth, throws a `TypeError` in the script (`A function cannot be passed to the
+host`).
+
+The host function therefore cannot mutate anything the script sees, and the script cannot hand it
+anything executable.
+
+### Return value: host to sandbox
+
+The return value goes through the [input conversion](#input-conversion) walk with three
+differences: the copy is not frozen, because the script owns it; functions are not accepted; and a
+violation throws `INTERNAL_ERROR` (`fn returned a value the sandbox cannot hold: …`, with the
+path) instead of a `TypeError`. A host function that returns a function, a class instance or a
+promise has a bug, and that must not be silent, so the script cannot catch it either.
+
+### Errors and budget
+
+An exception thrown by a host function becomes a sandbox error with `name` and `message` taken
+from the exception (or `'Error'` and `String(value)` for non-errors) and can be caught by the
+script; `instanceof` follows the name, so a host `RangeError` is a `RangeError` to the script.
+Nothing else of the host exception, in particular no `stack` or `cause`, enters the sandbox; the
+error's `stack` is the script's own call stack.
+
+A host call costs what any call costs: its call expression and its arguments (see
+[Limits](#limits)). The work and the time inside the host function are not measured.
+
+## Intrinsics
+
+An intrinsic is a host function that is trusted with the interpreter itself. It is for things a
+marshalled function cannot do: invoke a script closure, or run further code on the same budget.
+Mark one with `intrinsic(fn)`; code that writes an intrinsic is part of the trusted computing base
+and is reviewed as such.
+
+```ts
+type Intrinsic = (args: ReadonlyArray<unknown>, sandbox: Sandbox) => unknown;
+
+interface Sandbox {
+  /** Copies a sandbox value out, with the rules for host function arguments. */
+  toHost(value: unknown): unknown;
+  /** Copies a host value in, with the rules for host function return values. */
+  fromHost(value: unknown): unknown;
+  /** Calls a script closure under the current budget. */
+  call(closure: unknown, args: ReadonlyArray<unknown>): unknown;
+  /** Runs another program on the shared budget, one depth level down. */
+  run(code: string | Program, data?: unknown, options?: RunOptions): MapleRunResult;
+}
+```
+
+- `args` are raw sandbox values, not copies. The return value is used as a sandbox value as it is.
+- `sandbox.run` composes its global scope exactly like the public `run`, with the instance globals
+  as layer one, and returns the same envelope as the public `run`, with `stats` covering only the
+  nested run's own operations and time, and `value` copied out (see [Output](#output)). The
+  nested program is one more call level and appears as `<nested>` in stack traces. Misusing
+  `run` (data that is not an object) throws a plain `TypeError` to the intrinsic.
+- An exception the intrinsic itself throws is treated like a host function's: it becomes a
+  catchable sandbox error.
+- Errors from `call` and `run` arrive in the intrinsic as `MapleError`s and may be caught there. A
+  sandbox error that passes through an intrinsic uncaught is still the same sandbox error when it
+  reaches the calling script, so the script's `try` / `catch` works across an intrinsic. A
+  `LIMIT_EXCEEDED` that an intrinsic swallows does no harm: the exhausted counter lives on the run
+  and trips again on the next operation.
+
+## Limits
+
+Two counters guard every top-level run, shared by everything that happens inside it, nested runs
+included.
+
+- **Operations.** One operation is charged for each statement that runs, each expression that is
+  evaluated (every subexpression counts, so `a + b` costs three), each loop iteration, and each
+  callback a built-in or an intrinsic invokes, in addition to the operations of the callback's own
+  body. Names and patterns that are only bound or assigned to are not evaluated and cost nothing:
+  declared names, parameters, destructuring patterns, a plain variable on the left of `=`, `+=`
+  or `++`, and non-computed property keys. A call costs what its call expression and arguments
+  cost, whether it calls a closure, a built-in or a host function. Copying a value element by
+  element costs one more operation per element: array spread and spread arguments, object spread,
+  array and object rest, each key a `for...in` visits, each element `Array.from` collects, and
+  each element `flat` and `flatMap` visit, nested arrays included, so an array reached through
+  several slots is paid for once per slot.
+  Growing an array costs one operation per slot it gains, whether through `length` or through an
+  index past the end, so `a.length = 1e9` cannot buy a billion holes for one operation. Exceeding
+  `maxOps` throws `LIMIT_EXCEEDED`.
+- **Depth.** Each closure call, each callback invoked by a built-in and each nested `sandbox.run`
+  adds one level. Exceeding `maxDepth` throws `LIMIT_EXCEEDED`.
+
+Work done inside a built-in or a host function is not counted, however large it is:
+`'x'.repeat(1e8)`, `JSON.parse` of a long text, `join` over a large array, a pathological regular
+expression, and the comparisons inside `sort` (only its comparator is counted) each cost no more
+than the call around them. Parsing and the conversion of input and result are not counted either.
+Such a call is still bounded by the size of its inputs, and every input the script builds itself
+costs operations, but a single call can allocate far more than it costs: `'x'.repeat(5e8)` asks
+the host for half a gigabyte in one operation.
+
+A limit error aborts the run outright: it skips the script's `catch` and `finally` blocks and the
+script executes nothing after it. Maple has no time limit; wall-clock time, and memory, are the
+host's responsibility.
+
+## Output
+
+`value` is a fresh copy of the script's return value, never a reference into the sandbox:
+
+- Primitives as they are.
+- Plain objects and arrays rebuilt as normal host objects. A key named `__proto__` is dropped, so
+  host code that copies the result by assignment (`Object.assign`, deep-merge helpers) cannot turn
+  it into a prototype. Cycles are preserved.
+- `Date`, `RegExp`, `Map` and `Set` wrappers as fresh native instances with converted contents.
+- Closures, host functions, intrinsics and iterators become `undefined`.
+- Sandbox error objects become plain objects with `name`, `message` and `stack`.
+
+A value nested deeper than 1000 levels is refused with an `INTERNAL_ERROR` naming the limit,
+instead of overflowing the host stack.
+
+The result is safe to serialize with `JSON.stringify`, which then applies the usual JSON rules (a
+Date becomes its ISO string, a RegExp or Map becomes `{}`, nested `undefined` is dropped from
+objects and becomes `null` in arrays). Maple leaves that step to the host.
+
+`undefined` at the top level is returned as `undefined`.
+
+## Errors
+
+Every failure that originates inside a run throws one class:
+
+```ts
+class MapleError extends Error {
+  readonly code: MapleErrorCode;
+  /** 1-based line in the source of the program that was running. */
+  readonly line?: number;
+  /** 0-based column, as Acorn reports it. */
+  readonly column?: number;
+  /** The sandbox error that was not caught, for RUNTIME_ERROR. */
+  readonly sandboxError?: { name: string; message: string; stack: string };
+  /** The host exception, for INTERNAL_ERROR. */
+  readonly cause?: unknown;
+  /** Operations and depth consumed up to the failure; absent for PARSE_ERROR. */
+  readonly stats?: MapleRunStats;
+}
+
+const MapleErrorCode = {
+  PARSE_ERROR: 'PARSE_ERROR',
+  DISALLOWED_SYNTAX: 'DISALLOWED_SYNTAX',
+  RUNTIME_ERROR: 'RUNTIME_ERROR',
+  LIMIT_EXCEEDED: 'LIMIT_EXCEEDED',
+  INTERNAL_ERROR: 'INTERNAL_ERROR'
+} as const;
+
+type MapleErrorCode = (typeof MapleErrorCode)[keyof typeof MapleErrorCode];
+```
+
+`MapleErrorCode` is exported as a value, so a consumer compares with `MapleErrorCode.LIMIT_EXCEEDED`
+and sees each code's documentation in the editor.
+
+| Code                | Raised when                                                                      |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `PARSE_ERROR`       | Acorn cannot parse the source                                                    |
+| `DISALLOWED_SYNTAX` | The evaluator reaches an unsupported construct or a `new` target not on the list |
+| `RUNTIME_ERROR`     | A sandbox error was not caught (`TypeError`, `ReferenceError`, a script `throw`) |
+| `LIMIT_EXCEEDED`    | The operation budget or the depth limit was hit                                  |
+| `INTERNAL_ERROR`    | A host function returned an unsupported value, or Maple itself failed            |
+
+`line` and `column` point into the source of the program that was executing, which for a nested
+run is the nested source. Messages are written for the person debugging the script, for example
+`'class' is not supported` or `Cannot assign to read-only global 'name'`. `INTERNAL_ERROR`
+messages describe the host-side problem and never reach the script.
+
+## Testing
+
+Tests live next to the code as `*.spec.ts`. Four groups cover the contract:
+
+- **Escape tests.** Constructor chains (`(() => {}).constructor`), computed forbidden keys
+  (`'__pro' + 'to__'`), `JSON.parse` with `__proto__`, a `__proto__` data key, closures passed to
+  host functions, exceptions thrown from host functions, coercion of objects with own `toString` /
+  `valueOf`, writes to frozen data and to globals, `new` on unlisted constructors, forged wrapper
+  objects, property access on closures and host functions.
+- **Limit tests.** `while (true) {}`, deep recursion, `try { endless } catch {}` and
+  `try { endless } finally {}`, runaway recursion through a nested run.
+- **Semantics tests.** Organised by chapter like the language specification: literals, operators,
+  statements, functions, each built-in type. String conversion edge cases (`0.1 + 0.2`, `1e21`,
+  `-0`). Date tests pin `TZ` so local-time output is identical everywhere.
+- **Error tests.** Each code with its expected message, line and column.
+
+The library compiles against `lib: ["ES2024", "ES2025.Collection", "ES2025.Iterator"]`, the parts
+of ES2025 that the minimum Node version implements, with neither DOM nor Node type definitions, so a
+host API cannot be used by accident. The declared exceptions are the guarded `performance.now()`
+behind `durationMs`, and `atob` and `btoa`.
+
+## Adding a built-in
+
+1. Add a row to the dispatch table of the receiver type (`builtins/string-methods.ts`,
+   `builtins/array-methods.ts`, …) in the form `name: (receiver, args, context) => value`, or a
+   `NativeFunction` to the `members` of the namespace (`builtins/array-statics.ts`,
+   `builtins/object-statics.ts`, `builtins/json-statics.ts`).
+2. Convert every argument hook-free first (`toString`, `toNumber`, `optionalNumber`, …) so the host
+   only ever sees primitives. If the method takes a callback, invoke it through `context.call` so
+   it runs under the budget. Never hand a script closure to a host implementation.
+3. If the method needs no callback and cannot observe prototypes, it may delegate to the host
+   implementation on a Maple-owned value (for example `Array.prototype.with`). Wrap it in
+   `guardHostErrors` when the language specifies a `RangeError`, `URIError` or `SyntaxError` for it,
+   or when it can build a string or array longer than the host allows.
+4. Return only sandbox values: primitives, Maple-created objects and arrays, or wrappers. Never a
+   native `Date`, `RegExp`, `Map`, `Set` or function.
+5. Add the method to the list in this document and write its spec file.

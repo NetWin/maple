@@ -1,0 +1,196 @@
+import { describe, expect, it } from 'vitest';
+import { Maple } from './maple.ts';
+import { runAndCatch } from './spec-helpers.ts';
+
+function sandboxError(
+  maple: Maple,
+  code: string,
+  data?: unknown
+): { name: string; message: string } | undefined {
+  return runAndCatch(maple, code, data).sandboxError;
+}
+
+const double = (n: unknown): number => Number(n) * 2;
+const triple = (n: unknown): number => Number(n) * 3;
+const greet = (who: unknown): string => `hi ${String(who)}`;
+const upper = (s: unknown): string => String(s).toUpperCase();
+const one = (): number => 1;
+
+describe('host functions', () => {
+  it('are callable from every globals layer and from data', () => {
+    const maple = new Maple({ globals: { double } });
+
+    expect(maple.run('return double(21);').value).toBe(42);
+    expect(maple.run('return triple(2);', undefined, { globals: { triple } }).value).toBe(6);
+    expect(maple.run('return greet("x");', { greet }).value).toBe('hi x');
+    expect(maple.run('return text.upper("a");', { text: { upper } }).value).toBe('A');
+  });
+
+  it('look like functions to the script and never leave it', () => {
+    const maple = new Maple({ globals: { f: one } });
+
+    expect(maple.run('return typeof f;').value).toBe('function');
+    expect(maple.run('return f.name;').value).toBeUndefined();
+    expect(maple.run('return f + "";').value).toBe('[function]');
+    expect(maple.run('return f;').value).toBeUndefined();
+    expect(maple.run('return [f, { f }];').value).toEqual([undefined, { f: undefined }]);
+    expect(maple.run('const g = f; return g();').value).toBe(1);
+    expect(runAndCatch(maple, 'new f();').code).toBe('DISALLOWED_SYNTAX');
+    expect(sandboxError(maple, 'f.x = 1;')?.name).toBe('TypeError');
+  });
+
+  it('receive copies of the arguments, never references', () => {
+    const seen: Array<unknown> = [];
+    const take = (...args: Array<unknown>): number => {
+      seen.push(...args);
+      const [first] = args;
+      if (typeof first === 'object' && first !== null) {
+        Object.assign(first, { touched: true });
+      }
+      return args.length;
+    };
+    const maple = new Maple({ globals: { take } });
+
+    expect(
+      maple.run('const o = { a: [1] }; take(o, 2, "s", null, undefined); return o;').value
+    ).toEqual({ a: [1] });
+    expect(seen).toEqual([{ a: [1], touched: true }, 2, 's', null, undefined]);
+    expect(Object.isFrozen(seen[0])).toBe(false);
+    expect(maple.run('return take(input);', { input: { k: 1 } }).value).toBe(1);
+    expect(seen.at(-1)).toEqual({ k: 1, touched: true });
+  });
+
+  it('receive natives for wrappers', () => {
+    const seen: Array<unknown> = [];
+    const take = (value: unknown): void => {
+      seen.push(value);
+    };
+    const maple = new Maple({ globals: { take } });
+
+    maple.run('take(new Date(0)); take(/a/g); take(new Map([[1, 2]])); take(new Set([3]));');
+
+    expect(seen[0]).toEqual(new Date(0));
+    expect(seen[1]).toEqual(/a/g);
+    expect(seen[2]).toEqual(new Map([[1, 2]]));
+    expect(seen[3]).toEqual(new Set([3]));
+  });
+
+  it('refuse functions and iterators as arguments', () => {
+    const maple = new Maple({ globals: { take: one } });
+
+    expect(sandboxError(maple, 'take(() => 1);')).toMatchObject({
+      name: 'TypeError',
+      message: 'A function cannot be passed to the host'
+    });
+    expect(sandboxError(maple, 'take({ nested: [() => 1] });')?.name).toBe('TypeError');
+    expect(sandboxError(maple, 'take(take);')?.name).toBe('TypeError');
+    expect(sandboxError(maple, 'take([].values());')?.message).toBe(
+      'An iterator cannot be passed to the host'
+    );
+    expect(maple.run('try { take(() => 1); } catch (e) { return "caught"; }').value).toBe('caught');
+  });
+
+  it('refuse cyclic arguments but keep shared references', () => {
+    const seen: Array<unknown> = [];
+    const take = (value: unknown): void => {
+      seen.push(value);
+    };
+    const maple = new Maple({ globals: { take } });
+
+    expect(sandboxError(maple, 'const a = []; a.push(a); take(a);')).toMatchObject({
+      name: 'TypeError',
+      message: 'A cyclic value cannot be passed to the host'
+    });
+    expect(sandboxError(maple, 'const o = {}; o.m = new Map([[1, { o }]]); take([o]);')?.name).toBe(
+      'TypeError'
+    );
+    expect(seen).toEqual([]);
+
+    maple.run('const x = { n: 1 }; take([x, x]);');
+    const [shared] = seen;
+    expect(Array.isArray(shared) && shared[0] === shared[1]).toBe(true);
+  });
+
+  it('hand their results to the script as mutable sandbox values', () => {
+    const shared = { n: 1 };
+    const maple = new Maple({
+      globals: {
+        object: (): object => shared,
+        when: (): Date => new Date(0),
+        lookup: (): Map<string, Array<number>> => new Map([['k', [1]]]),
+        nothing: (): undefined => undefined,
+        pattern: (): RegExp => /x/
+      }
+    });
+
+    expect(maple.run('const o = object(); o.n = 2; return o;').value).toEqual({ n: 2 });
+    expect(shared.n).toBe(1);
+    expect(maple.run('return when().getTime();').value).toBe(0);
+    expect(maple.run('const d = when(); d.setTime(5); return d.getTime();').value).toBe(5);
+    expect(maple.run('const m = lookup(); m.set("j", 2); return m.size;').value).toBe(2);
+    expect(maple.run('return nothing();').value).toBeUndefined();
+    expect(maple.run('return pattern().test("x");').value).toBe(true);
+  });
+
+  it('report a result the sandbox cannot hold as an internal error', () => {
+    class Thing {
+      public readonly id = 1;
+    }
+    const maple = new Maple({
+      globals: {
+        fn: (): (() => number) => one,
+        thing: (): Thing => new Thing(),
+        promise: (): Promise<number> => Promise.resolve(1),
+        nested: (): object => ({ deep: { bad: Symbol('s') } })
+      }
+    });
+
+    expect(runAndCatch(maple, 'fn();')).toMatchObject({
+      code: 'INTERNAL_ERROR',
+      message: 'fn returned a value the sandbox cannot hold: Unsupported value at fn(): function'
+    });
+    expect(runAndCatch(maple, 'thing();').code).toBe('INTERNAL_ERROR');
+    expect(runAndCatch(maple, 'promise();').code).toBe('INTERNAL_ERROR');
+    expect(runAndCatch(maple, 'nested();').message).toContain('nested().deep.bad');
+    expect(runAndCatch(maple, 'try { fn(); } catch (e) { return "caught"; }').code).toBe(
+      'INTERNAL_ERROR'
+    );
+  });
+
+  it('turn host exceptions into catchable sandbox errors with name and message only', () => {
+    const maple = new Maple({
+      globals: {
+        boom: (): never => {
+          throw new RangeError('too far');
+        },
+        text: (): never => {
+          throw 'plain';
+        }
+      }
+    });
+
+    expect(
+      maple.run(
+        'try { boom(); } catch (e) { return [e.name, e.message, e instanceof RangeError, e instanceof Error]; }'
+      ).value
+    ).toEqual(['RangeError', 'too far', true, true]);
+    expect(maple.run('try { boom(); } catch (e) { return e.stack; }').value).toBe(
+      'RangeError: too far\n    at <script> (1:6)'
+    );
+    expect(maple.run('try { text(); } catch (e) { return [e.name, e.message]; }').value).toEqual([
+      'Error',
+      'plain'
+    ]);
+    expect(runAndCatch(maple, 'boom();')).toMatchObject({
+      code: 'RUNTIME_ERROR',
+      message: 'too far',
+      sandboxError: { name: 'RangeError', message: 'too far' }
+    });
+  });
+
+  it('cost one operation per call', () => {
+    const maple = new Maple({ globals: { f: one } });
+
+    expect(maple.run('return f();').stats.ops).toBe(3);
+  });
+});

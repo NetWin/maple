@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { execute, getAst } from '@netwin/maple';
+import { Maple, parse } from '@netwin/maple';
 import type { RunRequest, RunResponse, StepOutcome } from './maple-worker-protocol';
 
 // Runs off the main thread, so an endless loop in the interpreter can be stopped by terminating
@@ -10,14 +10,14 @@ addEventListener('message', (event: MessageEvent<RunRequest>) => {
   postMessage({
     id,
     step: 'ast',
-    outcome: attempt(() => getAst(code))
+    outcome: attempt(() => parse(code))
   } satisfies RunResponse);
 
   postMessage({
     id,
     step: 'result',
     outcome: attempt(() => {
-      return execute(code, JSON.parse(context));
+      return new Maple().run(code, JSON.parse(context)).value;
     })
   } satisfies RunResponse);
 });

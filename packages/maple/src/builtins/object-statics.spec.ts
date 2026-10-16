@@ -1,0 +1,198 @@
+import { describe, expect, it } from 'vitest';
+import { Maple } from '../maple.ts';
+import { runAndCatch } from '../spec-helpers.ts';
+
+const maple = new Maple();
+
+function run(code: string, data?: unknown): unknown {
+  return maple.run(code, data).value;
+}
+
+describe('Object statics', () => {
+  const data = { obj: { b: 1, a: 2 }, list: ['x'] };
+
+  it('enumerate own properties in insertion order', () => {
+    expect(run('return Object.keys(obj);', data)).toEqual(['b', 'a']);
+    expect(run('return Object.values(obj);', data)).toEqual([1, 2]);
+    expect(run('return Object.entries(obj);', data)).toEqual([
+      ['b', 1],
+      ['a', 2]
+    ]);
+    expect(run('return Object.keys(list);', data)).toEqual(['0']);
+    expect(run('return Object.keys("ab");')).toEqual(['0', '1']);
+    expect(run('return Object.keys(5);')).toEqual([]);
+    expect(run('return Object.keys(() => 1);')).toEqual([]);
+    expect(run('return Object.keys(new Error("x"));')).toEqual([]);
+    expect(run('return Object.keys({ a: 1, [2]: 1, b: 1 });')).toEqual(['2', 'a', 'b']);
+    expect(run('try { Object.keys(null); } catch (e) { return e.message; }')).toBe(
+      'Cannot convert null to object'
+    );
+  });
+
+  it('build objects from entries', () => {
+    expect(run('return Object.fromEntries([["a", 1], ["b", 2]]);')).toEqual({ a: 1, b: 2 });
+    expect(run('return Object.fromEntries(Object.entries(obj));', data)).toEqual({ b: 1, a: 2 });
+    expect(run('return Object.fromEntries([[1, "n"]]);')).toEqual({ 1: 'n' });
+    expect(run('const o = Object.fromEntries([]); o.x = 1; return o;')).toEqual({ x: 1 });
+    expect(run('try { Object.fromEntries([1]); } catch (e) { return e.name; }')).toBe('TypeError');
+    expect(run('try { Object.fromEntries(5); } catch (e) { return e.message; }')).toBe(
+      '5 is not iterable'
+    );
+    expect(run('return Object.keys(Object.fromEntries([["__proto__", 1]]));')).toEqual([
+      '__proto__'
+    ]);
+    expect('polluted' in {}).toBe(false);
+  });
+
+  it('assign into mutable targets and refuse read-only ones', () => {
+    expect(
+      run(
+        'const t = { a: 1 }; const r = Object.assign(t, { b: 2 }, null, { a: 3 }); return [r === t, t];'
+      )
+    ).toEqual([true, { a: 3, b: 2 }]);
+    expect(run('return Object.assign({}, obj);', data)).toEqual({ b: 1, a: 2 });
+    expect(run('return Object.assign({}, "ab");')).toEqual({ 0: 'a', 1: 'b' });
+    expect(runAndCatch(maple, 'Object.assign(obj, { c: 1 });', data).sandboxError?.name).toBe(
+      'TypeError'
+    );
+    expect(runAndCatch(maple, 'Object.assign(5, {});').sandboxError?.name).toBe('TypeError');
+  });
+
+  it('group by the callback result, converted to a key without hooks', () => {
+    const people = {
+      people: [
+        { n: 'a', age: 30 },
+        { n: 'b', age: 40 },
+        { n: 'c', age: 30 }
+      ]
+    };
+
+    expect(run('return Object.groupBy(people, (p) => p.age);', people)).toEqual({
+      30: [
+        { n: 'a', age: 30 },
+        { n: 'c', age: 30 }
+      ],
+      40: [{ n: 'b', age: 40 }]
+    });
+    expect(run('return Object.groupBy([1, 2, 3], (x, i) => (i % 2 ? "odd" : "even"));')).toEqual({
+      even: [1, 3],
+      odd: [2]
+    });
+    expect(run('return Object.groupBy("aab", (c) => c);')).toEqual({ a: ['a', 'a'], b: ['b'] });
+    expect(run('return Object.groupBy(new Set([1, 2]), (x) => x > 1);')).toEqual({
+      false: [1],
+      true: [2]
+    });
+    expect(run('return Object.groupBy([1], () => ({ toString: () => "hooked" }));')).toEqual({
+      '[object Object]': [1]
+    });
+    expect(
+      run('const g = Object.groupBy([1], () => "k"); g.k.push(2); g.x = 1; return g;')
+    ).toEqual({ k: [1, 2], x: 1 });
+    expect(run('return Object.groupBy([], (x) => x);')).toEqual({});
+  });
+
+  it('keep a __proto__ group a plain key and validate their arguments', () => {
+    expect(run('return Object.keys(Object.groupBy([1], () => "__proto__"));')).toEqual([
+      '__proto__'
+    ]);
+    expect(Object.getPrototypeOf(run('return Object.groupBy([1], () => "__proto__");'))).toBe(
+      Object.prototype
+    );
+    expect('polluted' in {}).toBe(false);
+    expect(run('try { Object.groupBy(5, (x) => x); } catch (e) { return e.message; }')).toBe(
+      '5 is not iterable'
+    );
+    expect(run('try { Object.groupBy([1], 5); } catch (e) { return e.message; }')).toBe(
+      '5 is not a function'
+    );
+    expect(
+      runAndCatch(new Maple({ maxOps: 300 }), 'Object.groupBy([1], () => { while (true) {} });')
+        .code
+    ).toBe('LIMIT_EXCEEDED');
+  });
+
+  it('answer hasOwn for objects, arrays and strings', () => {
+    expect(run('return Object.hasOwn(obj, "a");', data)).toBe(true);
+    expect(run('return Object.hasOwn(obj, "toString");', data)).toBe(false);
+    expect(run('return Object.hasOwn(list, 0);', data)).toBe(true);
+    expect(run('return Object.hasOwn("ab", 1) && Object.hasOwn("ab", "length");')).toBe(true);
+    expect(run('return Object.hasOwn("ab", 2);')).toBe(false);
+    expect(run('return Object.hasOwn(5, "x");')).toBe(false);
+  });
+
+  it('is a namespace that cannot be called or constructed', () => {
+    expect(runAndCatch(maple, 'Object();').sandboxError?.message).toBe('Object is not a function');
+    expect(runAndCatch(maple, 'new Object();').code).toBe('DISALLOWED_SYNTAX');
+    expect(runAndCatch(maple, 'Object.keys = 1;').sandboxError?.name).toBe('TypeError');
+  });
+});
+
+describe('hasOwnProperty', () => {
+  it('is the one method of plain objects', () => {
+    expect(run('return ({ a: 1 }).hasOwnProperty("a");')).toBe(true);
+    expect(run('return ({ a: 1 }).hasOwnProperty("b");')).toBe(false);
+    expect(run('return ({ a: 1 }).hasOwnProperty("toString");')).toBe(false);
+    expect(run('return obj.hasOwnProperty("b");', { obj: { b: 1 } })).toBe(true);
+    expect(run('return ({ hasOwnProperty: 7 }).hasOwnProperty;')).toBe(7);
+    expect(run('return ({}).valueOf;')).toBeUndefined();
+  });
+});
+
+describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
+  it('compares with SameValue', () => {
+    expect(
+      run('return [Object.is(NaN, NaN), Object.is(0, -0), Object.is("a", "a"), Object.is({}, {})];')
+    ).toEqual([true, false, true, false]);
+  });
+
+  it('lists own names the way in answers them', () => {
+    expect(run('return Object.getOwnPropertyNames({ a: 1, b: 2 });')).toEqual(['a', 'b']);
+    expect(run('return Object.getOwnPropertyNames([7]);')).toEqual(['0', 'length']);
+    expect(run('return Object.getOwnPropertyNames("ab");')).toEqual(['0', '1', 'length']);
+    expect(run('return Object.getOwnPropertyNames(new Error("x"));')).toEqual([
+      'name',
+      'message',
+      'stack'
+    ]);
+    expect(run('return Object.getOwnPropertyNames(new Map());')).toEqual(['size']);
+    expect(run('return Object.getOwnPropertyNames(() => 1);')).toEqual([]);
+    expect(run('return Object.getOwnPropertyNames(5);')).toEqual([]);
+    expect(run('return Object.getOwnPropertyNames(/x/).includes("lastIndex");')).toBe(true);
+    expect(run('return Object.getOwnPropertyNames(Math).includes("max");')).toBe(true);
+    expect(run('try { Object.getOwnPropertyNames(null); } catch (e) { return e.name; }')).toBe(
+      'TypeError'
+    );
+  });
+
+  it('freezes what the script owns and reports it', () => {
+    expect(
+      run(
+        'const o = Object.freeze({ a: 1 }); try { o.a = 2; } catch (e) { return [e.name, o.a, Object.isFrozen(o)]; }'
+      )
+    ).toEqual(['TypeError', 1, true]);
+    expect(
+      run('const l = Object.freeze([1]); try { l.push(2); } catch (e) { return [e.message, l]; }')
+    ).toEqual(['Cannot call push on a read-only array', [1]]);
+    expect(
+      run(
+        'const e = Object.freeze(new Error("x")); try { e.message = "y"; } catch (t) { return [t.name, e.message]; }'
+      )
+    ).toEqual(['TypeError', 'x']);
+    expect(run('const o = {}; return [Object.freeze(o) === o, Object.freeze(5)];')).toEqual([
+      true,
+      5
+    ]);
+    expect(
+      run(
+        'return [Object.isFrozen({}), Object.isFrozen(1), Object.isFrozen(() => 1), Object.isFrozen(new Map())];'
+      )
+    ).toEqual([false, true, true, false]);
+    expect(
+      run('return [Object.isFrozen(obj), Object.isFrozen(lookup)];', { obj: {}, lookup: new Map() })
+    ).toEqual([true, true]);
+    expect(run('const o = Object.freeze({ a: [1] }); o.a.push(2); return o;')).toEqual({
+      a: [1, 2]
+    });
+  });
+});
