@@ -1,9 +1,9 @@
 # @netwin/maple-parity
 
-A private test package that holds Maple to one promise: every script
-[`@netwin/js-interpreter`](https://github.com/netwin/JS-Interpreter) runs, Maple runs too, with the same result. Maple
-may support more, since it speaks modern JavaScript and js-interpreter only ES5. It may never support less, except
-for the divergences accepted.
+A private test package that compares Maple with [`@netwin/js-interpreter`](https://github.com/netwin/JS-Interpreter):
+a script js-interpreter runs should run in Maple too, with the same result. Maple may support more, since it speaks
+modern JavaScript and js-interpreter only ES5. Where the two differ, JavaScript decides: Maple follows the language,
+and each difference is listed below as a divergence, as is everything Maple leaves out on purpose.
 
 ```sh
 pnpm --filter @netwin/maple-parity test
