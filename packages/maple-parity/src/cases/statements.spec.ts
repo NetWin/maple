@@ -1171,6 +1171,12 @@ describe('binary:in', () => {
     expect(parity('var o = { 1: "x" }; return [1 in o, "1" in o];')).toStrictEqual([true, true]);
   });
 
+  it('finds the methods objects and arrays inherit', () => {
+    expect(
+      parity('return ["push" in [], "map" in [1], "hasOwnProperty" in {}, "toString" in {}];')
+    ).toStrictEqual([true, true, true, true]);
+  });
+
   it('throws on a primitive', () => {
     expect(bothThrow('return "a" in "abc";')).toBe('TypeError');
   });

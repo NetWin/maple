@@ -218,15 +218,17 @@ describe('delete and in', () => {
     expect(sandboxError('const o = {}; delete o.__proto__;')?.name).toBe('TypeError');
   });
 
-  it('answers in with own properties only', () => {
+  it('answers in with own properties and methods', () => {
     const data = { obj: { a: 1 }, list: [1] };
 
     expect(run('return "a" in obj;', data)).toBe(true);
     expect(run('return "z" in obj;', data)).toBe(false);
-    expect(run('return "toString" in obj;', data)).toBe(false);
+    expect(run('return "toString" in obj;', data)).toBe(true);
     expect(run('return 0 in list && "length" in list;', data)).toBe(true);
-    expect(run('return "map" in list;', data)).toBe(false);
+    expect(run('return "map" in list;', data)).toBe(true);
     expect(run('return "x" in (() => 1);')).toBe(false);
+    expect(run('return "toString" in (() => 1);')).toBe(true);
+    expect(run('return "call" in (() => 1);')).toBe(false);
     expect(run('return "__proto__" in obj;', data)).toBe(false);
     expect(run('return "__proto__" in own;', '{"own": {"__proto__": 1}}')).toBe(true);
     expect(sandboxError('return "a" in 5;')).toMatchObject({

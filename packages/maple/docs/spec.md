@@ -293,8 +293,9 @@ static or computed; every attempt is a `TypeError`. `Object.assign` writes key b
 them the same way. Operations that build a fresh object or list the keys of a whole object carry
 such a data key along as a plain own key: spread, object rest, `Object.fromEntries`, `JSON.parse`,
 `Object.keys` / `values` / `entries`, `for...in` and `JSON.stringify`. A `__proto__` key is
-dropped when a value leaves the sandbox (see [Output](#output)). The `in` operator answers for own properties
-only, so `'map' in []` is false.
+dropped when a value leaves the sandbox (see [Output](#output)). The `in` operator answers for own
+properties and for the methods of the value's type, as a read finds them, so `'map' in []` is true
+and `'valueOf' in []` is false.
 
 ## Value model
 
@@ -418,7 +419,7 @@ Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, 
 `Object.hasOwn`, `Object.groupBy`, `Object.is`, `Object.getOwnPropertyNames`, `Object.freeze`,
 `Object.isFrozen`.
 
-`getOwnPropertyNames` lists exactly the names `in` answers for, enumerable or not, so
+`getOwnPropertyNames` lists exactly the own names, enumerable or not, so
 `getOwnPropertyNames([1])` is `['0', 'length']`. `freeze` makes an object, array or error the
 script owns read-only and returns it; for anything else it changes nothing. `isFrozen` is `true`
 for primitives, functions and namespaces, which cannot be written to, and for collections that came

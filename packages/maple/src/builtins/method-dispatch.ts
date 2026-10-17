@@ -32,41 +32,58 @@ export function getMember(target: unknown, key: string, fail: Fail): unknown {
  * how `s.trim` resolves: through a table for the type, never through a host prototype.
  */
 export function resolveMethod(receiver: unknown, key: string): NativeFunction | undefined {
+  const methodDefinition = getMethodDefinition(receiver, key);
+  if (methodDefinition === undefined) {
+    return undefined;
+  }
+  return bind(receiver, key, methodDefinition);
+}
+
+/** Checks if a receiver type has a method under the given key. */
+export function hasMethod(receiver: unknown, key: string): boolean {
+  return getMethodDefinition(receiver, key) !== undefined;
+}
+
+/**
+ * Gets the method definition for a receiver type under the given key,
+ * or `undefined` if none exists.
+ */
+function getMethodDefinition(receiver: unknown, key: string): Method<any> | undefined {
   if (typeof receiver === 'string') {
-    return bind(receiver, key, STRING_METHODS.get(key));
+    return STRING_METHODS.get(key);
   }
   if (typeof receiver === 'number') {
-    return bind(receiver, key, NUMBER_METHODS.get(key));
+    return NUMBER_METHODS.get(key);
   }
   if (typeof receiver === 'boolean') {
-    return bind(receiver, key, BOOLEAN_METHODS.get(key));
+    return BOOLEAN_METHODS.get(key);
   }
   if (Array.isArray(receiver)) {
-    return bind(receiver, key, ARRAY_METHODS.get(key));
+    return ARRAY_METHODS.get(key);
   }
   if (isPlainObject(receiver)) {
-    return bind(receiver, key, OBJECT_METHODS.get(key));
+    return OBJECT_METHODS.get(key);
   }
   if (receiver instanceof RegExpWrapper) {
-    return bind(receiver, key, REGEXP_METHODS.get(key));
+    return REGEXP_METHODS.get(key);
   }
   if (receiver instanceof DateWrapper) {
-    return bind(receiver, key, DATE_METHODS.get(key));
+    return DATE_METHODS.get(key);
   }
   if (receiver instanceof MapWrapper) {
-    return bind(receiver, key, MAP_METHODS.get(key));
+    return MAP_METHODS.get(key);
   }
   if (receiver instanceof SetWrapper) {
-    return bind(receiver, key, SET_METHODS.get(key));
+    return SET_METHODS.get(key);
   }
   if (receiver instanceof SandboxError) {
-    return bind(receiver, key, ERROR_METHODS.get(key));
+    return ERROR_METHODS.get(key);
   }
   if (receiver instanceof IteratorWrapper) {
-    return bind(receiver, key, ITERATOR_METHODS.get(key));
+    return ITERATOR_METHODS.get(key);
   }
   if (isCallable(receiver)) {
-    return bind(receiver, key, FUNCTION_METHODS.get(key));
+    return FUNCTION_METHODS.get(key);
   }
   return undefined;
 }

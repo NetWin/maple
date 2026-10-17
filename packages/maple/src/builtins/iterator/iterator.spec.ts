@@ -29,7 +29,7 @@ describe('iterators', () => {
     expect(run('return typeof [].values();')).toBe('object');
     expect(run('return typeof [].values().next;')).toBe('function');
     expect(run('return [].values().foo;')).toBeUndefined();
-    expect(run('return "next" in [].values();')).toBe(false);
+    expect(run('return "next" in [].values();')).toBe(true);
     expect(run('return [].values() + "";')).toBe('[object Iterator]');
     expect(run('return JSON.stringify([].values());')).toBe('{}');
     expect(run('return [].values() instanceof Object;')).toBe(true);

@@ -288,7 +288,7 @@ describe('error additions', () => {
     expect(run('const e = new Error("m"); e.name = "Custom"; return e.toString();')).toBe(
       'Custom: m'
     );
-    expect(run('return "toString" in new Error();')).toBe(false);
+    expect(run('return "toString" in new Error();')).toBe(true);
   });
 
   it('provide URIError and EvalError, and match the errors Maple raises', () => {

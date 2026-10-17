@@ -33,7 +33,7 @@ import { fromHost } from '../boundary/from-host.ts';
 import type { HostFunction, Intrinsic, Sandbox } from '../boundary/host.ts';
 import { asMapleError, MapleError, MapleErrorCode } from '../boundary/maple-error.ts';
 import { toHost, UnconvertibleValueError } from '../boundary/to-host.ts';
-import { getMember } from '../builtins/method-dispatch.ts';
+import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
 import type { MapleRunResult, RunOptions } from '../maple.ts';
 import { assertNever } from '../support/assert-never.ts';
 import { defineOwn } from '../support/own-property.ts';
@@ -683,7 +683,8 @@ export class Evaluator {
         const left = this.evaluateExpression(node.left, scope);
         const right = this.evaluateExpression(node.right, scope);
         if (node.operator === 'in') {
-          return hasMember(right, toPropertyKey(left), this.failAt(node));
+          const propertyKey = toPropertyKey(left);
+          return hasMember(right, propertyKey, this.failAt(node)) || hasMethod(right, propertyKey);
         }
         if (node.operator === 'instanceof') {
           return this.instanceOf(left, right, node);

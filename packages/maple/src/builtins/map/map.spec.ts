@@ -57,7 +57,7 @@ describe('Map', () => {
   });
 
   it('has no own properties besides size and refuses writes', () => {
-    expect(run('return "size" in new Map() && !("get" in new Map());')).toBe(true);
+    expect(run('return ["size" in new Map(), "get" in new Map()];')).toEqual([true, true]);
     expect(run('return new Map().foo;')).toBeUndefined();
     expect(run('return Object.keys(new Map([[1, 2]]));')).toEqual([]);
     expect(runAndCatch(maple, 'new Map().x = 1;').sandboxError?.message).toBe(

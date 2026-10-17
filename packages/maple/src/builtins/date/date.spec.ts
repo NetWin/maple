@@ -147,7 +147,7 @@ describe('Date', () => {
 
   it('has no own properties and rejects writes', () => {
     expect(run('return new Date(0).foo;')).toBeUndefined();
-    expect(run('return "getTime" in new Date(0);')).toBe(false);
+    expect(run('return "getTime" in new Date(0);')).toBe(true);
     expect(runAndCatch(maple, 'new Date(0).x = 1;').sandboxError?.message).toBe(
       "Cannot add property 'x' to a Date"
     );

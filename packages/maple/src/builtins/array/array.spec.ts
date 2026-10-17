@@ -178,10 +178,11 @@ describe('array methods', () => {
     });
   });
 
-  it('exposes methods as bound functions and keeps in own-only', () => {
+  it('exposes methods as bound functions', () => {
     expect(run('const p = [].push; return typeof p;')).toBe('function');
     expect(run('const l = []; const p = l.push; p(1); return l;')).toEqual([1]);
-    expect(run('return "map" in [];')).toBe(false);
+    expect(run('return "map" in [];')).toBe(true);
+    expect(run('return "valueOf" in [];')).toBe(false);
     expect(run('return [].map.call;')).toBeUndefined();
   });
 });
