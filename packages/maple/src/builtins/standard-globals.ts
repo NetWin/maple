@@ -2,13 +2,7 @@ import { Builtin } from '../values/builtin.ts';
 import { toBoolean, toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import {
-  DateWrapper,
-  IteratorWrapper,
-  MapWrapper,
-  RegExpWrapper,
-  SetWrapper
-} from '../values/wrappers.ts';
+import { DateWrapper, IteratorWrapper, MapWrapper, SetWrapper } from '../values/wrappers.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
 import { constructDate, DATE_STATICS } from './date-statics.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
@@ -17,7 +11,7 @@ import { constructMap, MAP_STATICS } from './map-statics.ts';
 import { MATH_STATICS } from './math-statics.ts';
 import { NUMBER_STATICS } from './number-statics.ts';
 import { constructObject, OBJECT_STATICS } from './object-statics.ts';
-import { constructRegExp } from './regexp-statics.ts';
+import { REGEXP_BUILTIN } from './regexp/regexp.ts';
 import { constructSet } from './set-statics.ts';
 import { STRING_STATICS } from './string-statics.ts';
 
@@ -85,13 +79,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
     members: DATE_STATICS,
     isInstance: (value) => value instanceof DateWrapper
   }),
-  RegExp: new Builtin({
-    name: 'RegExp',
-    length: RegExp.length,
-    call: constructRegExp,
-    construct: constructRegExp,
-    isInstance: (value) => value instanceof RegExpWrapper
-  }),
+  RegExp: REGEXP_BUILTIN,
   Map: new Builtin({
     name: 'Map',
     length: Map.length,

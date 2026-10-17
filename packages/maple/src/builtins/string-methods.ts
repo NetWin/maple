@@ -14,7 +14,10 @@ import {
   method
 } from '../values/native.ts';
 import { IteratorWrapper, RegExpWrapper } from '../values/wrappers.ts';
-import { groupsToSandbox, matcherOf, matchToSandbox, toRegExp } from './regexp-methods.ts';
+import { groupsToSandbox } from './regexp/utils/groups-to-sandbox.ts';
+import { matchToSandbox } from './regexp/utils/match-to-sandbox.ts';
+import { matcherOf } from './regexp/utils/matcher-of.ts';
+import { toRegExp } from './regexp/utils/to-regexp.ts';
 
 type StringMethod = Method<string>;
 
