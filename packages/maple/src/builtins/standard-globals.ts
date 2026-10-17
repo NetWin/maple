@@ -2,7 +2,7 @@ import { Builtin } from '../values/builtin.ts';
 import { toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import { IteratorWrapper, SetWrapper } from '../values/wrappers.ts';
+import { IteratorWrapper } from '../values/wrappers.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
 import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
@@ -15,7 +15,7 @@ import { NUMBER_STATIC_PARSE_FLOAT } from './number/statics/parse-float.ts';
 import { NUMBER_STATIC_PARSE_INT } from './number/statics/parse-int.ts';
 import { constructObject, OBJECT_STATICS } from './object-statics.ts';
 import { REGEXP_BUILTIN } from './regexp/regexp.ts';
-import { constructSet } from './set-statics.ts';
+import { SET_BUILTIN } from './set/set.ts';
 import { STRING_BUILTIN } from './string/string.ts';
 
 // The library is typechecked without host libs; these web APIs exist in Node, browsers and workers
@@ -63,13 +63,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   Date: DATE_BUILTIN,
   RegExp: REGEXP_BUILTIN,
   Map: MAP_BUILTIN,
-  Set: new Builtin({
-    name: 'Set',
-    length: Set.length,
-    call: (_args, { fail }) => fail('TypeError', "Constructor Set requires 'new'"),
-    construct: constructSet,
-    isInstance: (value) => value instanceof SetWrapper
-  }),
+  Set: SET_BUILTIN,
   Iterator: new Builtin({
     name: 'Iterator',
     length: Iterator.length,

@@ -19,7 +19,7 @@ import { MAP_METHODS } from './map/map-methods.ts';
 import { NUMBER_METHODS } from './number/number-methods.ts';
 import { OBJECT_METHODS } from './object-methods.ts';
 import { REGEXP_METHODS } from './regexp/regexp-methods.ts';
-import { SET_METHODS } from './set-methods.ts';
+import { SET_METHODS } from './set/set-methods.ts';
 import { STRING_METHODS } from './string/string-methods.ts';
 
 /** Reads a property as scripts see it: an own property, otherwise the receiver type's method. */
