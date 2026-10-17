@@ -1,4 +1,4 @@
-import { optionalNumber } from '../values/arguments.ts';
+import { optionalNumberArgument } from '../values/arguments.ts';
 import { toString } from '../values/coercion.ts';
 import { NativeFunction } from '../values/native.ts';
 
@@ -29,6 +29,6 @@ export const NUMBER_STATICS: Readonly<Record<string, number | NativeFunction>> =
     parseFloat(toString(text))
   ),
   parseInt: new NativeFunction('parseInt', Number.parseInt.length, ([text, radix]) =>
-    parseInt(toString(text), optionalNumber(radix))
+    parseInt(toString(text), optionalNumberArgument(radix))
   )
 };

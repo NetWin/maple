@@ -1,3 +1,4 @@
+import { ARRAY_MAX_LENGTH } from '../builtins/array/array.ts';
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { Builtin } from './builtin.ts';
@@ -12,9 +13,6 @@ export type Fail = (name: string, message: string) => never;
 
 /** Charges operations against the run's budget, or ends the run when they do not fit. */
 export type Charge = (count: number) => void;
-
-/** The largest length an array can have, as in the language. */
-const MAX_ARRAY_LENGTH = 2 ** 32 - 1;
 
 /** Finds the built-in method a receiver's type offers under `key`. */
 export type MethodLookup = (receiver: unknown, key: string) => unknown;
@@ -113,7 +111,7 @@ export function readMember(
   throw new Error('A value of an unknown kind was read');
 }
 
-/** Writes a property; growing an array costs one operation per slot it adds. */
+/** Writes a property on a target object */
 export function setMember(
   target: unknown,
   key: string,
@@ -164,7 +162,7 @@ export function setMember(
   if (Array.isArray(target)) {
     if (key === 'length') {
       const length = toNumber(value);
-      if (!Number.isInteger(length) || length < 0 || length > MAX_ARRAY_LENGTH) {
+      if (!Number.isInteger(length) || length < 0 || length > ARRAY_MAX_LENGTH) {
         return fail('RangeError', 'Invalid array length');
       }
       charge(Math.max(0, length - target.length));
@@ -172,7 +170,7 @@ export function setMember(
       return;
     }
     const index = toArrayIndex(key);
-    if (index !== undefined && index < MAX_ARRAY_LENGTH && index >= target.length) {
+    if (index !== undefined && index < ARRAY_MAX_LENGTH && index >= target.length) {
       charge(index + 1 - target.length);
     }
     Reflect.set(target, key, value);

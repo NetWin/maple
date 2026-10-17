@@ -3,12 +3,12 @@ import { defineOwn } from '../support/own-property.ts';
 import { toNumber, toString } from './coercion.ts';
 
 /** An optional string argument: `undefined` stays absent, everything else converts hook-free. */
-export function optionalString(value: unknown): string | undefined {
+export function optionalStringArgument(value: unknown): string | undefined {
   return value === undefined ? undefined : toString(value);
 }
 
 /** An optional numeric argument: `undefined` stays absent, everything else converts hook-free. */
-export function optionalNumber(value: unknown): number | undefined {
+export function optionalNumberArgument(value: unknown): number | undefined {
   return value === undefined ? undefined : toNumber(value);
 }
 

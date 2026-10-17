@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Maple } from '../maple.ts';
-import { runAndCatch } from '../spec-helpers.ts';
+import { Maple } from '../../maple.ts';
+import { runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 
@@ -186,6 +186,47 @@ describe('array methods', () => {
   });
 });
 
+describe('Array statics', () => {
+  it('isArray, of and from', () => {
+    expect(run('return [Array.isArray([]), Array.isArray({}), Array.isArray("a")];')).toEqual([
+      true,
+      false,
+      false
+    ]);
+    expect(run('return Array.of(1, "a");')).toEqual([1, 'a']);
+    expect(run('return Array.from("ab");')).toEqual(['a', 'b']);
+    expect(run('return Array.from([1, 2], (x) => x * 2);')).toEqual([2, 4]);
+    expect(run('return Array.from([1, 2], (x, i) => i);')).toEqual([0, 1]);
+    expect(run('return Array.from({ length: 2 });')).toEqual([undefined, undefined]);
+    expect(run('return Array.from({ length: 2, 0: "a", 1: "b" });')).toEqual(['a', 'b']);
+    expect(run('return Array.from(list);', { list: [1] })).toEqual([1]);
+    expect(run('return Array.from({ length: 3 }, (_, i) => i);')).toEqual([0, 1, 2]);
+    expect(run('try { Array.from(5); } catch (e) { return e.message; }')).toBe('5 is not iterable');
+    expect(run('try { Array.from([], 5); } catch (e) { return e.message; }')).toBe(
+      '5 is not a function'
+    );
+    expect(run('return Array.foo;')).toBeUndefined();
+  });
+
+  it('from reads an array-like length as ToLength does', () => {
+    expect(run('return Array.from({ length: 1.5, 0: "a", 1: "b" });')).toEqual(['a']);
+    expect(run('return Array.from({ length: -1, 0: "a" });')).toEqual([]);
+    expect(run('return Array.from({ length: "2", 0: "a", 1: "b" });')).toEqual(['a', 'b']);
+    expect(run('return Array.from({ length: NaN, 0: "a" });')).toEqual([]);
+  });
+
+  it('from maps each item as it is read', () => {
+    expect(
+      run('const a = [1, 2]; return Array.from(a, (x, i) => { if (i === 0) a[1] = 9; return x; });')
+    ).toEqual([1, 9]);
+    expect(
+      run(
+        'const o = { length: 2, 0: 1, 1: 2 }; return Array.from(o, (x, i) => { if (i === 0) o[1] = 9; return x; });'
+      )
+    ).toEqual([1, 9]);
+  });
+});
+
 describe('holes', () => {
   it('are skipped by the callback methods', () => {
     const code =
@@ -255,46 +296,5 @@ describe('Array as a function and a constructor', () => {
       message: 'Invalid array length'
     });
     expect(runAndCatch(maple, 'new Array(1.5);').sandboxError?.name).toBe('RangeError');
-  });
-});
-
-describe('Array statics', () => {
-  it('isArray, of and from', () => {
-    expect(run('return [Array.isArray([]), Array.isArray({}), Array.isArray("a")];')).toEqual([
-      true,
-      false,
-      false
-    ]);
-    expect(run('return Array.of(1, "a");')).toEqual([1, 'a']);
-    expect(run('return Array.from("ab");')).toEqual(['a', 'b']);
-    expect(run('return Array.from([1, 2], (x) => x * 2);')).toEqual([2, 4]);
-    expect(run('return Array.from([1, 2], (x, i) => i);')).toEqual([0, 1]);
-    expect(run('return Array.from({ length: 2 });')).toEqual([undefined, undefined]);
-    expect(run('return Array.from({ length: 2, 0: "a", 1: "b" });')).toEqual(['a', 'b']);
-    expect(run('return Array.from(list);', { list: [1] })).toEqual([1]);
-    expect(run('return Array.from({ length: 3 }, (_, i) => i);')).toEqual([0, 1, 2]);
-    expect(run('try { Array.from(5); } catch (e) { return e.message; }')).toBe('5 is not iterable');
-    expect(run('try { Array.from([], 5); } catch (e) { return e.message; }')).toBe(
-      '5 is not a function'
-    );
-    expect(run('return Array.foo;')).toBeUndefined();
-  });
-
-  it('from reads an array-like length as ToLength does', () => {
-    expect(run('return Array.from({ length: 1.5, 0: "a", 1: "b" });')).toEqual(['a']);
-    expect(run('return Array.from({ length: -1, 0: "a" });')).toEqual([]);
-    expect(run('return Array.from({ length: "2", 0: "a", 1: "b" });')).toEqual(['a', 'b']);
-    expect(run('return Array.from({ length: NaN, 0: "a" });')).toEqual([]);
-  });
-
-  it('from maps each item as it is read', () => {
-    expect(
-      run('const a = [1, 2]; return Array.from(a, (x, i) => { if (i === 0) a[1] = 9; return x; });')
-    ).toEqual([1, 9]);
-    expect(
-      run(
-        'const o = { length: 2, 0: 1, 1: 2 }; return Array.from(o, (x, i) => { if (i === 0) o[1] = 9; return x; });'
-      )
-    ).toEqual([1, 9]);
   });
 });

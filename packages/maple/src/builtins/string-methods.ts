@@ -1,8 +1,8 @@
 import {
   intlOptionsArgument,
   localesArgument,
-  optionalNumber,
-  optionalString
+  optionalNumberArgument,
+  optionalStringArgument
 } from '../values/arguments.ts';
 import { toNumber, toString } from '../values/coercion.ts';
 import {
@@ -42,44 +42,44 @@ export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string,
   [
     'endsWith',
     method(String.prototype.endsWith.length, (s, [search, end]) =>
-      s.endsWith(toString(search), optionalNumber(end))
+      s.endsWith(toString(search), optionalNumberArgument(end))
     )
   ],
   ['isWellFormed', method(String.prototype.isWellFormed.length, (s) => s.isWellFormed())],
   [
     'includes',
     method(String.prototype.includes.length, (s, [search, position]) =>
-      s.includes(toString(search), optionalNumber(position))
+      s.includes(toString(search), optionalNumberArgument(position))
     )
   ],
   [
     'indexOf',
     method(String.prototype.indexOf.length, (s, [search, position]) =>
-      s.indexOf(toString(search), optionalNumber(position))
+      s.indexOf(toString(search), optionalNumberArgument(position))
     )
   ],
   [
     'lastIndexOf',
     method(String.prototype.lastIndexOf.length, (s, [search, position]) =>
-      s.lastIndexOf(toString(search), optionalNumber(position))
+      s.lastIndexOf(toString(search), optionalNumberArgument(position))
     )
   ],
   [
     'normalize',
     method(String.prototype.normalize.length, (s, [form], { fail }) =>
-      guardHostErrors(fail, () => s.normalize(optionalString(form)))
+      guardHostErrors(fail, () => s.normalize(optionalStringArgument(form)))
     )
   ],
   [
     'padEnd',
     method(String.prototype.padEnd.length, (s, [length, fill], { fail }) =>
-      guardHostErrors(fail, () => s.padEnd(toNumber(length), optionalString(fill)))
+      guardHostErrors(fail, () => s.padEnd(toNumber(length), optionalStringArgument(fill)))
     )
   ],
   [
     'padStart',
     method(String.prototype.padStart.length, (s, [length, fill], { fail }) =>
-      guardHostErrors(fail, () => s.padStart(toNumber(length), optionalString(fill)))
+      guardHostErrors(fail, () => s.padStart(toNumber(length), optionalStringArgument(fill)))
     )
   ],
   [
@@ -103,17 +103,17 @@ export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string,
   [
     'slice',
     method(String.prototype.slice.length, (s, [start, end]) =>
-      s.slice(optionalNumber(start), optionalNumber(end))
+      s.slice(optionalNumberArgument(start), optionalNumberArgument(end))
     )
   ],
   [
     'split',
     method(String.prototype.split.length, (s, [separator, limit]) =>
       separator === undefined
-        ? [s].slice(0, optionalNumber(limit) ?? 1)
+        ? [s].slice(0, optionalNumberArgument(limit) ?? 1)
         : s.split(
             separator instanceof RegExpWrapper ? matcherOf(separator) : toString(separator),
-            optionalNumber(limit)
+            optionalNumberArgument(limit)
           )
     )
   ],
@@ -145,7 +145,7 @@ export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string,
   [
     'startsWith',
     method(String.prototype.startsWith.length, (s, [search, position]) =>
-      s.startsWith(toString(search), optionalNumber(position))
+      s.startsWith(toString(search), optionalNumberArgument(position))
     )
   ],
   [
@@ -155,7 +155,7 @@ export const STRING_METHODS: ReadonlyMap<string, StringMethod> = new Map<string,
   [
     'substring',
     method(String.prototype.substring.length, (s, [start, end]) =>
-      s.substring(toNumber(start), optionalNumber(end))
+      s.substring(toNumber(start), optionalNumberArgument(end))
     )
   ],
   [

@@ -9,7 +9,7 @@ import {
   RegExpWrapper,
   SetWrapper
 } from '../values/wrappers.ts';
-import { ARRAY_STATICS, constructArray } from './array-statics.ts';
+import { ARRAY_BUILTIN } from './array/array.ts';
 import { constructDate, DATE_STATICS } from './date-statics.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
 import { JSON_STATICS } from './json-statics.ts';
@@ -67,14 +67,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   SyntaxError: errorConstructor('SyntaxError', SyntaxError.length),
   URIError: errorConstructor('URIError', URIError.length),
   EvalError: errorConstructor('EvalError', EvalError.length),
-  Array: new Builtin({
-    name: 'Array',
-    length: Array.length,
-    call: constructArray,
-    construct: constructArray,
-    isInstance: Array.isArray,
-    members: ARRAY_STATICS
-  }),
+  Array: ARRAY_BUILTIN,
   Object: new Builtin({
     name: 'Object',
     length: Object.length,
