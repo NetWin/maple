@@ -4,14 +4,14 @@ import { NativeFunction } from '../../../values/native.ts';
 export const OBJECT_STATIC_ASSIGN: NativeFunction = new NativeFunction(
   'assign',
   Object.assign.length,
-  (_, [target, ...sources], { fail, charge }) => {
+  (_, [target, ...sources], context) => {
     if (typeof target !== 'object' || target === null) {
-      return fail('TypeError', 'Object.assign needs an object as its target');
+      return context.fail('TypeError', 'Object.assign needs an object as its target');
     }
 
     for (const source of sources) {
-      for (const [key, value] of ownEntries(source)) {
-        setMember(target, key, value, fail, charge);
+      for (const [key, value] of ownEntries(source, context.runState)) {
+        setMember(target, key, value, context);
       }
     }
 

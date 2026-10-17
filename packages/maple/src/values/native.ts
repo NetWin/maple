@@ -1,7 +1,6 @@
 import type { HostFunction, Intrinsic } from '../boundary/host.ts';
 import { FUNCTION_PLACEHOLDER, type Primitive } from './coercion.ts';
-import { ExtraProperties } from './extra-properties.ts';
-import type { Charge, Fail } from './members.ts';
+import type { Fail, MemberContext } from './members.ts';
 import {
   FUNCTION_PROPERTIES,
   type FixedProperties,
@@ -9,11 +8,11 @@ import {
   SandboxObject
 } from './sandbox-object.ts';
 
-/** What a built-in receives besides its arguments: its ways back into the interpreter. */
-export interface CallContext {
-  readonly fail: Fail;
-  /** Charges operations for work proportional to the size of a value, such as copied elements. */
-  readonly charge: Charge;
+/**
+ * What a built-in receives besides its arguments: its ways back into the interpreter. `charge`
+ * covers work proportional to the size of a value, such as copied elements.
+ */
+export interface CallContext extends MemberContext {
   /** Calls a script function under the budget, for callbacks such as a replace function. */
   call(callee: unknown, args: ReadonlyArray<unknown>): unknown;
   /** The script call stack at this point, formatted for `Error.stack`. */
@@ -38,8 +37,8 @@ export type NativeImplementation = (
  * A built-in or host function as a value, such as `Math.max`, `trim` read off a string, or a
  * function from `globals`. A built-in shows its `name` and `length` to the script; a host
  * function has an `undefined` length and shows no properties at all, since its name and arity
- * are the host's business. Built-in and host functions are shared between runs, so they take no
- * properties.
+ * are the host's business. Built-in and host functions are shared between runs, so what a script
+ * adds to one is kept by the run.
  */
 export class NativeFunction extends SandboxObject {
   public readonly name: string;
@@ -56,7 +55,7 @@ export class NativeFunction extends SandboxObject {
   protected readonly fixed: FixedProperties<NativeFunction>;
 
   constructor(name: string, length: number | undefined, invoke: NativeImplementation) {
-    super(ExtraProperties.NONE);
+    super(true);
     this.name = name;
     this.length = length;
     this.invoke = invoke;
@@ -65,11 +64,6 @@ export class NativeFunction extends SandboxObject {
 
   public override toPrimitive(): Primitive {
     return FUNCTION_PLACEHOLDER;
-  }
-
-  /** As on a primitive, the write fails whatever the key, since the function cannot hold one. */
-  public override setProperty(key: string, _value: unknown, fail: Fail): never {
-    return fail('TypeError', `Cannot create property '${key}' on function`);
   }
 }
 

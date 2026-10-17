@@ -1,6 +1,5 @@
 import type { Node } from 'acorn';
 import { type Primitive, toString } from './coercion.ts';
-import { ExtraProperties } from './extra-properties.ts';
 import { type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
 /** `name` and `message` take any value as a string. */
@@ -43,7 +42,7 @@ export class SandboxError extends SandboxObject {
   protected readonly fixed: FixedProperties<SandboxError> = ERROR_PROPERTIES;
 
   constructor(name: string, message: string, kind: string = name, frames: string = '') {
-    super(new ExtraProperties());
+    super(false);
     this.name = name;
     this.message = message;
     this.kind = kind;

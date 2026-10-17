@@ -1,6 +1,5 @@
 import { FUNCTION_PLACEHOLDER, type Primitive, type PrimitiveHint } from './coercion.ts';
-import { ExtraProperties } from './extra-properties.ts';
-import type { Fail } from './members.ts';
+import type { MemberContext } from './members.ts';
 import type { CallContext } from './native.ts';
 import type { Prototype } from './prototype.ts';
 import {
@@ -32,8 +31,8 @@ export interface BuiltinOptions {
 }
 
 /**
- * A standard global such as `Error`, `Array` or `Math`: a namespace the script can only read. It is
- * shared between runs, so it takes no properties.
+ * A standard global such as `Error`, `Array` or `Math`, whose members the script can only read. It
+ * is shared between runs, so what a script adds to one is kept by the run.
  */
 export class Builtin extends SandboxObject {
   public readonly name: string;
@@ -57,7 +56,7 @@ export class Builtin extends SandboxObject {
   protected readonly fixed: FixedProperties<Builtin>;
 
   constructor(options: BuiltinOptions) {
-    super(ExtraProperties.NONE);
+    super(true);
     this.name = options.name;
     this.length = options.length;
     const members = Object.entries(options.members ?? {}).map(
@@ -75,9 +74,12 @@ export class Builtin extends SandboxObject {
     this.tag = this.isCallable ? 'Function' : options.name;
   }
 
-  /** Not even a key it does not have can be deleted, so a global reads as fixed as it is. */
-  public override deleteProperty(key: string, fail: Fail): never {
-    return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
+  /** Its members cannot be deleted, so `Math.PI` stays; what the run added to it can. */
+  public override deleteProperty(key: string, context: MemberContext): boolean {
+    if (this.fixed.has(key)) {
+      return context.fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
+    }
+    return super.deleteProperty(key, context);
   }
 
   /** A namespace converts as in JavaScript, `[object Math]`. */

@@ -1,10 +1,9 @@
 import { isPlainObject } from '../../../support/is-plain-object.ts';
 import { MAX_NESTING } from '../../../support/nesting-limit.ts';
-import { Builtin } from '../../../values/builtin.ts';
-import { Closure } from '../../../values/closure.ts';
 import type { IExtraProperties } from '../../../values/extra-properties.ts';
 import { getExtraPropertiesOf } from '../../../values/members.ts';
 import { type CallContext, isCallable, NativeFunction } from '../../../values/native.ts';
+import { SandboxObject } from '../../../values/sandbox-object.ts';
 import { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 
 /** What one `stringify` call carries through the recursion. */
@@ -113,12 +112,9 @@ function serialize(
     throw new Error(`A ${typeof current} reached JSON.stringify`);
   }
 
-  if (current instanceof Closure || current instanceof NativeFunction) {
+  // A namespace such as Math serializes like an object holding what the run added to it
+  if (current instanceof SandboxObject && current.isCallable) {
     return undefined;
-  }
-
-  if (current instanceof Builtin) {
-    return current.isCallable ? undefined : '{}';
   }
 
   if (ancestors.includes(current)) {
@@ -155,7 +151,7 @@ function serialize(
         keys: (): Array<string> => Object.keys(current)
       };
     } else {
-      properties = getExtraPropertiesOf(current);
+      properties = getExtraPropertiesOf(current, context.runState);
     }
     if (!properties) {
       throw new Error('A value of an unknown kind reached JSON.stringify');

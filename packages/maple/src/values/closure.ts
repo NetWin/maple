@@ -1,7 +1,6 @@
 import type { ArrowFunctionExpression, FunctionDeclaration, FunctionExpression } from 'acorn';
 import type { Scope } from '../evaluator/scope.ts';
 import { FUNCTION_PLACEHOLDER, type Primitive } from './coercion.ts';
-import { ExtraProperties } from './extra-properties.ts';
 import { FUNCTION_PROPERTIES, type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
 export type FunctionNode = FunctionDeclaration | FunctionExpression | ArrowFunctionExpression;
@@ -22,7 +21,7 @@ export class Closure extends SandboxObject {
   protected readonly fixed: FixedProperties<Closure> = FUNCTION_PROPERTIES;
 
   constructor(node: FunctionNode, scope: Scope, inferredName: string = '') {
-    super(new ExtraProperties());
+    super(false);
     this.node = node;
     this.scope = scope;
     this.name = node.type !== 'ArrowFunctionExpression' && node.id ? node.id.name : inferredName;

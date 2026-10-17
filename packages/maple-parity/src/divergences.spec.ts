@@ -300,24 +300,6 @@ describe('constructor', () => {
 
 // Not supported yet: each entry goes once Maple supports it.
 
-// Built-in functions and namespaces are shared by every run, so a property added to one must not
-// carry over into the next; it needs state that lives as long as the run.
-
-describe('assign:built-in function', () => {
-  it('refuses properties on a built-in method', () => {
-    expect(rejected('var p = [].push; p.cache = 1; return p.cache;')).toBe(
-      MapleErrorCode.RUNTIME_ERROR
-    );
-  });
-
-  it('refuses properties on a global function and a namespace', () => {
-    expect(rejected('parseInt.cache = 1; return parseInt.cache;')).toBe(
-      MapleErrorCode.RUNTIME_ERROR
-    );
-    expect(rejected('Math.answer = 42; return Math.answer;')).toBe(MapleErrorCode.RUNTIME_ERROR);
-  });
-});
-
 // Maple has no extensibility flag apart from freezing yet.
 
 describe('Object.isExtensible', () => {

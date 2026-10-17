@@ -84,7 +84,8 @@ describe('errors', () => {
       expect(run('return typeof Error;')).toBe('function');
       expect(run('return Error.captureStackTrace;')).toBeUndefined();
       expect(run('return new Error("x").foo;')).toBeUndefined();
-      expect(runAndCatch(maple, 'Error.x = 1;').sandboxError?.name).toBe('TypeError');
+      expect(run('Error.x = 1; return Error.x;')).toBe(1);
+      expect(run('return Error.x;')).toBeUndefined();
     });
   });
 

@@ -400,3 +400,17 @@ describe('assign:function property', () => {
     ).toEqual(['a']);
   });
 });
+
+describe('assign:built-in function', () => {
+  it('takes properties on a built-in method', () => {
+    expect(parity('var p = [].push; p.cache = 1; return [p.cache, [].push.cache];')).toEqual([
+      1, 1
+    ]);
+  });
+
+  it('takes properties on a global function and a namespace', () => {
+    expect(
+      parity('parseInt.cache = 1; Math.answer = 42; return [parseInt.cache, Math.answer];')
+    ).toEqual([1, 42]);
+  });
+});

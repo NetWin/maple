@@ -75,9 +75,8 @@ On purpose: these are what the sandbox leaves out.
 
 Planned; each entry goes once Maple supports it.
 
-| Divergence                                                                                                            | Why                                                                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| A property added to a built-in function or a namespace: `[].push.cache = 1`, `parseInt.cache = 1`, `Math.answer = 42` | Built-ins are shared by every run, so the property must not carry over into the next; it needs state that lives as long as the run. |
-| `isExtensible`, `preventExtensions`                                                                                   | Maple has no extensibility flag apart from freezing yet.                                                                            |
-| `call`, `apply`, `bind`                                                                                               | Every built-in method checks its receiver now, so they can come. Spread arguments and closures cover the uses until then.           |
-| `defineProperty`, `defineProperties`, `getOwnPropertyDescriptor`, `propertyIsEnumerable`                              | Data descriptors need per-property attributes on Maple's own values first. Accessors stay out, as getters and setters do.           |
+| Divergence                                                                               | Why                                                                                                                       |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `isExtensible`, `preventExtensions`                                                      | Maple has no extensibility flag apart from freezing yet.                                                                  |
+| `call`, `apply`, `bind`                                                                  | Every built-in method checks its receiver now, so they can come. Spread arguments and closures cover the uses until then. |
+| `defineProperty`, `defineProperties`, `getOwnPropertyDescriptor`, `propertyIsEnumerable` | Data descriptors need per-property attributes on Maple's own values first. Accessors stay out, as getters and setters do. |

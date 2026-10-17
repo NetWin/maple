@@ -224,7 +224,7 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
       run(
         'return [Object.isFrozen({}), Object.isFrozen(1), Object.isFrozen(() => 1), Object.isFrozen(Math.max), Object.isFrozen(new Map())];'
       )
-    ).toEqual([false, true, false, true, false]);
+    ).toEqual([false, true, false, false, false]);
     expect(
       run(
         'const f = Object.freeze(() => 1); const m = Object.freeze(new Map()); m.set(1, 2); try { f.x = 1; } catch (e) { return [e.name, Object.isFrozen(f), Object.isFrozen(m), m.size]; }'

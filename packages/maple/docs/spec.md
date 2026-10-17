@@ -330,10 +330,10 @@ functions and intrinsics are the one channel through which the host may share st
 runs, and that is the host's decision.
 
 Closures and built-in functions have their read-only `length` and `name`, and host functions and
-intrinsics have no properties at all. A closure takes the properties a script adds, as in
-`fn.cache = {}`. Built-in functions, host functions, intrinsics and namespaces are shared by every
-run, so writing to them throws a `TypeError`: a property on one would carry over into the next
-run.
+intrinsics have no properties at all. Every function takes the properties a script adds, as in
+`fn.cache = {}`, and so does a namespace such as `Math`. Built-in functions, host functions,
+intrinsics and namespaces are shared by every run, so what a run adds to one, or `freeze`s on it,
+is kept by that run and gone when the next one starts; a nested run sees what its run added.
 Their methods are listed under [Functions](#functions).
 
 ### Methods
@@ -344,8 +344,8 @@ through a host prototype. Each method is one function shared by every value of t
 JavaScript, the receiver comes from the call: `a.push(1)`, `a['push'](1)`, `(a.push)(1)`,
 `a?.push(1)` and `a.push?.(1)` pass `a`, while a plain call such as `const p = a.push; p(1)`,
 `(0, a.push)(1)` or a method passed as a callback has none and is a `TypeError`. A receiver of
-another type is refused the same way, so `({ t: 'x'.trim }).t()` is a `TypeError` where the
-language would convert the object. Own data properties win: `obj.toString()` where `obj` has an own key
+another type is refused the same way, so `({ t: 'x'.trim }).t()` is a `TypeError` where
+JavaScript would convert the object. Own data properties win: `obj.toString()` where `obj` has an own key
 `toString` calls that value. Plain objects have four dispatched methods: `hasOwnProperty`,
 `toString` and `toLocaleString`, which give what coercion gives, and `valueOf`, which gives the
 object itself. Booleans have `toString` and `valueOf`.
@@ -431,12 +431,12 @@ Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, 
 `getOwnPropertyNames` lists exactly the own names, enumerable or not, so
 `getOwnPropertyNames([1])` is `['0', 'length']`. `freeze` makes an object, array or error the
 script owns read-only, freezes the properties a script added to a closure or a wrapper, and
-returns it; for anything else it changes nothing. A frozen Map can still `set`, as in the
-language. A frozen RegExp keeps its `lastIndex`: assigning it throws a `TypeError`, and with `g` or
+returns it; for anything else it changes nothing. A frozen Map can still `set`, as in
+JavaScript. A frozen RegExp keeps its `lastIndex`: assigning it throws a `TypeError`, and with `g` or
 `y` so do `exec`, `test`, `match`, `search`, `replace` and `replaceAll`, which would write it;
-`split` and `matchAll` match on a copy and still work. `isFrozen` is `true` for primitives, built-in and host functions and namespaces, which
-cannot be written to, for collections that came in with the input, and for whatever `freeze` was
-given. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
+`split` and `matchAll` match on a copy and still work. `isFrozen` is `true` for primitives, for collections that came in with the
+input, and for whatever `freeze` was given; for a built-in function or a namespace, that is what
+the current run gave it. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
 `create`, …) and `seal` / `preventExtensions` are not available.
 
 `Object(...)` and `new Object(...)` do the same: a fresh object for no argument, `null` or

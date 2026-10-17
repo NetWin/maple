@@ -1,4 +1,4 @@
-import { type Fail, readMember } from '../values/members.ts';
+import { type MemberContext, readMember } from '../values/members.ts';
 import type { NativeFunction } from '../values/native.ts';
 import type { Prototype } from '../values/prototype.ts';
 import { ARRAY_PROTOTYPE } from './array/array-prototype.ts';
@@ -34,8 +34,8 @@ const PROTOTYPES: ReadonlyArray<Prototype> = [
 ];
 
 /** Reads a property as scripts see it: an own property, otherwise the receiver type's method. */
-export function getMember(target: unknown, key: string, fail: Fail): unknown {
-  return readMember(target, key, fail, (receiver) => resolveMethod(receiver, key));
+export function getMember(target: unknown, key: string, context: MemberContext): unknown {
+  return readMember(target, key, context, (receiver) => resolveMethod(receiver, key));
 }
 
 /**

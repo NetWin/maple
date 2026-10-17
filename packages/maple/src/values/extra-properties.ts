@@ -17,12 +17,6 @@ export class ExtraProperties implements IExtraProperties {
   #entries: Record<string, unknown> | undefined;
   #locked: boolean;
 
-  /**
-   * For the functions and globals shared between runs, which must never carry a property from one
-   * run into the next: empty and locked for good.
-   */
-  public static readonly NONE: ExtraProperties = new ExtraProperties(true);
-
   /** A wrapper that came in with the input starts locked, as it is read-only. */
   constructor(locked = false) {
     this.#locked = locked;

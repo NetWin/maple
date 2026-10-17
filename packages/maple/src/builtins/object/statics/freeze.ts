@@ -11,11 +11,11 @@ import { SandboxError } from '../../../values/sandbox-error.ts';
 export const OBJECT_STATIC_FREEZE: NativeFunction = new NativeFunction(
   'freeze',
   Object.freeze.length,
-  (_, [target]) => {
+  (_, [target], { runState }) => {
     if (Array.isArray(target) || isPlainObject(target) || target instanceof SandboxError) {
       Object.freeze(target);
     }
-    getExtraPropertiesOf(target)?.lock();
+    getExtraPropertiesOf(target, runState)?.lock();
     return target;
   }
 );

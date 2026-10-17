@@ -94,6 +94,10 @@ describe('intrinsics', () => {
       message: 'Call depth limit of 5 exceeded'
     });
     expect(runAndCatch(maple, 'exec("return 1 +;");').code).toBe('PARSE_ERROR');
+    expect(maple.run('Math.x = 1; return exec("Math.x++; return Math.x;") + Math.x;').value).toBe(
+      4
+    );
+    expect(maple.run('return exec("return Math.x;");').value).toBeUndefined();
     expect(
       maple.run(
         'try { exec("throw new RangeError(\\"deep\\");"); } catch (e) { return [e.name, e.message]; }'

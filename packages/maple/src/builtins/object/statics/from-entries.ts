@@ -10,7 +10,8 @@ import { getMember } from '../../method-dispatch.ts';
 export const OBJECT_STATIC_FROM_ENTRIES: NativeFunction = new NativeFunction(
   'fromEntries',
   Object.fromEntries.length,
-  (_, [iterable], { fail }) => {
+  (_, [iterable], context) => {
+    const fail = context.fail;
     const iterator = iterate(iterable);
     if (!iterator) {
       return fail('TypeError', `${toString(iterable)} is not iterable`);
@@ -22,7 +23,11 @@ export const OBJECT_STATIC_FROM_ENTRIES: NativeFunction = new NativeFunction(
       if (typeof entry !== 'object' || entry === null || entry instanceof Closure) {
         return fail('TypeError', `Iterator value ${toString(entry)} is not an entry object`);
       }
-      defineOwn(result, toPropertyKey(getMember(entry, '0', fail)), getMember(entry, '1', fail));
+      defineOwn(
+        result,
+        toPropertyKey(getMember(entry, '0', context)),
+        getMember(entry, '1', context)
+      );
     }
 
     return result;

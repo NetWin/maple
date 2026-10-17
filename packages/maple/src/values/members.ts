@@ -3,6 +3,7 @@ import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { toNumber, toString, typeOf } from './coercion.ts';
 import type { ExtraProperties } from './extra-properties.ts';
+import type { RunState } from './run-state.ts';
 import { SandboxObject } from './sandbox-object.ts';
 
 /** Raises a catchable sandbox error at the node the caller is evaluating. */
@@ -10,6 +11,16 @@ export type Fail = (name: string, message: string) => never;
 
 /** Charges operations against the run's budget, or ends the run when they do not fit. */
 export type Charge = (count: number) => void;
+
+/**
+ * What a member operation needs from the run: where to raise an error, the budget to charge
+ * growth to, and the run's own state for the values every run shares.
+ */
+export interface MemberContext {
+  readonly fail: Fail;
+  readonly charge: Charge;
+  readonly runState: RunState;
+}
 
 /** Finds the built-in method a receiver's type offers under `key`. */
 export type MethodLookup = (receiver: unknown, key: string) => unknown;
@@ -31,13 +42,18 @@ export function assertAllowedKey(key: string, fail: Fail): void {
 export function readMember(
   target: unknown,
   key: string,
-  fail: Fail,
+  context: MemberContext,
   methodLookup: MethodLookup
 ): unknown {
+  const fail = context.fail;
+  const runState = context.runState;
+
   if (target === undefined || target === null) {
     return fail('TypeError', `Cannot read properties of ${String(target)} (reading '${key}')`);
   }
+
   assertAllowedKey(key, fail);
+
   if (typeof target === 'string') {
     if (key === 'length') {
       return target.length;
@@ -45,18 +61,23 @@ export function readMember(
     const index = toArrayIndex(key);
     return index === undefined ? methodLookup(target, key) : target[index];
   }
+
   if (typeof target !== 'object') {
     return methodLookup(target, key);
   }
+
   if (target instanceof SandboxObject) {
-    return target.getProperty(key, methodLookup);
+    return target.getProperty(key, runState, methodLookup);
   }
+
   if (key === 'callee' && isArgumentsObject(target)) {
     return fail('TypeError', "'callee' may not be accessed on the arguments object in strict mode");
   }
+
   if (Array.isArray(target) || isPlainObject(target)) {
     return Object.hasOwn(target, key) ? Reflect.get(target, key) : methodLookup(target, key);
   }
+
   throw new Error('A value of an unknown kind was read');
 }
 
@@ -65,9 +86,9 @@ export function setMember(
   target: unknown,
   key: string,
   value: unknown,
-  fail: Fail,
-  charge: Charge
+  context: MemberContext
 ): void {
+  const { fail, charge } = context;
   if (target === undefined || target === null) {
     return fail('TypeError', `Cannot set properties of ${String(target)} (setting '${key}')`);
   }
@@ -80,7 +101,7 @@ export function setMember(
   }
 
   if (target instanceof SandboxObject) {
-    return target.setProperty(key, value, fail);
+    return target.setProperty(key, value, context);
   }
 
   if (Object.isFrozen(target)) {
@@ -124,7 +145,9 @@ export function setMember(
   throw new Error('A value of an unknown kind was written');
 }
 
-export function deleteMember(target: unknown, key: string, fail: Fail): boolean {
+export function deleteMember(target: unknown, key: string, context: MemberContext): boolean {
+  const fail = context.fail;
+
   if (target === undefined || target === null) {
     return fail('TypeError', `Cannot convert ${String(target)} to object`);
   }
@@ -133,7 +156,7 @@ export function deleteMember(target: unknown, key: string, fail: Fail): boolean 
   assertAllowedKey(key, fail);
 
   if (target instanceof SandboxObject) {
-    return target.deleteProperty(key, fail);
+    return target.deleteProperty(key, context);
   }
 
   if (typeof target !== 'object') {
@@ -148,30 +171,38 @@ export function deleteMember(target: unknown, key: string, fail: Fail): boolean 
 }
 
 /** The `in` operator over own properties, which is all the sandbox has. */
-export function hasMember(target: unknown, key: string, fail: Fail): boolean {
+export function hasMember(target: unknown, key: string, context: MemberContext): boolean {
+  const fail = context.fail;
+  const runState = context.runState;
+
   if (typeof target !== 'object' || target === null) {
     return fail(
       'TypeError',
       `Cannot use 'in' operator to search for '${key}' in ${toString(target)}`
     );
   }
+
   if (target instanceof SandboxObject) {
-    return target.hasProperty(key);
+    return target.hasProperty(key, runState);
   }
+
   return Object.hasOwn(target, key);
 }
 
 /** The own property names `in` answers `true` for, enumerable or not, for `getOwnPropertyNames`. */
-export function ownPropertyNames(target: unknown): Array<string> {
+export function ownPropertyNames(target: unknown, runState: RunState): Array<string> {
   if (typeof target === 'string') {
     return [...Object.keys(target), 'length'];
   }
+
   if (typeof target !== 'object' || target === null) {
     return [];
   }
+
   if (target instanceof SandboxObject) {
-    return target.ownKeys();
+    return target.ownKeys(runState);
   }
+
   return Object.getOwnPropertyNames(target);
 }
 
@@ -179,7 +210,7 @@ export function ownPropertyNames(target: unknown): Array<string> {
  * What object spread and object rest copy: own enumerable entries of objects, arrays and strings,
  * one at a time, so a caller can charge each entry before the next exists.
  */
-export function* ownEntries(value: unknown): Generator<[string, unknown]> {
+export function* ownEntries(value: unknown, runState: RunState): Generator<[string, unknown]> {
   if (typeof value === 'string') {
     for (let index = 0; index < value.length; index++) {
       yield [String(index), value.charAt(index)];
@@ -192,18 +223,21 @@ export function* ownEntries(value: unknown): Generator<[string, unknown]> {
     }
     return;
   }
-  const extra = getExtraPropertiesOf(value);
+  const extra = getExtraPropertiesOf(value, runState);
   for (const key of extra?.keys() ?? []) {
     yield [key, extra?.get(key)];
   }
 }
 
 /**
- * What a script added to a value that is not a plain object or an array. A built-in or host
- * function has a locked, empty set of them, since it is shared between runs.
+ * What a script added to a value that is not a plain object or an array; for a built-in or host
+ * function, which every run shares, what `run` added.
  */
-export function getExtraPropertiesOf(value: unknown): ExtraProperties | undefined {
-  return value instanceof SandboxObject ? value.properties : undefined;
+export function getExtraPropertiesOf(
+  value: unknown,
+  runState: RunState
+): ExtraProperties | undefined {
+  return value instanceof SandboxObject ? value.getExtraProperties(runState) : undefined;
 }
 
 /** The canonical array index a key denotes, if any: `'1'` but not `'01'` or `'1.5'`. */

@@ -6,8 +6,8 @@ import { asObjectCoercibleOrThrow } from '../utils/as-object-coercible-or-throw.
 export const OBJECT_STATIC_HAS_OWN: NativeFunction = new NativeFunction(
   'hasOwn',
   Object.hasOwn.length,
-  (_, [target, key], { fail }) => {
-    const object = asObjectCoercibleOrThrow(target, fail);
+  (_, [target, key], context) => {
+    const object = asObjectCoercibleOrThrow(target, context.fail);
     const name = toPropertyKey(key);
 
     if (typeof object === 'string') {
@@ -15,6 +15,6 @@ export const OBJECT_STATIC_HAS_OWN: NativeFunction = new NativeFunction(
       return name === 'length' || (index !== undefined && index < object.length);
     }
 
-    return typeof object === 'object' && object !== null ? hasMember(object, name, fail) : false;
+    return typeof object === 'object' && object !== null ? hasMember(object, name, context) : false;
   }
 );

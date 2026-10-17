@@ -5,6 +5,6 @@ import { asObjectCoercibleOrThrow } from '../utils/as-object-coercible-or-throw.
 export const OBJECT_STATIC_KEYS: NativeFunction = new NativeFunction(
   'keys',
   Object.keys.length,
-  (_, [target], { fail }) =>
-    Array.from(ownEntries(asObjectCoercibleOrThrow(target, fail)), ([key]) => key)
+  (_, [target], { fail, runState }) =>
+    Array.from(ownEntries(asObjectCoercibleOrThrow(target, fail), runState), ([key]) => key)
 );

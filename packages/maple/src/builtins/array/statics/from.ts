@@ -26,10 +26,10 @@ export const ARRAY_STATIC_FROM: NativeFunction = new NativeFunction(
     if (typeof source !== 'object' || source === null) {
       return fail('TypeError', `${toString(source)} is not iterable`);
     }
-    const length = toLength(getMember(source, 'length', fail));
+    const length = toLength(getMember(source, 'length', context));
     for (let index = 0; index < length; index++) {
       context.charge(1);
-      add(getMember(source, String(index), fail));
+      add(getMember(source, String(index), context));
     }
     return items;
   }

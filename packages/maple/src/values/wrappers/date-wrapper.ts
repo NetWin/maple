@@ -1,5 +1,4 @@
 import type { Primitive, PrimitiveHint } from '../coercion.ts';
-import { ExtraProperties } from '../extra-properties.ts';
 import { type FixedProperties, NO_FIXED_PROPERTIES, SandboxObject } from '../sandbox-object.ts';
 
 export class DateWrapper extends SandboxObject {
@@ -13,7 +12,7 @@ export class DateWrapper extends SandboxObject {
   protected readonly fixed: FixedProperties<DateWrapper> = NO_FIXED_PROPERTIES;
 
   constructor(date: Date, readOnly = false) {
-    super(new ExtraProperties(readOnly));
+    super(false, readOnly);
     this.date = date;
     this.readOnly = readOnly;
   }

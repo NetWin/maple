@@ -47,11 +47,13 @@ import {
   deleteMember,
   type Fail,
   hasMember,
+  type MemberContext,
   ownEntries,
   setMember,
   toPropertyKey
 } from '../values/members.ts';
 import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
+import { RunState } from '../values/run-state.ts';
 import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
@@ -175,6 +177,9 @@ export class Evaluator {
 
   /** The active script calls, outermost first; `Error.stack` is rendered from it. */
   readonly #frames: Array<Frame> = [];
+
+  /** What this run changed on the values every run shares; a nested run shares it with its budget. */
+  readonly #runState = new RunState();
 
   /** Script throws handed to an intrinsic as `MapleError`s, so they can be restored on the way out. */
   readonly #wrapped = new WeakMap<MapleError, SandboxThrow>();
@@ -431,12 +436,12 @@ export class Evaluator {
         pattern
       );
     }
-    const fail = this.failAt(pattern);
+    const context = this.memberContext(pattern);
     const taken = new Set<string>();
     for (const property of pattern.properties) {
       if (property.type === 'RestElement') {
         const rest: Record<string, unknown> = {};
-        for (const [key, entry] of ownEntries(value)) {
+        for (const [key, entry] of ownEntries(value, this.#runState)) {
           this.tick(property);
           if (!taken.has(key)) {
             defineOwn(rest, key, entry);
@@ -447,7 +452,7 @@ export class Evaluator {
       }
       const key = this.propertyKey(property.key, property.computed, scope);
       taken.add(key);
-      this.bindPattern(property.value, getMember(value, key, fail), scope, mode);
+      this.bindPattern(property.value, getMember(value, key, context), scope, mode);
     }
   }
 
@@ -550,7 +555,7 @@ export class Evaluator {
   }
 
   private evaluateForIn(node: ForInStatement, scope: Scope, labels: Labels): Completion {
-    const keys = enumerableKeys(this.evaluateExpression(node.right, scope));
+    const keys = enumerableKeys(this.evaluateExpression(node.right, scope), this.#runState);
     for (const key of keys) {
       this.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, key, scope);
@@ -685,7 +690,9 @@ export class Evaluator {
         const right = this.evaluateExpression(node.right, scope);
         if (node.operator === 'in') {
           const propertyKey = toPropertyKey(left);
-          return hasMember(right, propertyKey, this.failAt(node)) || hasMethod(right, propertyKey);
+          return (
+            hasMember(right, propertyKey, this.memberContext(node)) || hasMethod(right, propertyKey)
+          );
         }
         if (node.operator === 'instanceof') {
           return this.instanceOf(left, right, node);
@@ -756,7 +763,10 @@ export class Evaluator {
     const object: Record<string, unknown> = {};
     for (const property of node.properties) {
       if (property.type === 'SpreadElement') {
-        for (const [key, value] of ownEntries(this.evaluateExpression(property.argument, scope))) {
+        for (const [key, value] of ownEntries(
+          this.evaluateExpression(property.argument, scope),
+          this.#runState
+        )) {
           this.tick(property);
           defineOwn(object, key, value);
         }
@@ -814,7 +824,7 @@ export class Evaluator {
       return SHORT_CIRCUIT;
     }
     const key = this.propertyKey(node.property, node.computed, scope);
-    return { object, value: getMember(object, key, this.failAt(node)) };
+    return { object, value: getMember(object, key, this.memberContext(node)) };
   }
 
   /** The key of a member access or a literal property; computed keys go through ToPropertyKey. */
@@ -855,10 +865,10 @@ export class Evaluator {
     }
     const object = this.evaluateExpression(target.object, scope);
     const key = this.propertyKey(target.property, target.computed, scope);
-    const fail = this.failAt(target);
+    const context = this.memberContext(target);
     return {
-      get: () => getMember(object, key, fail),
-      set: (value) => setMember(object, key, value, fail, (count) => this.charge(count, target))
+      get: () => getMember(object, key, context),
+      set: (value) => setMember(object, key, value, context)
     };
   }
 
@@ -931,7 +941,7 @@ export class Evaluator {
         }
         const object = this.evaluateExpression(node.argument.object, scope);
         const key = this.propertyKey(node.argument.property, node.argument.computed, scope);
-        return deleteMember(object, key, this.failAt(node.argument));
+        return deleteMember(object, key, this.memberContext(node.argument));
       }
       case 'typeof':
         // `typeof undeclared` is the one read of an unknown name that does not throw
@@ -1014,11 +1024,19 @@ export class Evaluator {
     return this.invoke(receiver, target, args, node, this.describe(callee));
   }
 
-  /** What a built-in gets to reach back into the run; `node` is the call it was invoked from. */
-  private callContext(node: Node): CallContext {
+  /** What a member operation at `node` needs from the run. */
+  private memberContext(node: Node): MemberContext {
     return {
       fail: this.failAt(node),
       charge: (count) => this.charge(count, node),
+      runState: this.#runState
+    };
+  }
+
+  /** What a built-in gets to reach back into the run; `node` is the call it was invoked from. */
+  private callContext(node: Node): CallContext {
+    return {
+      ...this.memberContext(node),
       call: (callee, args) => {
         this.tick(node);
         return this.invoke(undefined, callee, args, node, 'callback');

@@ -36,7 +36,8 @@ describe('host functions', () => {
     expect(maple.run('return [f, { f }];').value).toEqual([undefined, { f: undefined }]);
     expect(maple.run('const g = f; return g();').value).toBe(1);
     expect(runAndCatch(maple, 'new f();').code).toBe('DISALLOWED_SYNTAX');
-    expect(sandboxError(maple, 'f.x = 1;')?.name).toBe('TypeError');
+    expect(maple.run('f.x = 1; return f.x;').value).toBe(1);
+    expect(maple.run('return f.x;').value).toBeUndefined();
   });
 
   it('receive copies of the arguments, never references', () => {

@@ -78,6 +78,6 @@ describe('global number functions', () => {
     expect(run('return typeof parseInt;')).toBe('function');
     expect(run('const p = parseInt; return p("8");')).toBe(8);
     expect(run('return [parseInt.length, parseInt.name];')).toEqual([2, 'parseInt']);
-    expect(runAndCatch(maple, 'parseInt.x = 1;').sandboxError?.name).toBe('TypeError');
+    expect(run('parseInt.x = 1; return parseInt.x;')).toBe(1);
   });
 });

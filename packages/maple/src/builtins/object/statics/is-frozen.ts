@@ -10,12 +10,12 @@ import { NativeFunction } from '../../../values/native.ts';
 export const OBJECT_STATIC_IS_FROZEN: NativeFunction = new NativeFunction(
   'isFrozen',
   Object.isFrozen.length,
-  (_, [target]) => {
+  (_, [target], { runState }) => {
     if (Array.isArray(target) || isPlainObject(target)) {
       return Object.isFrozen(target);
     }
 
-    const extra = getExtraPropertiesOf(target);
+    const extra = getExtraPropertiesOf(target, runState);
     return !extra || extra.locked;
   }
 );

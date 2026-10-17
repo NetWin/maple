@@ -1,5 +1,4 @@
 import { type Primitive, toNumber } from '../coercion.ts';
-import { ExtraProperties } from '../extra-properties.ts';
 import { type FixedProperties, SandboxObject } from '../sandbox-object.ts';
 
 /** What a regexp shows; `lastIndex` is the one that can be written. */
@@ -36,7 +35,7 @@ export class RegExpWrapper extends SandboxObject {
   protected readonly fixed: FixedProperties<RegExpWrapper> = REGEXP_PROPERTIES;
 
   constructor(regexp: RegExp, readOnly = false) {
-    super(new ExtraProperties(readOnly));
+    super(false, readOnly);
     this.regexp = regexp;
     this.readOnly = readOnly;
   }

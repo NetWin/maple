@@ -2,6 +2,7 @@ import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { toLength } from './coercion.ts';
 import { getExtraPropertiesOf } from './members.ts';
+import type { RunState } from './run-state.ts';
 import { IteratorWrapper } from './wrappers/iterator-wrapper.ts';
 import { MapWrapper } from './wrappers/map-wrapper.ts';
 import { SetWrapper } from './wrappers/set-wrapper.ts';
@@ -45,7 +46,7 @@ export function asHostIterable(value: unknown): Iterable<unknown> | undefined {
  * The keys `for...in` visits: own enumerable keys of plain objects, arrays and strings, and what a
  * script added to any other value of its own.
  */
-export function* enumerableKeys(value: unknown): Generator<string> {
+export function* enumerableKeys(value: unknown, runState: RunState): Generator<string> {
   if (typeof value === 'string') {
     for (let index = 0; index < value.length; index++) {
       yield String(index);
@@ -62,7 +63,7 @@ export function* enumerableKeys(value: unknown): Generator<string> {
     }
     return;
   }
-  const extra = getExtraPropertiesOf(value);
+  const extra = getExtraPropertiesOf(value, runState);
   for (const key of extra?.keys() ?? []) {
     if (extra?.has(key)) {
       yield key;

@@ -235,7 +235,7 @@ describe('escape attempts', () => {
       expect(errorName('host(Math.max);')).toBe('TypeError');
     });
 
-    it('cannot be given properties or inspected', () => {
+    it('cannot be inspected', () => {
       expect(run('return [(() => 1).length, (function f(a) {}).name];')).toEqual([0, 'f']);
       expect(run('return host.name;')).toBeUndefined();
       expect(run('return host.length;')).toBeUndefined();
@@ -247,15 +247,28 @@ describe('escape attempts', () => {
       expect(run('return Object.keys(() => 1);')).toEqual([]);
       expect(run('return Object.keys(host);')).toEqual([]);
       expect(run('return Object.keys(Math);')).toEqual([]);
-      expect(errorName('host.x = 1;')).toBe('TypeError');
-      expect(errorName('Math.max.x = 1;')).toBe('TypeError');
-      expect(errorName('[].push.x = 1;')).toBe('TypeError');
     });
 
-    it('keep shared functions free of state a run could leave for the next', () => {
-      expect(errorName('const p = [].push; p.cache = 1;')).toBe('TypeError');
-      expect(run('return [].push.cache;')).toBeUndefined();
-      expect(errorName('Math.x = 1;')).toBe('TypeError');
+    it('keep what a run adds to a shared value to that run', () => {
+      expect(
+        run(
+          'host.x = 1; Math.max.x = 2; [].push.x = 3; Math.x = 4; return [host.x, Math.max.x, [].push.x, Math.x];'
+        )
+      ).toEqual([1, 2, 3, 4]);
+      expect(run('return [host.x, Math.max.x, [].push.x, Math.x, Object.keys(Math)];')).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        []
+      ]);
+      expect(new Maple().run('return [].push.x;').value).toBeUndefined();
+    });
+
+    it('keep a shared value frozen only for the run that froze it', () => {
+      expect(run('Object.freeze(Math); return Object.isFrozen(Math);')).toBe(true);
+      expect(errorName('Object.freeze(Math); Math.x = 1;')).toBe('TypeError');
+      expect(run('Math.x = 1; return [Object.isFrozen(Math), Math.x];')).toEqual([false, 1]);
     });
   });
 
