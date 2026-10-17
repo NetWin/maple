@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Maple } from '../maple.ts';
-import { runAndCatch } from '../spec-helpers.ts';
+import { Maple } from '../../maple.ts';
+import { runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 

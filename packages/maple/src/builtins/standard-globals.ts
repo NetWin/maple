@@ -2,9 +2,9 @@ import { Builtin } from '../values/builtin.ts';
 import { toBoolean, toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import { DateWrapper, IteratorWrapper, MapWrapper, SetWrapper } from '../values/wrappers.ts';
+import { IteratorWrapper, MapWrapper, SetWrapper } from '../values/wrappers.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
-import { constructDate, DATE_STATICS } from './date-statics.ts';
+import { DATE_BUILTIN } from './date/date.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
 import { JSON_STATICS } from './json-statics.ts';
 import { constructMap, MAP_STATICS } from './map-statics.ts';
@@ -66,14 +66,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
     members: OBJECT_STATICS
   }),
   JSON: new Builtin({ name: 'JSON', members: JSON_STATICS }),
-  Date: new Builtin({
-    name: 'Date',
-    length: Date.length,
-    call: () => new Date().toString(),
-    construct: (args) => constructDate(args),
-    members: DATE_STATICS,
-    isInstance: (value) => value instanceof DateWrapper
-  }),
+  Date: DATE_BUILTIN,
   RegExp: REGEXP_BUILTIN,
   Map: new Builtin({
     name: 'Map',
