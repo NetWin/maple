@@ -10,7 +10,7 @@ import { IteratorWrapper } from '../../../values/wrappers.ts';
 export const ITERATOR_STATIC_FROM: NativeFunction = new NativeFunction(
   'from',
   Iterator.from.length,
-  ([source], { fail }) => {
+  (_, [source], { fail }) => {
     if (source instanceof IteratorWrapper) {
       return source;
     }

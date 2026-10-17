@@ -178,9 +178,11 @@ describe('array methods', () => {
     });
   });
 
-  it('exposes methods as bound functions', () => {
+  it('exposes methods as functions that need their array', () => {
     expect(run('const p = [].push; return typeof p;')).toBe('function');
-    expect(run('const l = []; const p = l.push; p(1); return l;')).toEqual([1]);
+    expect(runAndCatch(maple, 'const l = []; const p = l.push; p(1);').sandboxError?.message).toBe(
+      'Array.prototype.push called on incompatible receiver undefined'
+    );
     expect(run('return "map" in [];')).toBe(true);
     expect(run('return "valueOf" in [];')).toBe(false);
     expect(run('return [].map.call;')).toBeUndefined();

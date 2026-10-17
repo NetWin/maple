@@ -7,7 +7,7 @@ import { MapWrapper } from '../../../values/wrappers.ts';
 export const MAP_STATIC_GROUP_BY: NativeFunction = new NativeFunction(
   'groupBy',
   Map.groupBy.length,
-  ([items, callback], context) => {
+  (_, [items, callback], context) => {
     const iterable = asHostIterable(items);
     if (!iterable) {
       return context.fail('TypeError', `${toString(items)} is not iterable`);

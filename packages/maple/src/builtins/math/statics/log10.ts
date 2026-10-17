@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const MATH_STATIC_LOG10: NativeFunction = new NativeFunction(
   'log10',
   Math.log10.length,
-  ([x]) => Math.log10(toNumber(x))
+  (_, [x]) => Math.log10(toNumber(x))
 );

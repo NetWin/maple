@@ -10,7 +10,7 @@ import { getMember } from '../../method-dispatch.ts';
 export const OBJECT_STATIC_FROM_ENTRIES: NativeFunction = new NativeFunction(
   'fromEntries',
   Object.fromEntries.length,
-  ([iterable], { fail }) => {
+  (_, [iterable], { fail }) => {
     const iterator = iterate(iterable);
     if (!iterator) {
       return fail('TypeError', `${toString(iterable)} is not iterable`);

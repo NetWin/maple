@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const MATH_STATIC_HYPOT: NativeFunction = new NativeFunction(
   'hypot',
   Math.hypot.length,
-  (values) => Math.hypot(...values.map(toNumber))
+  (_, values) => Math.hypot(...values.map(toNumber))
 );

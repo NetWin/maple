@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const MATH_STATIC_COSH: NativeFunction = new NativeFunction(
   'cosh',
   Math.cosh.length,
-  ([x]) => Math.cosh(toNumber(x))
+  (_, [x]) => Math.cosh(toNumber(x))
 );

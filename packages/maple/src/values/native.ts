@@ -18,7 +18,15 @@ export interface CallContext {
   invokeIntrinsic(fn: Intrinsic, args: ReadonlyArray<unknown>): unknown;
 }
 
-export type NativeImplementation = (args: ReadonlyArray<unknown>, context: CallContext) => unknown;
+/**
+ * `receiver` is the object a member call such as `a.push(1)` was made on,
+ * and `undefined` for a plain call.
+ */
+export type NativeImplementation = (
+  receiver: unknown,
+  args: ReadonlyArray<unknown>,
+  context: CallContext
+) => unknown;
 
 /**
  * A built-in or host function as a value, such as `Math.max`, `trim` read off a string, or a

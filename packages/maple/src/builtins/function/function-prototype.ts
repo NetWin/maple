@@ -5,7 +5,7 @@ import { FUNCTION_METHOD_VALUE_OF } from './methods/value-of.ts';
 
 /**
  * The methods every function answers to, closures, built-ins and host functions alike. `call`,
- * `apply` and `bind` have no receiver to set and are left out.
+ * `apply` and `bind`, which would let a script pick the receiver, are left out.
  */
 export const FUNCTION_PROTOTYPE: Prototype = new Prototype(
   'Function',

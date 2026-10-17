@@ -35,8 +35,8 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   Infinity: Number.POSITIVE_INFINITY,
   parseInt: NUMBER_STATIC_PARSE_INT,
   parseFloat: NUMBER_STATIC_PARSE_FLOAT,
-  isNaN: new NativeFunction('isNaN', isNaN.length, ([value]) => Number.isNaN(toNumber(value))),
-  isFinite: new NativeFunction('isFinite', isFinite.length, ([value]) =>
+  isNaN: new NativeFunction('isNaN', isNaN.length, (_, [value]) => Number.isNaN(toNumber(value))),
+  isFinite: new NativeFunction('isFinite', isFinite.length, (_, [value]) =>
     Number.isFinite(toNumber(value))
   ),
   encodeURIComponent: uriFunction('encodeURIComponent', encodeURIComponent),
@@ -71,7 +71,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
  * catchable error under the host's name, `InvalidCharacterError`.
  */
 function base64Function(name: string, host: (text: string) => string): NativeFunction {
-  return new NativeFunction(name, host.length, ([text], { fail }) => {
+  return new NativeFunction(name, host.length, (_, [text], { fail }) => {
     try {
       return host(toString(text));
     } catch (error) {
@@ -85,7 +85,7 @@ function base64Function(name: string, host: (text: string) => string): NativeFun
 
 /** The URI functions throw `URIError` on malformed input, which the script may catch. */
 function uriFunction(name: string, host: (text: string) => string): NativeFunction {
-  return new NativeFunction(name, host.length, ([text], { fail }) =>
+  return new NativeFunction(name, host.length, (_, [text], { fail }) =>
     guardHostErrors(fail, () => host(toString(text)))
   );
 }

@@ -101,9 +101,11 @@ describe('string methods', () => {
     expect(tooLong('"a".padEnd(2 ** 30)')).toBe('RangeError: Invalid string length');
   });
 
-  it('expose methods as bound functions', () => {
+  it('expose methods as functions that need their string', () => {
     expect(run('return typeof "a".trim;')).toBe('function');
-    expect(run('const t = " a ".trim; return t();')).toBe('a');
+    expect(runAndCatch(maple, 'const t = " a ".trim; t();').sandboxError?.message).toBe(
+      'String.prototype.trim called on incompatible receiver undefined'
+    );
     expect(run('return "a".trim.foo;')).toBeUndefined();
     expect(run('return "a".foo;')).toBeUndefined();
     expect(run('return "a".trim + "";')).toBe('[function]');

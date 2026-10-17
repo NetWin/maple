@@ -333,10 +333,14 @@ Their methods are listed under [Functions](#functions).
 
 ### Methods
 
-A method call such as `s.trim()` is resolved by the receiver's type through a dispatch table, never
-through a host prototype. Reading the member without calling it yields the method bound to that
-receiver, so `typeof s.trim` is `'function'` and `const t = s.trim; t()` works; such a value has
-no properties of its own. Own data properties win: `obj.toString()` where `obj` has an own key
+A method call such as `s.trim()` is resolved by the receiver's type through its prototype, never
+through a host prototype. Each method is one function shared by every value of the type, so
+`a.push === b.push` and `'x'.trim === 'y'.trim`; such a value has no properties of its own. As in
+the language, the receiver comes from the call: `a.push(1)`, `a['push'](1)`, `(a.push)(1)`,
+`a?.push(1)` and `a.push?.(1)` pass `a`, while a plain call such as `const p = a.push; p(1)`,
+`(0, a.push)(1)` or a method passed as a callback has none and is a `TypeError`. A receiver of
+another type is refused the same way, so `({ t: 'x'.trim }).t()` is a `TypeError` where the
+language would convert the object. Own data properties win: `obj.toString()` where `obj` has an own key
 `toString` calls that value. Plain objects have four dispatched methods: `hasOwnProperty`,
 `toString` and `toLocaleString`, which give what coercion gives, and `valueOf`, which gives the
 object itself. Booleans have `toString` and `valueOf`.

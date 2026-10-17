@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const NUMBER_STATIC_PARSE_FLOAT: NativeFunction = new NativeFunction(
   'parseFloat',
   Number.parseFloat.length,
-  ([text]) => parseFloat(toString(text))
+  (_, [text]) => parseFloat(toString(text))
 );

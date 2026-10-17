@@ -39,11 +39,12 @@ export function getMember(target: unknown, key: string, fail: Fail): unknown {
 }
 
 /**
- * The method a receiver type offers under `key`, bound to that receiver, or `undefined`. This is
- * how `s.trim` resolves: through the prototype of the type, never through a host prototype.
+ * The method a receiver type offers under `key`, or `undefined`. This is how `s.trim` resolves:
+ * through the prototype of the type, never through a host prototype. It is the same function for
+ * every value of the type; the call supplies the receiver.
  */
 export function resolveMethod(receiver: unknown, key: string): NativeFunction | undefined {
-  return prototypeOf(receiver)?.resolve(receiver, key);
+  return prototypeOf(receiver)?.resolve(key);
 }
 
 /** Checks if a receiver type has a method under the given key. */

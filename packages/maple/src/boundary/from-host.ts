@@ -1,7 +1,7 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { toArrayIndex } from '../values/members.ts';
-import { NativeFunction } from '../values/native.ts';
+import { NativeFunction, type NativeImplementation } from '../values/native.ts';
 import { DateWrapper, MapWrapper, RegExpWrapper, SetWrapper } from '../values/wrappers.ts';
 import { isHostFunction, isIntrinsic } from './host.ts';
 
@@ -57,9 +57,10 @@ function convert(
     }
     const name = value.name === '' ? path : value.name;
     // No length, so the script sees no properties on a host function
-    const native = isIntrinsic(value)
-      ? new NativeFunction(name, undefined, (args, context) => context.invokeIntrinsic(value, args))
-      : new NativeFunction(name, undefined, (args, context) => context.invokeHost(value, args));
+    const impl: NativeImplementation = isIntrinsic(value)
+      ? (_, args, context) => context.invokeIntrinsic(value, args)
+      : (_, args, context) => context.invokeHost(value, args);
+    const native = new NativeFunction(name, undefined, impl);
     copies.set(value, native);
     return native;
   }

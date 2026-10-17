@@ -796,6 +796,15 @@ export class Evaluator {
   }
 
   private evaluateMember(node: MemberExpression, scope: Scope): unknown {
+    const access = this.accessMember(node, scope);
+    return access === SHORT_CIRCUIT ? SHORT_CIRCUIT : access.value;
+  }
+
+  /** A member read that also hands back the object, which a call needs as its receiver. */
+  private accessMember(
+    node: MemberExpression,
+    scope: Scope
+  ): { object: unknown; value: unknown } | typeof SHORT_CIRCUIT {
     if (node.object.type === 'Super') {
       return this.unsupported(node.object);
     }
@@ -804,7 +813,7 @@ export class Evaluator {
       return SHORT_CIRCUIT;
     }
     const key = this.propertyKey(node.property, node.computed, scope);
-    return getMember(object, key, this.failAt(node));
+    return { object, value: getMember(object, key, this.failAt(node)) };
   }
 
   /** The key of a member access or a literal property; computed keys go through ToPropertyKey. */
@@ -979,41 +988,29 @@ export class Evaluator {
     if (callee.type === 'Super') {
       return this.unsupported(callee);
     }
+
     let target: unknown;
-    let description: string;
+    let receiver: unknown;
     if (callee.type === 'MemberExpression') {
       // Not routed through evaluateExpression so a short-circuited object is seen here
       this.tick(callee);
-      target = this.evaluateMember(callee, scope);
-      description = this.describe(callee);
+      const access = this.accessMember(callee, scope);
+      if (access === SHORT_CIRCUIT) {
+        target = SHORT_CIRCUIT;
+      } else {
+        receiver = access.object;
+        target = access.value;
+      }
     } else {
       target = this.evaluateExpression(callee, scope);
-      description = this.describe(callee);
     }
+
     if (target === SHORT_CIRCUIT || (node.optional && (target === null || target === undefined))) {
       return SHORT_CIRCUIT;
     }
-    const args = this.evaluateArguments(node.arguments, scope);
-    return this.invoke(target, args, node, description);
-  }
 
-  /** Calls any callable sandbox value; `description` names it in the error when it is not one. */
-  private invoke(
-    callee: unknown,
-    args: ReadonlyArray<unknown>,
-    node: Node,
-    description: string
-  ): unknown {
-    if (callee instanceof Closure) {
-      return this.callClosure(callee, args, node);
-    }
-    if (callee instanceof NativeFunction) {
-      return callee.invoke(args, this.callContext(node));
-    }
-    if (callee instanceof Builtin && callee.call) {
-      return callee.call(args, this.callContext(node));
-    }
-    return this.throwError('TypeError', `${description} is not a function`, node);
+    const args = this.evaluateArguments(node.arguments, scope);
+    return this.invoke(receiver, target, args, node, this.describe(callee));
   }
 
   /** What a built-in gets to reach back into the run; `node` is the call it was invoked from. */
@@ -1023,7 +1020,7 @@ export class Evaluator {
       charge: (count) => this.charge(count, node),
       call: (callee, args) => {
         this.tick(node);
-        return this.invoke(callee, args, node, 'callback');
+        return this.invoke(undefined, callee, args, node, 'callback');
       },
       stackTrace: () => this.stackTrace(node),
       invokeHost: (fn, args) => this.invokeHost(fn, args, node),
@@ -1065,11 +1062,31 @@ export class Evaluator {
       call: (callee, args) =>
         this.forIntrinsic(() => {
           this.tick(node);
-          return this.invoke(callee, args, node, 'callback');
+          return this.invoke(undefined, callee, args, node, 'callback');
         }),
       run: (code, data, options = {}) =>
         this.forIntrinsic(() => this.runNested(code, data, options, node))
     };
+  }
+
+  /** Calls any callable sandbox value; `description` names it in the error when it is not one. */
+  private invoke(
+    receiver: unknown,
+    callee: unknown,
+    args: ReadonlyArray<unknown>,
+    node: Node,
+    description: string
+  ): unknown {
+    if (callee instanceof Closure) {
+      return this.callClosure(callee, args, node);
+    }
+    if (callee instanceof NativeFunction) {
+      return callee.invoke(receiver, args, this.callContext(node));
+    }
+    if (callee instanceof Builtin && callee.call) {
+      return callee.call(args, this.callContext(node));
+    }
+    return this.throwError('TypeError', `${description} is not a function`, node);
   }
 
   /** A nested program is one more call level and one more frame on the same budget. */

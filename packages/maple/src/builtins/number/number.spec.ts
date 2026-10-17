@@ -25,8 +25,10 @@ describe('number methods', () => {
     expect(run('try { (1).toString(1); } catch (e) { return e.name; }')).toBe('RangeError');
   });
 
-  it('are bound functions like string methods', () => {
-    expect(run('const f = (7).toFixed; return f(1);')).toBe('7.0');
+  it('are functions that need their number, like string methods', () => {
+    expect(runAndCatch(maple, 'const f = (7).toFixed; f(1);').sandboxError?.message).toBe(
+      'Number.prototype.toFixed called on incompatible receiver undefined'
+    );
     expect(run('return n.toFixed(1);', { n: 2 })).toBe('2.0');
   });
 });

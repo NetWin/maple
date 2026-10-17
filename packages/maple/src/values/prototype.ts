@@ -1,3 +1,4 @@
+import { toString } from './coercion.ts';
 import { type Method, NativeFunction } from './native.ts';
 
 /**
@@ -11,9 +12,8 @@ export class Prototype<Receiver = unknown> {
 
   readonly #receives: (value: unknown) => boolean;
 
-  readonly #keys: ReadonlySet<string>;
-
-  readonly #resolve: (receiver: unknown, key: string) => NativeFunction | undefined;
+  /** One function per method, shared by every value of the type, so `a.push === b.push`. */
+  readonly #functions: ReadonlyMap<string, NativeFunction>;
 
   constructor(
     name: string,
@@ -22,18 +22,20 @@ export class Prototype<Receiver = unknown> {
   ) {
     this.name = name;
     this.#receives = receives;
-    // Copied into a Map, so a script's key can never reach what an object literal inherits
-    const table = new Map(Object.entries(methods));
-    this.#keys = new Set(table.keys());
-    this.#resolve = (receiver, key): NativeFunction | undefined => {
-      const method = table.get(key);
-      if (!method || !receives(receiver)) {
-        return undefined;
-      }
-      return new NativeFunction(key, method.length, (args, context) =>
-        method.call(receiver, args, context)
-      );
-    };
+    this.#functions = new Map(
+      Object.entries(methods).map(([key, method]) => [
+        key,
+        new NativeFunction(key, method.length, (receiver, args, context) => {
+          if (!receives(receiver)) {
+            return context.fail(
+              'TypeError',
+              `${name}.prototype.${key} called on incompatible receiver ${toString(receiver)}`
+            );
+          }
+          return method.call(receiver, args, context);
+        })
+      ])
+    );
   }
 
   /** Whether `value` is one of this type's values, so its methods are looked up here. */
@@ -42,11 +44,11 @@ export class Prototype<Receiver = unknown> {
   }
 
   public has(key: string): boolean {
-    return this.#keys.has(key);
+    return this.#functions.has(key);
   }
 
-  /** The method under `key` bound to `receiver`, or `undefined` if there is none. */
-  public resolve(receiver: unknown, key: string): NativeFunction | undefined {
-    return this.#resolve(receiver, key);
+  /** The method under `key`, the same function every time, or `undefined` if there is none. */
+  public resolve(key: string): NativeFunction | undefined {
+    return this.#functions.get(key);
   }
 }

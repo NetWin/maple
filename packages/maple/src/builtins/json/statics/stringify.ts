@@ -22,7 +22,7 @@ interface Serialization {
 export const JSON_STATIC_STRINGIFY: NativeFunction = new NativeFunction(
   'stringify',
   JSON.stringify.length,
-  ([value, replacer, space], context) =>
+  (_, [value, replacer, space], context) =>
     serialize('', value, '', {
       gap: gapOf(space),
       allowed: allowedKeys(replacer),

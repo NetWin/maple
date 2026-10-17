@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const MATH_STATIC_ROUND: NativeFunction = new NativeFunction(
   'round',
   Math.round.length,
-  ([x]) => Math.round(toNumber(x))
+  (_, [x]) => Math.round(toNumber(x))
 );

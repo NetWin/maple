@@ -10,7 +10,7 @@ import { isWrapper, IteratorWrapper } from '../../../values/wrappers.ts';
 export const OBJECT_STATIC_IS_FROZEN: NativeFunction = new NativeFunction(
   'isFrozen',
   Object.isFrozen.length,
-  ([target]) => {
+  (_, [target]) => {
     if (Array.isArray(target) || isPlainObject(target) || target instanceof SandboxError) {
       return Object.isFrozen(target);
     }

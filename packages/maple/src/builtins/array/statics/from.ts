@@ -6,7 +6,7 @@ import { getMember } from '../../method-dispatch.ts';
 export const ARRAY_STATIC_FROM: NativeFunction = new NativeFunction(
   'from',
   Array.from.length,
-  ([source, mapper], context) => {
+  (_, [source, mapper], context) => {
     const { fail } = context;
     if (mapper !== undefined && !isCallable(mapper)) {
       return fail('TypeError', `${toString(mapper)} is not a function`);

@@ -4,7 +4,7 @@ import { NativeFunction } from '../../../values/native.ts';
 export const OBJECT_STATIC_ASSIGN: NativeFunction = new NativeFunction(
   'assign',
   Object.assign.length,
-  ([target, ...sources], { fail, charge }) => {
+  (_, [target, ...sources], { fail, charge }) => {
     if (typeof target !== 'object' || target === null) {
       return fail('TypeError', 'Object.assign needs an object as its target');
     }

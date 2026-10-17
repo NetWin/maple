@@ -14,6 +14,10 @@ function callOps(body: string): number {
 describe('functions', () => {
   const maple = new Maple();
 
+  const errorMessage = (code: string): string | undefined => {
+    return runAndCatch(maple, code).sandboxError?.message;
+  };
+
   describe('declarations', () => {
     it('can be called after and before their declaration', () => {
       expect(maple.run('function f() { return 1; } return f();').value).toBe(1);
@@ -138,6 +142,53 @@ describe('functions', () => {
       expect(error.message).toBe('Call depth limit of 10 exceeded');
       expect(error.line).toBe(1);
       expect(error.stats?.maxDepth).toBe(10);
+    });
+  });
+
+  describe('method calls', () => {
+    it('find one function per method, whatever value it is read from', () => {
+      expect(
+        run(
+          'const a = []; return [a.push === a.push, a.push === [].push, "x".trim === "y".trim, (1).toFixed === (2).toFixed, new Map().get === new Map().get];'
+        )
+      ).toEqual([true, true, true, true, true]);
+      expect(run('return [[].toString === ({}).toString, "a".at === [].at];')).toEqual([
+        false,
+        false
+      ]);
+      expect(
+        run('return [new Set([[].push, [].push]).size, [[].push].includes([].push)];')
+      ).toEqual([1, true]);
+    });
+
+    it('take the receiver from the member they are called on', () => {
+      expect(
+        run(
+          'const a = []; a.push(1); a["push"](2); (a.push)(3); a?.push(4); a.push?.(5); return a;'
+        )
+      ).toEqual([1, 2, 3, 4, 5]);
+      expect(
+        run('const b = [], c = []; const push = b.push; c.push(1); return [b, c, push === c.push];')
+      ).toEqual([[], [1], true]);
+    });
+
+    it('throw a TypeError when called without their receiver', () => {
+      const message = 'Array.prototype.push called on incompatible receiver undefined';
+      expect(errorMessage('const p = [].push; p(1);')).toBe(message);
+      expect(errorMessage('const { push } = []; push(1);')).toBe(message);
+      expect(errorMessage('(0, [].push)(1);')).toBe(message);
+      expect(errorMessage('[" a "].map("".trim);')).toBe(
+        'String.prototype.trim called on incompatible receiver undefined'
+      );
+    });
+
+    it('refuse a receiver of another type', () => {
+      expect(errorMessage('({ t: "x".trim }).t();')).toBe(
+        'String.prototype.trim called on incompatible receiver [object Object]'
+      );
+      expect(errorMessage('const m = { get: new Map().get }; m.get(1);')).toBe(
+        'Map.prototype.get called on incompatible receiver [object Object]'
+      );
     });
   });
 

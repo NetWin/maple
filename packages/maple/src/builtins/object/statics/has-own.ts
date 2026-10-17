@@ -6,7 +6,7 @@ import { asObjectCoercibleOrThrow } from '../utils/as-object-coercible-or-throw.
 export const OBJECT_STATIC_HAS_OWN: NativeFunction = new NativeFunction(
   'hasOwn',
   Object.hasOwn.length,
-  ([target, key], { fail }) => {
+  (_, [target, key], { fail }) => {
     const object = asObjectCoercibleOrThrow(target, fail);
     const name = toPropertyKey(key);
 

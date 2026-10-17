@@ -362,3 +362,23 @@ describe('Function.prototype.valueOf', () => {
     expect(parity('return parseInt.valueOf() === parseInt;')).toBe(true);
   });
 });
+
+describe('method calls', () => {
+  it('read the same function for every value of a type', () => {
+    expect(
+      parity(
+        'var a = [], b = []; return [a.push === a.push, a.push === b.push, "x".trim === "y".trim, (1).toFixed === (2).toFixed, [[].push].indexOf([].push)];'
+      )
+    ).toEqual([true, true, true, true, 0]);
+  });
+
+  it('take the receiver from the member they are called on', () => {
+    expect(parity('var a = []; a.push(1); a["push"](2); (a.push)(3); return a;')).toEqual([
+      1, 2, 3
+    ]);
+  });
+
+  it('throw when a string method is called without its string', () => {
+    expect(bothThrow('var t = " a ".trim; t();')).toBe('TypeError');
+  });
+});

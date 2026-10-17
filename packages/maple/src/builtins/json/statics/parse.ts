@@ -13,7 +13,7 @@ import {
 export const JSON_STATIC_PARSE: NativeFunction = new NativeFunction(
   'parse',
   JSON.parse.length,
-  ([text, reviver], context) => {
+  (_, [text, reviver], context) => {
     const parsed: unknown = guardHostErrors(context.fail, () => JSON.parse(toString(text)));
     if (!isCallable(reviver)) {
       return parsed;

@@ -5,6 +5,6 @@ import { guardHostErrors, NativeFunction } from '../../../values/native.ts';
 export const STRING_STATIC_FROM_CODE_POINT: NativeFunction = new NativeFunction(
   'fromCodePoint',
   String.fromCodePoint.length,
-  (codes, { fail }) =>
+  (_, codes, { fail }) =>
     guardHostErrors(fail, () => codes.map((code) => String.fromCodePoint(toNumber(code))).join(''))
 );

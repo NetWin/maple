@@ -9,7 +9,7 @@ import { SandboxError } from '../../../values/sandbox-error.ts';
 export const OBJECT_STATIC_FREEZE: NativeFunction = new NativeFunction(
   'freeze',
   Object.freeze.length,
-  ([target]) => {
+  (_, [target]) => {
     if (Array.isArray(target) || isPlainObject(target) || target instanceof SandboxError) {
       Object.freeze(target);
     }

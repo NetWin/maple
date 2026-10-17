@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const MATH_STATIC_FLOOR: NativeFunction = new NativeFunction(
   'floor',
   Math.floor.length,
-  ([x]) => Math.floor(toNumber(x))
+  (_, [x]) => Math.floor(toNumber(x))
 );

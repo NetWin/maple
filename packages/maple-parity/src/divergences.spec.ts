@@ -337,6 +337,18 @@ describe('instance:arguments.callee', () => {
   });
 });
 
+describe('call:method without its receiver', () => {
+  // A plain call passes no receiver in strict mode; js-interpreter passes the global object
+  it('throws for a method called on its own', () => {
+    expect(divergence('var p = [].push; return p(1);')).toBe(MapleErrorCode.RUNTIME_ERROR);
+    expect(divergence('return (0, [].push)(1);')).toBe(MapleErrorCode.RUNTIME_ERROR);
+  });
+
+  it('throws for a method passed as a callback', () => {
+    expect(divergence('return [" a "].map("".trim);')).toBe(MapleErrorCode.RUNTIME_ERROR);
+  });
+});
+
 // There is no debugger to stop in; the statement is rejected rather than ignored.
 
 describe('syntax:DebuggerStatement', () => {

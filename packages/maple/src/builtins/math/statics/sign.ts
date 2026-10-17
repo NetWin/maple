@@ -4,5 +4,5 @@ import { NativeFunction } from '../../../values/native.ts';
 export const MATH_STATIC_SIGN: NativeFunction = new NativeFunction(
   'sign',
   Math.sign.length,
-  ([x]) => Math.sign(toNumber(x))
+  (_, [x]) => Math.sign(toNumber(x))
 );
