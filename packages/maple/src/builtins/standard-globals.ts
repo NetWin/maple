@@ -12,7 +12,7 @@ import { MATH_STATICS } from './math-statics.ts';
 import { NUMBER_BUILTIN } from './number/number.ts';
 import { NUMBER_STATIC_PARSE_FLOAT } from './number/statics/parse-float.ts';
 import { NUMBER_STATIC_PARSE_INT } from './number/statics/parse-int.ts';
-import { constructObject, OBJECT_STATICS } from './object-statics.ts';
+import { OBJECT_BUILTIN } from './object/object.ts';
 import { REGEXP_BUILTIN } from './regexp/regexp.ts';
 import { SET_BUILTIN } from './set/set.ts';
 import { STRING_BUILTIN } from './string/string.ts';
@@ -50,14 +50,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   URIError: errorConstructor('URIError', URIError.length),
   EvalError: errorConstructor('EvalError', EvalError.length),
   Array: ARRAY_BUILTIN,
-  Object: new Builtin({
-    name: 'Object',
-    length: Object.length,
-    call: constructObject,
-    construct: constructObject,
-    isInstance: (value) => typeof value === 'object' && value !== null,
-    members: OBJECT_STATICS
-  }),
+  Object: OBJECT_BUILTIN,
   JSON: new Builtin({ name: 'JSON', members: JSON_STATICS }),
   Date: DATE_BUILTIN,
   RegExp: REGEXP_BUILTIN,

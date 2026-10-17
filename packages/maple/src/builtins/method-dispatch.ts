@@ -17,7 +17,7 @@ import { FUNCTION_METHODS } from './function-methods.ts';
 import { ITERATOR_METHODS } from './iterator/iterator-methods.ts';
 import { MAP_METHODS } from './map/map-methods.ts';
 import { NUMBER_METHODS } from './number/number-methods.ts';
-import { OBJECT_METHODS } from './object-methods.ts';
+import { OBJECT_METHODS } from './object/object-methods.ts';
 import { REGEXP_METHODS } from './regexp/regexp-methods.ts';
 import { SET_METHODS } from './set/set-methods.ts';
 import { STRING_METHODS } from './string/string-methods.ts';
