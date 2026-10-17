@@ -315,20 +315,6 @@ describe('clearInterval', () => {
   });
 });
 
-// Legacy encodings nobody should need; the URI functions are there instead.
-
-describe('escape', () => {
-  it('has no escape', () => {
-    expect(divergence("return escape('a b');")).toBe(MapleErrorCode.RUNTIME_ERROR);
-  });
-});
-
-describe('unescape', () => {
-  it('has no unescape', () => {
-    expect(divergence("return unescape('a%20b');")).toBe(MapleErrorCode.RUNTIME_ERROR);
-  });
-});
-
 // Every script runs in strict mode.
 
 describe('syntax:WithStatement', () => {
@@ -365,14 +351,6 @@ describe('call:method without its receiver', () => {
 
   it('throws for a method passed as a callback', () => {
     expect(divergence('return [" a "].map("".trim);')).toBe(MapleErrorCode.RUNTIME_ERROR);
-  });
-});
-
-// There is no debugger to stop in; the statement is rejected rather than ignored.
-
-describe('syntax:DebuggerStatement', () => {
-  it('rejects debugger', () => {
-    expect(divergence('debugger; return 1;')).toBe(MapleErrorCode.DISALLOWED_SYNTAX);
   });
 });
 

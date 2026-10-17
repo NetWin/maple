@@ -19,6 +19,29 @@ describe('URI functions', () => {
   });
 });
 
+describe('escape and unescape', () => {
+  it('encode per UTF-16 code unit as the language does', () => {
+    expect(
+      run('return [escape("a b"), escape("@*_+-./"), escape("\\u00ff\\u0100"), escape("😀")];')
+    ).toEqual(['a%20b', '@*_+-./', '%FF%u0100', '%uD83D%uDE00']);
+  });
+
+  it('decode both forms and keep anything else', () => {
+    expect(
+      run('return [unescape("%uD83D%uDE00"), unescape("%41%u0042"), unescape("%4%zz%")];')
+    ).toEqual(['😀', 'AB', '%4%zz%']);
+    expect(run('return unescape(escape("ä€😀 %"));')).toBe('ä€😀 %');
+  });
+
+  it('convert their argument hook-free', () => {
+    expect(run('return [escape(1.5), escape(), unescape(null)];')).toEqual([
+      '1.5',
+      'undefined',
+      'null'
+    ]);
+  });
+});
+
 describe('base64', () => {
   it('encodes and decodes Latin-1 text', () => {
     expect(run('return btoa("Maple");')).toBe('TWFwbGU=');

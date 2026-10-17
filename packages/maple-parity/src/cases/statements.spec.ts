@@ -31,6 +31,12 @@ describe('syntax:EmptyStatement', () => {
   });
 });
 
+describe('syntax:DebuggerStatement', () => {
+  it('does nothing', () => {
+    expect(parity('var n = 1; debugger; return n + 1;')).toBe(2);
+  });
+});
+
 describe('syntax:BlockStatement', () => {
   it('runs nested blocks', () => {
     expect(parity('var a = 0; { a += 1; { a += 2; } } return a;')).toBe(3);

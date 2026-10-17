@@ -136,6 +136,7 @@ yields `undefined`.
   a labelled loop
 - `try` / `catch` / `finally`, `throw`
 - Expression statements, blocks, the empty statement
+- `debugger`, which does nothing, as in an engine without a debugger attached
 
 ### Expressions
 
@@ -158,7 +159,7 @@ yields `undefined`.
 Reaching any of these throws `DISALLOWED_SYNTAX`:
 
 `this`, `class`, `super`, `async` / `await`, generators and `yield`, getters and setters,
-`debugger`, tagged templates, `import` / `export`, `import.meta`, `new.target`, `arguments` at the
+tagged templates, `import` / `export`, `import.meta`, `new.target`, `arguments` at the
 script level, which is no function, and `new` on anything that is not in the constructor list.
 
 Strict-mode grammar is a parse rule, not an evaluator rule: `with`, legacy octal literals such as
@@ -241,7 +242,7 @@ These are always present, below the three layers, so a host or data key of the s
 them:
 
 `undefined`, `NaN`, `Infinity`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`,
-`encodeURIComponent`, `decodeURIComponent`, `encodeURI`, `decodeURI`, `String`, `Number`,
+`encodeURIComponent`, `decodeURIComponent`, `encodeURI`, `decodeURI`, `escape`, `unescape`, `String`, `Number`,
 `Boolean`, `Array`, `Object`, `Math`, `JSON`, `Date`, `RegExp`, `Map`, `Set`, `Iterator`, `Error`,
 `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError`, `EvalError`, `atob`, `btoa`.
 

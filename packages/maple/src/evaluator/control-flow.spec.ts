@@ -78,8 +78,8 @@ describe('control flow', () => {
       expect(run('for (let i = 0; i < 2; i++) { return i; }')).toBe(0);
     });
 
-    it('reject debugger', () => {
-      expect(runAndCatch(maple, 'debugger;').message).toBe("'debugger' is not supported");
+    it('ignore debugger', () => {
+      expect(run('let n = 1; debugger; return n;')).toBe(1);
     });
   });
 

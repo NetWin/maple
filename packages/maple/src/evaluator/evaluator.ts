@@ -126,7 +126,6 @@ const NODE_NAMES: Partial<Record<Node['type'], string>> = {
   Super: 'super',
   AwaitExpression: 'await',
   YieldExpression: 'yield',
-  DebuggerStatement: 'debugger',
   TaggedTemplateExpression: 'tagged templates',
   ImportDeclaration: 'import',
   ImportExpression: 'import',
@@ -233,6 +232,8 @@ export class Evaluator {
     this.tick(node);
     switch (node.type) {
       case 'EmptyStatement':
+      // There is no debugger to stop in, and without one the statement does nothing
+      case 'DebuggerStatement':
         return NORMAL;
       case 'ExpressionStatement':
         this.evaluateExpression(node.expression, scope);

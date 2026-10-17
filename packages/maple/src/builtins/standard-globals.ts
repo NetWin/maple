@@ -14,6 +14,8 @@ import {
 } from './error/error.ts';
 import { ITERATOR_BUILTIN } from './iterator/iterator.ts';
 import { JSON_BUILTIN } from './json/json.ts';
+import { GLOBAL_ESCAPE } from './legacy/escape.ts';
+import { GLOBAL_UNESCAPE } from './legacy/unescape.ts';
 import { MAP_BUILTIN } from './map/map.ts';
 import { MATH_BUILTIN } from './math/math.ts';
 import { NUMBER_BUILTIN } from './number/number.ts';
@@ -43,6 +45,8 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   decodeURIComponent: uriFunction('decodeURIComponent', decodeURIComponent),
   encodeURI: uriFunction('encodeURI', encodeURI),
   decodeURI: uriFunction('decodeURI', decodeURI),
+  escape: GLOBAL_ESCAPE,
+  unescape: GLOBAL_UNESCAPE,
   atob: base64Function('atob', atob),
   btoa: base64Function('btoa', btoa),
   String: STRING_BUILTIN,

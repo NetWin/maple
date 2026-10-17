@@ -146,6 +146,22 @@ describe('decodeURI', () => {
   });
 });
 
+describe('escape', () => {
+  it('encodes with %XX below 256 and %uXXXX above', () => {
+    expect(
+      parity("return [escape('a b'), escape('@*_+-./'), escape('ä€'), escape('~!')];")
+    ).toEqual(['a%20b', '@*_+-./', '%E4%u20AC', '%7E%21']);
+  });
+});
+
+describe('unescape', () => {
+  it('decodes both forms and keeps what is no escape', () => {
+    expect(
+      parity("return [unescape('a%20b'), unescape('%u20AC%e4'), unescape('%zz%u12%')];")
+    ).toEqual(['a b', '€ä', '%zz%u12%']);
+  });
+});
+
 describe('Number', () => {
   it('Number as a conversion function', () => {
     expect(
