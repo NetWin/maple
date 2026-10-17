@@ -1,4 +1,4 @@
-import type { Fail } from '../../../values/members.ts';
+import type { MemberContext } from '../../../values/members.ts';
 import type { RegExpWrapper } from '../../../values/wrappers/regexp-wrapper.ts';
 
 /**
@@ -7,14 +7,15 @@ import type { RegExpWrapper } from '../../../values/wrappers/regexp-wrapper.ts';
  * run of a script to the next. A frozen `g` or `y` regexp cannot match at all, since its
  * `lastIndex` cannot be written.
  */
-export function matcherOf(wrapper: RegExpWrapper, fail: Fail): RegExp {
+export function matcherOf(wrapper: RegExpWrapper, { fail, runState }: MemberContext): RegExp {
   const regexp = wrapper.regexp;
 
   if (wrapper.readOnly) {
     return new RegExp(regexp.source, regexp.flags);
   }
 
-  if (wrapper.properties.locked && (regexp.global || regexp.sticky)) {
+  const lastIndex = wrapper.getOwnPropertyAttributes('lastIndex', runState);
+  if (!lastIndex?.writable && (regexp.global || regexp.sticky)) {
     return fail('TypeError', "Cannot assign to read-only property 'lastIndex' of a RegExp");
   }
 

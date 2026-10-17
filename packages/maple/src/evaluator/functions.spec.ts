@@ -445,6 +445,12 @@ describe('functions', () => {
   });
 
   describe('added properties', () => {
+    it('come after length and name, apart from array indices, which come first', () => {
+      expect(
+        run('const f = () => 1; f.z = 1; f[0] = 2; f[1] = 3; return Object.getOwnPropertyNames(f);')
+      ).toEqual(['0', '1', 'length', 'name', 'z']);
+    });
+
     it('can be given to a script function', () => {
       expect(
         run(

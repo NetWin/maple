@@ -429,9 +429,10 @@ Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, 
 `Object.isFrozen`.
 
 `getOwnPropertyNames` lists exactly the own names, enumerable or not, so
-`getOwnPropertyNames([1])` is `['0', 'length']`. `freeze` makes an object, array or error the
-script owns read-only, freezes the properties a script added to a closure or a wrapper, and
-returns it; for anything else it changes nothing. A frozen Map can still `set`, as in
+`getOwnPropertyNames([1])` is `['0', 'length']`, with array indices first as in JavaScript, also
+on functions and errors. `freeze` makes an object, an array or one of Maple's own values take no
+new properties and makes every own property read-only, and returns it; for anything else it changes
+nothing. A frozen Map can still `set`, as in
 JavaScript. A frozen RegExp keeps its `lastIndex`: assigning it throws a `TypeError`, and with `g` or
 `y` so do `exec`, `test`, `match`, `search`, `replace` and `replaceAll`, which would write it;
 `split` and `matchAll` match on a copy and still work. `isFrozen` is `true` for primitives, for collections that came in with the

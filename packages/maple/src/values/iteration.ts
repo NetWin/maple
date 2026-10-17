@@ -1,7 +1,7 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { toLength } from './coercion.ts';
-import { getExtraPropertiesOf } from './members.ts';
+import { getOwnPropertiesOf } from './members.ts';
 import type { RunState } from './run-state.ts';
 import { IteratorWrapper } from './wrappers/iterator-wrapper.ts';
 import { MapWrapper } from './wrappers/map-wrapper.ts';
@@ -63,9 +63,9 @@ export function* enumerableKeys(value: unknown, runState: RunState): Generator<s
     }
     return;
   }
-  const extra = getExtraPropertiesOf(value, runState);
-  for (const key of extra?.keys() ?? []) {
-    if (extra?.has(key)) {
+  const properties = getOwnPropertiesOf(value, runState);
+  for (const key of properties?.enumerableKeys() ?? []) {
+    if (properties?.getAdded(key) !== undefined) {
       yield key;
     }
   }

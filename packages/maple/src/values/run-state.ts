@@ -1,4 +1,4 @@
-import { ExtraProperties } from './extra-properties.ts';
+import { OwnProperties } from './own-properties.ts';
 import type { SandboxObject } from './sandbox-object.ts';
 
 /**
@@ -7,13 +7,13 @@ import type { SandboxObject } from './sandbox-object.ts';
  * when a run reaches past a shared value's fixed properties.
  */
 export class RunState {
-  readonly #extraProperties = new Map<SandboxObject, ExtraProperties>();
+  readonly #ownProperties = new Map<SandboxObject, OwnProperties>();
 
-  public getExtraPropertiesOf(value: SandboxObject): ExtraProperties {
-    let properties = this.#extraProperties.get(value);
+  public getOwnPropertiesOf(value: SandboxObject): OwnProperties {
+    let properties = this.#ownProperties.get(value);
     if (properties === undefined) {
-      properties = new ExtraProperties();
-      this.#extraProperties.set(value, properties);
+      properties = new OwnProperties();
+      this.#ownProperties.set(value, properties);
     }
     return properties;
   }

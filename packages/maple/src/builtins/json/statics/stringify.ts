@@ -1,10 +1,16 @@
 import { isPlainObject } from '../../../support/is-plain-object.ts';
 import { MAX_NESTING } from '../../../support/nesting-limit.ts';
-import type { IExtraProperties } from '../../../values/extra-properties.ts';
-import { getExtraPropertiesOf } from '../../../values/members.ts';
+import { getOwnPropertiesOf } from '../../../values/members.ts';
 import { type CallContext, isCallable, NativeFunction } from '../../../values/native.ts';
 import { SandboxObject } from '../../../values/sandbox-object.ts';
 import { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
+
+/** The own properties `stringify` reads, of a plain object or of one of Maple's own values. */
+interface PropertyView {
+  has(key: string): boolean;
+  get(key: string): unknown;
+  keys(): Array<string>;
+}
 
 /** What one `stringify` call carries through the recursion. */
 interface Serialization {
@@ -143,7 +149,7 @@ function serialize(
   } else {
     // An error or a wrapper serializes like an object holding what the script added to it, so a
     // plain object is read through the same three methods
-    let properties: IExtraProperties | undefined;
+    let properties: PropertyView | undefined;
     if (isPlainObject(current)) {
       properties = {
         has: (propertyKey: string): boolean => Object.hasOwn(current, propertyKey),
@@ -151,7 +157,14 @@ function serialize(
         keys: (): Array<string> => Object.keys(current)
       };
     } else {
-      properties = getExtraPropertiesOf(current, context.runState);
+      const own = getOwnPropertiesOf(current, context.runState);
+      if (own) {
+        properties = {
+          has: (propertyKey: string): boolean => own.getAdded(propertyKey) !== undefined,
+          get: (propertyKey: string): unknown => own.getAdded(propertyKey)?.value,
+          keys: (): Array<string> => own.enumerableKeys()
+        };
+      }
     }
     if (!properties) {
       throw new Error('A value of an unknown kind reached JSON.stringify');

@@ -160,7 +160,7 @@ function copyError(error: SandboxError, walk: Walk, depth: number): SandboxError
   const copy: SandboxErrorInfo = error.toInfo();
   walk.copies.set(error, copy);
 
-  const keys = error.properties.keys();
+  const keys = error.properties.enumerableKeys();
   if (keys.length === 0) {
     return copy;
   }
@@ -172,7 +172,7 @@ function copyError(error: SandboxError, walk: Walk, depth: number): SandboxError
   for (const key of keys) {
     // Host code that copies by assignment would turn an own __proto__ key into a prototype
     if (key !== '__proto__') {
-      defineOwn(properties, key, convert(error.properties.get(key), walk, depth + 1));
+      defineOwn(properties, key, convert(error.properties.getAdded(key)?.value, walk, depth + 1));
     }
   }
 

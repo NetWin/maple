@@ -8,6 +8,7 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
     'name',
     {
       get: (error) => error.name,
+      configurable: true,
       set: (error, value) => {
         error.name = toString(value);
       }
@@ -17,12 +18,13 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
     'message',
     {
       get: (error) => error.message,
+      configurable: true,
       set: (error, value) => {
         error.message = toString(value);
       }
     }
   ],
-  ['stack', { get: (error) => error.stack }]
+  ['stack', { get: (error) => error.stack, configurable: true }]
 ]);
 
 /** An error object as the script sees it: name, message and a stack of script positions. */

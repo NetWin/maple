@@ -60,7 +60,10 @@ export class Builtin extends SandboxObject {
     this.name = options.name;
     this.length = options.length;
     const members = Object.entries(options.members ?? {}).map(
-      ([key, member]): [string, FixedProperty<Builtin>] => [key, { get: () => member }]
+      ([key, member]): [string, FixedProperty<Builtin>] => [
+        key,
+        { get: () => member, configurable: false }
+      ]
     );
     this.fixed = new Map([
       ...(options.length === undefined ? [] : FUNCTION_PROPERTIES),

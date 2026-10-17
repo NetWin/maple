@@ -306,6 +306,23 @@ describe('error additions', () => {
 });
 
 describe('properties added to errors', () => {
+  it('are listed in the order JavaScript gives keys: array indices first', () => {
+    const setup = 'const e = new Error("m"); e.b = 1; e[2] = 2; e.a = 3; e[1] = 4;';
+
+    expect(run(`${setup} return [Object.keys(e), JSON.stringify(e)];`)).toEqual([
+      ['1', '2', 'b', 'a'],
+      '{"1":4,"2":2,"b":1,"a":3}'
+    ]);
+  });
+
+  it('come after name, message and stack, apart from array indices, which come first', () => {
+    expect(
+      run(
+        'const e = new Error("m"); e.z = 1; e[1] = 2; e[0] = 3; return Object.getOwnPropertyNames(e);'
+      )
+    ).toEqual(['0', '1', 'name', 'message', 'stack', 'z']);
+  });
+
   it('behave like own properties of an object', () => {
     const setup = 'const e = new Error("m"); e.code = 123;';
 

@@ -12,7 +12,7 @@ export const STRING_METHOD_REPLACE_ALL: Method<string> = method(
       return context.fail('TypeError', 'replaceAll must be called with a global RegExp');
     }
     const search =
-      pattern instanceof RegExpWrapper ? matcherOf(pattern, context.fail) : toString(pattern);
+      pattern instanceof RegExpWrapper ? matcherOf(pattern, context) : toString(pattern);
     if (!isCallable(replacement)) {
       return s.replaceAll(search, toString(replacement));
     }

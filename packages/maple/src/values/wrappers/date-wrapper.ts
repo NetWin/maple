@@ -12,9 +12,12 @@ export class DateWrapper extends SandboxObject {
   protected readonly fixed: FixedProperties<DateWrapper> = NO_FIXED_PROPERTIES;
 
   constructor(date: Date, readOnly = false) {
-    super(false, readOnly);
+    super(false);
     this.date = date;
     this.readOnly = readOnly;
+    if (readOnly) {
+      this.freezeOwnProperties();
+    }
   }
 
   /** The one value that converts differently for a number than for a string. */

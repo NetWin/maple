@@ -7,21 +7,22 @@ const REGEXP_PROPERTIES: FixedProperties<RegExpWrapper> = new Map([
     'lastIndex',
     {
       get: (r) => r.regexp.lastIndex,
+      configurable: false,
       set: (r, value) => {
         r.regexp.lastIndex = toNumber(value);
       }
     }
   ],
-  ['source', { get: (r) => r.regexp.source }],
-  ['flags', { get: (r) => r.regexp.flags }],
-  ['global', { get: (r) => r.regexp.global }],
-  ['ignoreCase', { get: (r) => r.regexp.ignoreCase }],
-  ['multiline', { get: (r) => r.regexp.multiline }],
-  ['sticky', { get: (r) => r.regexp.sticky }],
-  ['unicode', { get: (r) => r.regexp.unicode }],
-  ['dotAll', { get: (r) => r.regexp.dotAll }],
-  ['hasIndices', { get: (r) => r.regexp.hasIndices }],
-  ['unicodeSets', { get: (r) => r.regexp.unicodeSets }]
+  ['source', { get: (r) => r.regexp.source, configurable: false }],
+  ['flags', { get: (r) => r.regexp.flags, configurable: false }],
+  ['global', { get: (r) => r.regexp.global, configurable: false }],
+  ['ignoreCase', { get: (r) => r.regexp.ignoreCase, configurable: false }],
+  ['multiline', { get: (r) => r.regexp.multiline, configurable: false }],
+  ['sticky', { get: (r) => r.regexp.sticky, configurable: false }],
+  ['unicode', { get: (r) => r.regexp.unicode, configurable: false }],
+  ['dotAll', { get: (r) => r.regexp.dotAll, configurable: false }],
+  ['hasIndices', { get: (r) => r.regexp.hasIndices, configurable: false }],
+  ['unicodeSets', { get: (r) => r.regexp.unicodeSets, configurable: false }]
 ]);
 
 export class RegExpWrapper extends SandboxObject {
@@ -35,9 +36,12 @@ export class RegExpWrapper extends SandboxObject {
   protected readonly fixed: FixedProperties<RegExpWrapper> = REGEXP_PROPERTIES;
 
   constructor(regexp: RegExp, readOnly = false) {
-    super(false, readOnly);
+    super(false);
     this.regexp = regexp;
     this.readOnly = readOnly;
+    if (readOnly) {
+      this.freezeOwnProperties();
+    }
   }
 
   public override toPrimitive(): Primitive {

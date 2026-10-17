@@ -2,7 +2,7 @@ import { ARRAY_MAX_LENGTH } from '../builtins/array/array.ts';
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { toNumber, toString, typeOf } from './coercion.ts';
-import type { ExtraProperties } from './extra-properties.ts';
+import type { OwnProperties } from './own-properties.ts';
 import type { RunState } from './run-state.ts';
 import { SandboxObject } from './sandbox-object.ts';
 
@@ -223,21 +223,18 @@ export function* ownEntries(value: unknown, runState: RunState): Generator<[stri
     }
     return;
   }
-  const extra = getExtraPropertiesOf(value, runState);
-  for (const key of extra?.keys() ?? []) {
-    yield [key, extra?.get(key)];
+  const properties = getOwnPropertiesOf(value, runState);
+  for (const key of properties?.enumerableKeys() ?? []) {
+    yield [key, properties?.getAdded(key)?.value];
   }
 }
 
 /**
- * What a script added to a value that is not a plain object or an array; for a built-in or host
- * function, which every run shares, what `run` added.
+ * The state of the own properties of a value that is not a plain object or an array; for a
+ * built-in or host function, which every run shares, what `runState`'s run made of them.
  */
-export function getExtraPropertiesOf(
-  value: unknown,
-  runState: RunState
-): ExtraProperties | undefined {
-  return value instanceof SandboxObject ? value.getExtraProperties(runState) : undefined;
+export function getOwnPropertiesOf(value: unknown, runState: RunState): OwnProperties | undefined {
+  return value instanceof SandboxObject ? value.getOwnProperties(runState) : undefined;
 }
 
 /** The canonical array index a key denotes, if any: `'1'` but not `'01'` or `'1.5'`. */

@@ -1,7 +1,7 @@
 import { type FixedProperties, SandboxObject } from '../sandbox-object.ts';
 
 const MAP_PROPERTIES: FixedProperties<MapWrapper> = new Map([
-  ['size', { get: (wrapper) => wrapper.map.size }]
+  ['size', { get: (wrapper) => wrapper.map.size, configurable: false }]
 ]);
 
 export class MapWrapper extends SandboxObject {
@@ -15,8 +15,11 @@ export class MapWrapper extends SandboxObject {
   protected readonly fixed: FixedProperties<MapWrapper> = MAP_PROPERTIES;
 
   constructor(map: Map<unknown, unknown>, readOnly = false) {
-    super(false, readOnly);
+    super(false);
     this.map = map;
     this.readOnly = readOnly;
+    if (readOnly) {
+      this.freezeOwnProperties();
+    }
   }
 }
