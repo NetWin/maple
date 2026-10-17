@@ -1,7 +1,7 @@
 import { Builtin } from '../../values/builtin.ts';
 import { toString } from '../../values/coercion.ts';
 import { type CallContext, guardHostErrors } from '../../values/native.ts';
-import { RegExpWrapper } from '../../values/wrappers.ts';
+import { RegExpWrapper } from '../../values/wrappers/regexp-wrapper.ts';
 import { REGEXP_PROTOTYPE } from './regexp-prototype.ts';
 
 export const REGEXP_BUILTIN: Builtin = new Builtin({

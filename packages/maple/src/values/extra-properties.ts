@@ -7,14 +7,21 @@ export type IExtraProperties = {
 };
 
 /**
- * What a script added to an error, a script function or a wrapper. Kept apart from the value's
- * fields, so no key reaches them, in a record that inherits nothing, so no key reaches more, and
- * listed in the order the language gives keys: integers first, then the rest as they were added.
+ * What a script added to one of Maple's own values (see `SandboxObject`). Kept apart from the
+ * value's fields, so no key reaches them, in a record that inherits nothing, so no key reaches
+ * more, and listed in the order the language gives keys: integers first, then the rest as they were
+ * added.
  */
 export class ExtraProperties implements IExtraProperties {
   /** Created on the first write, since most values never get a property. */
   #entries: Record<string, unknown> | undefined;
   #locked: boolean;
+
+  /**
+   * For the functions and globals shared between runs, which must never carry a property from one
+   * run into the next: empty and locked for good.
+   */
+  public static readonly NONE: ExtraProperties = new ExtraProperties(true);
 
   /** A wrapper that came in with the input starts locked, as it is read-only. */
   constructor(locked = false) {

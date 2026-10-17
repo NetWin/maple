@@ -1,5 +1,5 @@
 import { Prototype } from '../../values/prototype.ts';
-import { IteratorWrapper } from '../../values/wrappers.ts';
+import { IteratorWrapper } from '../../values/wrappers/iterator-wrapper.ts';
 import { ITERATOR_METHOD_DROP } from './methods/drop.ts';
 import { ITERATOR_METHOD_EVERY } from './methods/every.ts';
 import { ITERATOR_METHOD_FILTER } from './methods/filter.ts';

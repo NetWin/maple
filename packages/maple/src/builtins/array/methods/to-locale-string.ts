@@ -1,7 +1,7 @@
 import { intlOptionsArgument, localesArgument } from '../../../values/arguments.ts';
 import { toString } from '../../../values/coercion.ts';
 import { guardHostErrors, method, type Method } from '../../../values/native.ts';
-import { DateWrapper } from '../../../values/wrappers.ts';
+import { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 
 export const ARRAY_METHOD_TO_LOCALE_STRING: Method<Array<unknown>> = method(
   Array.prototype.toLocaleString.length,

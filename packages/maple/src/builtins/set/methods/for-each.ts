@@ -1,6 +1,6 @@
 import { toString } from '../../../values/coercion.ts';
 import { isCallable, method, type Method } from '../../../values/native.ts';
-import { type SetWrapper } from '../../../values/wrappers.ts';
+import type { SetWrapper } from '../../../values/wrappers/set-wrapper.ts';
 
 export const SET_METHOD_FOR_EACH: Method<SetWrapper> = method(
   Set.prototype.forEach.length,

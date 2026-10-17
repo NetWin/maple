@@ -1,5 +1,5 @@
 import { method, type Method } from '../../../values/native.ts';
-import { IteratorWrapper } from '../../../values/wrappers.ts';
+import { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
 import { matchToSandbox } from '../../regexp/utils/match-to-sandbox.ts';
 import { toRegExp } from '../../regexp/utils/to-regexp.ts';
 

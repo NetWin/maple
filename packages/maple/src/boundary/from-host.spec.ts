@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { NativeFunction } from '../values/native.ts';
-import { DateWrapper, MapWrapper, RegExpWrapper, SetWrapper } from '../values/wrappers.ts';
+import { DateWrapper } from '../values/wrappers/date-wrapper.ts';
+import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
+import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
+import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
 import { fromHost } from './from-host.ts';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -157,7 +160,7 @@ describe('fromHost', () => {
   it('wraps Date, RegExp, Map and Set as read-only copies with converted contents', () => {
     const date = fromHost(new Date(5));
     expect(date).toBeInstanceOf(DateWrapper);
-    expect(date instanceof DateWrapper && [date.date.getTime(), date.frozen]).toEqual([5, true]);
+    expect(date instanceof DateWrapper && [date.date.getTime(), date.readOnly]).toEqual([5, true]);
 
     const source = /a/g;
     source.lastIndex = 1;
@@ -174,7 +177,7 @@ describe('fromHost', () => {
     expect(key).toEqual(inner);
     expect(Object.isFrozen(key)).toBe(true);
     expect(at(value, '0')).toBe(key);
-    expect(map instanceof MapWrapper && map.frozen).toBe(true);
+    expect(map instanceof MapWrapper && map.readOnly).toBe(true);
 
     const set = fromHost(new Set([1]));
     expect(set instanceof SetWrapper && [...set.set]).toEqual([1]);
@@ -186,7 +189,7 @@ describe('fromHost', () => {
     expect(Object.isFrozen(copy)).toBe(false);
     expect(Object.isFrozen(at(copy, 'list'))).toBe(false);
     const when = at(copy, 'when');
-    expect(when instanceof DateWrapper && when.frozen).toBe(false);
+    expect(when instanceof DateWrapper && when.readOnly).toBe(false);
   });
 
   it('turns functions into native function values, unless told not to', () => {

@@ -1,6 +1,7 @@
 import { toNumber } from '../../../values/coercion.ts';
 import { type Method, method } from '../../../values/native.ts';
-import { asMutableOrThrow, type DateWrapper } from '../../../values/wrappers.ts';
+import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
+import { asMutableOrThrow } from '../../../values/wrappers/wrapper.ts';
 
 /**
  * The legacy `setYear`, which the host's typings leave out: two-digit years mean 19xx, and an

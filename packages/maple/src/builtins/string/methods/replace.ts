@@ -1,6 +1,6 @@
 import { toString } from '../../../values/coercion.ts';
 import { isCallable, method, type Method } from '../../../values/native.ts';
-import { RegExpWrapper } from '../../../values/wrappers.ts';
+import { RegExpWrapper } from '../../../values/wrappers/regexp-wrapper.ts';
 import { groupsToSandbox } from '../../regexp/utils/groups-to-sandbox.ts';
 import { matcherOf } from '../../regexp/utils/matcher-of.ts';
 

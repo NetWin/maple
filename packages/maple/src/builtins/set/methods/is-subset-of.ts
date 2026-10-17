@@ -1,5 +1,5 @@
 import { method, type Method } from '../../../values/native.ts';
-import { type SetWrapper } from '../../../values/wrappers.ts';
+import type { SetWrapper } from '../../../values/wrappers/set-wrapper.ts';
 import { asSetLikeOrThrow } from '../utils/as-set-like-or-throw.ts';
 
 export const SET_METHOD_IS_SUBSET_OF: Method<SetWrapper> = method(

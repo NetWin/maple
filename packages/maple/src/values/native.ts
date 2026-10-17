@@ -1,7 +1,14 @@
 import type { HostFunction, Intrinsic } from '../boundary/host.ts';
 import { Builtin } from './builtin.ts';
 import { Closure } from './closure.ts';
+import { ExtraProperties } from './extra-properties.ts';
 import type { Charge, Fail } from './members.ts';
+import {
+  FUNCTION_PROPERTIES,
+  type FixedProperties,
+  NO_FIXED_PROPERTIES,
+  SandboxObject
+} from './sandbox-object.ts';
 
 /** What a built-in receives besides its arguments: its ways back into the interpreter. */
 export interface CallContext {
@@ -32,18 +39,33 @@ export type NativeImplementation = (
  * A built-in or host function as a value, such as `Math.max`, `trim` read off a string, or a
  * function from `globals`. A built-in shows its `name` and `length` to the script; a host
  * function has an `undefined` length and shows no properties at all, since its name and arity
- * are the host's business.
+ * are the host's business. Built-in and host functions are shared between runs, so they take no
+ * properties.
  */
-export class NativeFunction {
+export class NativeFunction extends SandboxObject {
   public readonly name: string;
   /** What the language gives the built-in as `length`, read off the host's own function. */
   public readonly length: number | undefined;
   public readonly invoke: NativeImplementation;
 
   constructor(name: string, length: number | undefined, invoke: NativeImplementation) {
+    super(ExtraProperties.NONE);
     this.name = name;
     this.length = length;
     this.invoke = invoke;
+  }
+
+  protected get fixed(): FixedProperties<NativeFunction> {
+    return this.length === undefined ? NO_FIXED_PROPERTIES : FUNCTION_PROPERTIES;
+  }
+
+  public get tag(): string {
+    return 'Function';
+  }
+
+  /** As on a primitive, the write fails whatever the key, since the function cannot hold one. */
+  public override setProperty(key: string, _value: unknown, fail: Fail): never {
+    return fail('TypeError', `Cannot create property '${key}' on function`);
   }
 }
 

@@ -5,7 +5,7 @@ import { Closure } from '../../../values/closure.ts';
 import type { IExtraProperties } from '../../../values/extra-properties.ts';
 import { getExtraPropertiesOf } from '../../../values/members.ts';
 import { type CallContext, isCallable, NativeFunction } from '../../../values/native.ts';
-import { DateWrapper } from '../../../values/wrappers.ts';
+import { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 
 /** What one `stringify` call carries through the recursion. */
 interface Serialization {

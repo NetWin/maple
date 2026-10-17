@@ -1,5 +1,5 @@
 import { Prototype } from '../../values/prototype.ts';
-import { SetWrapper } from '../../values/wrappers.ts';
+import { SetWrapper } from '../../values/wrappers/set-wrapper.ts';
 import { SET_METHOD_ADD } from './methods/add.ts';
 import { SET_METHOD_CLEAR } from './methods/clear.ts';
 import { SET_METHOD_DELETE } from './methods/delete.ts';

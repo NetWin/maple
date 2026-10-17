@@ -67,7 +67,7 @@ describe('Math', () => {
     expect(run('return "max" in Math;')).toBe(true);
     expect(run('return Math instanceof Object;')).toBe(true);
     expect(runAndCatch(maple, 'Math.PI = 3;').sandboxError?.message).toBe(
-      "Cannot assign to read-only property 'PI'"
+      "Cannot assign to read-only property 'PI' of a Math"
     );
     expect(runAndCatch(maple, 'delete Math.PI;').sandboxError?.name).toBe('TypeError');
     expect(runAndCatch(maple, 'new Math();').code).toBe('DISALLOWED_SYNTAX');

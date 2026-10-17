@@ -53,7 +53,7 @@ import {
 } from '../values/members.ts';
 import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
-import { RegExpWrapper } from '../values/wrappers.ts';
+import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
 import { BREAK, type Completion, CONTINUE, NORMAL } from './completion.ts';
 import {

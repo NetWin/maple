@@ -1,5 +1,13 @@
+import { ExtraProperties } from './extra-properties.ts';
+import type { Fail } from './members.ts';
 import type { CallContext } from './native.ts';
 import type { Prototype } from './prototype.ts';
+import {
+  FUNCTION_PROPERTIES,
+  type FixedProperties,
+  type FixedProperty,
+  SandboxObject
+} from './sandbox-object.ts';
 
 export type BuiltinCall = (args: ReadonlyArray<unknown>, context: CallContext) => unknown;
 
@@ -22,24 +30,48 @@ export interface BuiltinOptions {
   prototype?: Prototype;
 }
 
-/** A standard global such as `Error`, `Array` or `Math`: a namespace the script can only read. */
-export class Builtin {
+/**
+ * A standard global such as `Error`, `Array` or `Math`: a namespace the script can only read. It is
+ * shared between runs, so it takes no properties.
+ */
+export class Builtin extends SandboxObject {
   public readonly name: string;
   public readonly length: number | undefined;
-  public readonly members: ReadonlyMap<string, unknown>;
   public readonly call: BuiltinCall | undefined;
   public readonly construct: BuiltinCall | undefined;
   public readonly isInstance: ((value: unknown) => boolean) | undefined;
   public readonly prototype: Prototype | undefined;
+  /** `length` and `name` when it is callable, then its static members. */
+  readonly #fixed: FixedProperties<Builtin>;
 
   constructor(options: BuiltinOptions) {
+    super(ExtraProperties.NONE);
     this.name = options.name;
     this.length = options.length;
-    this.members = new Map(Object.entries(options.members ?? {}));
+    const members = Object.entries(options.members ?? {}).map(
+      ([key, member]): [string, FixedProperty<Builtin>] => [key, { get: () => member }]
+    );
+    this.#fixed = new Map([
+      ...(options.length === undefined ? [] : FUNCTION_PROPERTIES),
+      ...members
+    ]);
     this.call = options.call;
     this.construct = options.construct;
     this.isInstance = options.isInstance;
     this.prototype = options.prototype;
+  }
+
+  protected get fixed(): FixedProperties<Builtin> {
+    return this.#fixed;
+  }
+
+  public get tag(): string {
+    return this.callable ? 'Function' : this.name;
+  }
+
+  /** Not even a key it does not have can be deleted, so a global reads as fixed as it is. */
+  public override deleteProperty(key: string, fail: Fail): never {
+    return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
   }
 
   /** Whether the script sees it as a function, which is what `typeof Error` reports. */

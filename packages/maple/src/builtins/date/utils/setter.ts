@@ -1,6 +1,7 @@
 import { toNumber } from '../../../values/coercion.ts';
 import type { CallContext, MethodCall } from '../../../values/native.ts';
-import { asMutableOrThrow, type DateWrapper } from '../../../values/wrappers.ts';
+import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
+import { asMutableOrThrow } from '../../../values/wrappers/wrapper.ts';
 
 export function setter(
   name: string,

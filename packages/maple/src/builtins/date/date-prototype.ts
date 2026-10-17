@@ -1,5 +1,5 @@
 import { Prototype } from '../../values/prototype.ts';
-import { DateWrapper } from '../../values/wrappers.ts';
+import { DateWrapper } from '../../values/wrappers/date-wrapper.ts';
 import { DATE_METHOD_GET_DATE } from './methods/get-date.ts';
 import { DATE_METHOD_GET_DAY } from './methods/get-day.ts';
 import { DATE_METHOD_GET_FULL_YEAR } from './methods/get-full-year.ts';

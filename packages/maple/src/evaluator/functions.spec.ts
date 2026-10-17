@@ -462,10 +462,10 @@ describe('functions', () => {
 
     it('leave name and length read-only', () => {
       expect(errorMessage('function f() {} f.name = "g";')).toBe(
-        "Cannot assign to read-only property 'name' of function"
+        "Cannot assign to read-only property 'name' of a Function"
       );
       expect(errorMessage('const f = (a) => a; f.length = 2;')).toBe(
-        "Cannot assign to read-only property 'length' of function"
+        "Cannot assign to read-only property 'length' of a Function"
       );
     });
   });

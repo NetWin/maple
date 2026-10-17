@@ -1,7 +1,7 @@
 import { optionalNumberArgument } from '../../../values/arguments.ts';
 import { toString } from '../../../values/coercion.ts';
 import { method, type Method } from '../../../values/native.ts';
-import { RegExpWrapper } from '../../../values/wrappers.ts';
+import { RegExpWrapper } from '../../../values/wrappers/regexp-wrapper.ts';
 import { matcherOf } from '../../regexp/utils/matcher-of.ts';
 
 export const STRING_METHOD_SPLIT: Method<string> = method(

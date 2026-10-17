@@ -268,7 +268,7 @@ describe('escape attempts', () => {
         1,
         'Error: m\n    at <script> (1:10)'
       ]);
-      expect(run('const m = new Map([[1, 2]]); return [m.map, m.frozen, m.size];')).toEqual([
+      expect(run('const m = new Map([[1, 2]]); return [m.map, m.readOnly, m.size];')).toEqual([
         undefined,
         undefined,
         1

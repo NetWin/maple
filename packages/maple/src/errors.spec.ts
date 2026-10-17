@@ -339,7 +339,7 @@ describe('properties added to errors', () => {
       )
     ).toEqual(['Custom: n', []]);
     expect(runAndCatch(maple, 'new Error("m").stack = "";').sandboxError?.message).toBe(
-      "Cannot assign to read-only property 'stack'"
+      "Cannot assign to read-only property 'stack' of an Error"
     );
   });
 

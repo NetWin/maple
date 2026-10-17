@@ -4,13 +4,11 @@ import { parse } from '../parse.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { Closure } from '../values/closure.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import {
-  DateWrapper,
-  IteratorWrapper,
-  MapWrapper,
-  RegExpWrapper,
-  SetWrapper
-} from '../values/wrappers.ts';
+import { DateWrapper } from '../values/wrappers/date-wrapper.ts';
+import { IteratorWrapper } from '../values/wrappers/iterator-wrapper.ts';
+import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
+import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
+import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
 import { fromHost } from './from-host.ts';
 import { toHost, UnconvertibleValueError } from './to-host.ts';
 

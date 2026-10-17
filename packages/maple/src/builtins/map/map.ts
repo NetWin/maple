@@ -1,7 +1,7 @@
 import { Builtin } from '../../values/builtin.ts';
 import { toString } from '../../values/coercion.ts';
 import { iterate } from '../../values/iteration.ts';
-import { MapWrapper } from '../../values/wrappers.ts';
+import { MapWrapper } from '../../values/wrappers/map-wrapper.ts';
 import { MAP_PROTOTYPE } from './map-prototype.ts';
 import { MAP_STATICS } from './map-statics.ts';
 

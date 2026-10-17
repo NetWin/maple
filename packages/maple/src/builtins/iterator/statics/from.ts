@@ -1,7 +1,7 @@
 import { toString } from '../../../values/coercion.ts';
 import { iterate } from '../../../values/iteration.ts';
 import { NativeFunction } from '../../../values/native.ts';
-import { IteratorWrapper } from '../../../values/wrappers.ts';
+import { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
 
 /**
  * Takes Maple's own iterables only; an object with a script `next` method is refused, so the host

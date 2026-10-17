@@ -1,5 +1,5 @@
 import { Prototype } from '../../values/prototype.ts';
-import { MapWrapper } from '../../values/wrappers.ts';
+import { MapWrapper } from '../../values/wrappers/map-wrapper.ts';
 import { MAP_METHOD_CLEAR } from './methods/clear.ts';
 import { MAP_METHOD_DELETE } from './methods/delete.ts';
 import { MAP_METHOD_ENTRIES } from './methods/entries.ts';

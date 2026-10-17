@@ -5,13 +5,11 @@ import { Builtin } from '../values/builtin.ts';
 import { Closure } from '../values/closure.ts';
 import { NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import {
-  DateWrapper,
-  IteratorWrapper,
-  MapWrapper,
-  RegExpWrapper,
-  SetWrapper
-} from '../values/wrappers.ts';
+import { DateWrapper } from '../values/wrappers/date-wrapper.ts';
+import { IteratorWrapper } from '../values/wrappers/iterator-wrapper.ts';
+import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
+import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
+import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
 import type { SandboxErrorInfo } from './maple-error.ts';
 
 type UnconvertibleKind = 'function' | 'iterator' | 'cyclic value';

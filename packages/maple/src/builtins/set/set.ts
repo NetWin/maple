@@ -1,7 +1,7 @@
 import { Builtin } from '../../values/builtin.ts';
 import { toString } from '../../values/coercion.ts';
 import { iterate } from '../../values/iteration.ts';
-import { SetWrapper } from '../../values/wrappers.ts';
+import { SetWrapper } from '../../values/wrappers/set-wrapper.ts';
 import { SET_PROTOTYPE } from './set-prototype.ts';
 
 export const SET_BUILTIN: Builtin = new Builtin({

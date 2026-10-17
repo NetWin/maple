@@ -1,6 +1,6 @@
 import { toBoolean } from '../../../values/coercion.ts';
 import { method, type Method } from '../../../values/native.ts';
-import { type IteratorWrapper } from '../../../values/wrappers.ts';
+import type { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
 import { helpers } from '../utils/helpers.ts';
 import { iteratorCallback } from '../utils/iterator-callback.ts';
 

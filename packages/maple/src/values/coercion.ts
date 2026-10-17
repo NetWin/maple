@@ -4,7 +4,9 @@ import { Builtin } from './builtin.ts';
 import { Closure } from './closure.ts';
 import { NativeFunction } from './native.ts';
 import { SandboxError, SandboxThrow } from './sandbox-error.ts';
-import { DateWrapper, isWrapper, RegExpWrapper, wrapperKind } from './wrappers.ts';
+import { DateWrapper } from './wrappers/date-wrapper.ts';
+import { RegExpWrapper } from './wrappers/regexp-wrapper.ts';
+import { isWrapper } from './wrappers/wrapper.ts';
 
 export type Primitive = undefined | null | boolean | number | string;
 
@@ -56,7 +58,7 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
     return String(value.regexp);
   }
   if (isWrapper(value)) {
-    return `[object ${wrapperKind(value)}]`;
+    return `[object ${value.tag}]`;
   }
   if (isArgumentsObject(value)) {
     return ARGUMENTS_PLACEHOLDER;

@@ -1,5 +1,6 @@
 import { method, type Method } from '../../../values/native.ts';
-import { asMutableOrThrow, type SetWrapper } from '../../../values/wrappers.ts';
+import type { SetWrapper } from '../../../values/wrappers/set-wrapper.ts';
+import { asMutableOrThrow } from '../../../values/wrappers/wrapper.ts';
 
 export const SET_METHOD_CLEAR: Method<SetWrapper> = method(
   Set.prototype.clear.length,

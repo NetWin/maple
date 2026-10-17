@@ -1,5 +1,5 @@
 import { method, type Method } from '../../../values/native.ts';
-import { type IteratorWrapper } from '../../../values/wrappers.ts';
+import type { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
 import { iteratorCallback } from '../utils/iterator-callback.ts';
 
 /** In-house, so an empty iterator without a start value is a catchable `TypeError`. */

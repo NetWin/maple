@@ -2,7 +2,10 @@ import { isPlainObject } from '../support/is-plain-object.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { toArrayIndex } from '../values/members.ts';
 import { NativeFunction, type NativeImplementation } from '../values/native.ts';
-import { DateWrapper, MapWrapper, RegExpWrapper, SetWrapper } from '../values/wrappers.ts';
+import { DateWrapper } from '../values/wrappers/date-wrapper.ts';
+import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
+import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
+import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
 import { isHostFunction, isIntrinsic } from './host.ts';
 
 export interface FromHostOptions {

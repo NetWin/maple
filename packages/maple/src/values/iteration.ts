@@ -2,7 +2,9 @@ import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { toLength } from './coercion.ts';
 import { getExtraPropertiesOf } from './members.ts';
-import { IteratorWrapper, MapWrapper, SetWrapper } from './wrappers.ts';
+import { IteratorWrapper } from './wrappers/iterator-wrapper.ts';
+import { MapWrapper } from './wrappers/map-wrapper.ts';
+import { SetWrapper } from './wrappers/set-wrapper.ts';
 
 /**
  * The values `for...of` and friends visit, or `undefined` when the value is not iterable. A Map

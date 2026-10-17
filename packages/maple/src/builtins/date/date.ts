@@ -1,6 +1,6 @@
 import { Builtin } from '../../values/builtin.ts';
 import { toPrimitive } from '../../values/coercion.ts';
-import { DateWrapper } from '../../values/wrappers.ts';
+import { DateWrapper } from '../../values/wrappers/date-wrapper.ts';
 import { DATE_PROTOTYPE } from './date-prototype.ts';
 import { DATE_STATICS } from './date-statics.ts';
 import { dateComponents } from './utils/date-components.ts';

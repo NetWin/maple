@@ -1,5 +1,5 @@
 import { Builtin } from '../../values/builtin.ts';
-import { IteratorWrapper } from '../../values/wrappers.ts';
+import { IteratorWrapper } from '../../values/wrappers/iterator-wrapper.ts';
 import { ITERATOR_PROTOTYPE } from './iterator-prototype.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
 

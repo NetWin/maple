@@ -1,7 +1,7 @@
 import { toString } from '../../../values/coercion.ts';
 import { asHostIterable } from '../../../values/iteration.ts';
 import { isCallable, NativeFunction } from '../../../values/native.ts';
-import { MapWrapper } from '../../../values/wrappers.ts';
+import { MapWrapper } from '../../../values/wrappers/map-wrapper.ts';
 
 /** Keys keep their identity, as in a Map built by hand. */
 export const MAP_STATIC_GROUP_BY: NativeFunction = new NativeFunction(

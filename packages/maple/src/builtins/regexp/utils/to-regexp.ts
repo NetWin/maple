@@ -1,6 +1,6 @@
 import { toString } from '../../../values/coercion.ts';
 import { type CallContext, guardHostErrors } from '../../../values/native.ts';
-import { RegExpWrapper } from '../../../values/wrappers.ts';
+import { RegExpWrapper } from '../../../values/wrappers/regexp-wrapper.ts';
 import { matcherOf } from './matcher-of.ts';
 
 /** A regexp for the string methods that accept one: a wrapper's own, or one built from the text. */

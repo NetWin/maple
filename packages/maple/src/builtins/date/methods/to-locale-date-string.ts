@@ -1,6 +1,6 @@
 import { intlOptionsArgument, localesArgument } from '../../../values/arguments.ts';
 import { guardIntlErrors, type Method, method } from '../../../values/native.ts';
-import type { DateWrapper } from '../../../values/wrappers.ts';
+import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 
 export const DATE_METHOD_TO_LOCALE_DATE_STRING: Method<DateWrapper> = method(
   Date.prototype.toLocaleDateString.length,
