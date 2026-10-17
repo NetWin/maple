@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('Date', () => {
   it('creates a date from milliseconds', () => {
@@ -385,7 +385,7 @@ describe('Date.prototype.toISOString', () => {
   });
 
   it('throws on an invalid date', () => {
-    expect(bothThrow('return new Date(NaN).toISOString();')).toBe('RangeError');
+    expect(allThrow('return new Date(NaN).toISOString();')).toBe('RangeError');
   });
 });
 

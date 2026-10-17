@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('Error', () => {
   it('new Error with a message', () => {
@@ -252,10 +252,10 @@ describe('throw and catch', () => {
     expect(parity('try { throw { code: 7 }; } catch (e) { return e.code; }')).toEqual(7);
   });
   it('uncaught throw of an Error', () => {
-    expect(bothThrow("throw new TypeError('uncaught');")).toBe('TypeError');
+    expect(allThrow("throw new TypeError('uncaught');")).toBe('TypeError');
   });
   it('uncaught throw of a primitive', () => {
-    expect(bothThrow('throw 42;')).toBe('Error');
+    expect(allThrow('throw 42;')).toBe('Error');
   });
   it('rethrowing from a catch', () => {
     expect(

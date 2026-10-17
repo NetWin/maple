@@ -2,7 +2,7 @@
   "name": "@netwin/maple-parity",
   "version": "0.0.0",
   "private": true,
-  "description": "Checks that Maple runs everything js-interpreter runs, apart from the listed divergences",
+  "description": "Compares Maple with js-interpreter and with Node",
   "license": "MIT",
   "type": "module",
   "scripts": {

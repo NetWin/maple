@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 // js-interpreter's `arguments` is a real array and it turns a function into '[object Function]'
 // instead of its source, both unlike ES5; the tests only rely on what ES5 and both engines agree on.
@@ -175,7 +175,7 @@ describe('syntax:FunctionExpression', () => {
   });
 
   it('throws when a missing method is called', () => {
-    expect(bothThrow('var o = {}; return o.missing();')).toBe('TypeError');
+    expect(allThrow('var o = {}; return o.missing();')).toBe('TypeError');
   });
 });
 
@@ -300,7 +300,7 @@ describe('instance:function.length', () => {
 });
 
 describe('length and name of built-in functions', () => {
-  it('are the ones the language gives them', () => {
+  it('are the ones JavaScript gives them', () => {
     expect(
       parity(
         'return [parseInt.length, Math.max.length, "".charAt.length, [].push.length, Date.UTC.length];'
@@ -379,7 +379,7 @@ describe('method calls', () => {
   });
 
   it('throw when a string method is called without its string', () => {
-    expect(bothThrow('var t = " a ".trim; t();')).toBe('TypeError');
+    expect(allThrow('var t = " a ".trim; t();')).toBe('TypeError');
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('NaN', () => {
   it('NaN is not equal to itself', () => {
@@ -114,7 +114,7 @@ describe('encodeURIComponent', () => {
     ).toEqual(true);
   });
   it('encodeURIComponent of a lone surrogate throws', () => {
-    expect(bothThrow("return encodeURIComponent('\\uD800');")).toBe('URIError');
+    expect(allThrow("return encodeURIComponent('\\uD800');")).toBe('URIError');
   });
 });
 
@@ -133,7 +133,7 @@ describe('decodeURIComponent', () => {
     );
   });
   it('decodeURIComponent of a malformed escape throws', () => {
-    expect(bothThrow("return decodeURIComponent('%');")).toBe('URIError');
+    expect(allThrow("return decodeURIComponent('%');")).toBe('URIError');
   });
 });
 
@@ -142,7 +142,7 @@ describe('decodeURI', () => {
     expect(parity("return decodeURI('a%20b%2Fc%3F%C3%BC');")).toEqual('a b%2Fc%3Fü');
   });
   it('decodeURI of a malformed escape throws', () => {
-    expect(bothThrow("return decodeURI('%E0%A4%A');")).toBe('URIError');
+    expect(allThrow("return decodeURI('%E0%A4%A');")).toBe('URIError');
   });
 });
 
@@ -257,7 +257,7 @@ describe('Array.isArray', () => {
 
 describe('globals from data', () => {
   it('reading an undeclared global throws', () => {
-    expect(bothThrow('return notDeclaredAnywhere;')).toBe('ReferenceError');
+    expect(allThrow('return notDeclaredAnywhere;')).toBe('ReferenceError');
   });
   it('typeof an undeclared global', () => {
     expect(parity('return typeof notDeclaredAnywhere;')).toEqual('undefined');

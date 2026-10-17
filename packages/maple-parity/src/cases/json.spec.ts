@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('JSON', () => {
   it('JSON.stringify of primitives', () => {
@@ -110,13 +110,13 @@ describe('JSON.parse', () => {
     expect(parity('return JSON.parse(\'"a\\\\nb\\\\u00fc\\\\""\');')).toEqual('a\nbü"');
   });
   it('JSON.parse of invalid text throws', () => {
-    expect(bothThrow("return JSON.parse('{a:1}');")).toBe('SyntaxError');
+    expect(allThrow("return JSON.parse('{a:1}');")).toBe('SyntaxError');
   });
   it('JSON.parse of a trailing comma throws', () => {
-    expect(bothThrow("return JSON.parse('[1,2,]');")).toBe('SyntaxError');
+    expect(allThrow("return JSON.parse('[1,2,]');")).toBe('SyntaxError');
   });
   it('JSON.parse of an empty string throws', () => {
-    expect(bothThrow("return JSON.parse('');")).toBe('SyntaxError');
+    expect(allThrow("return JSON.parse('');")).toBe('SyntaxError');
   });
   it('JSON round trip', () => {
     expect(

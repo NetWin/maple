@@ -42,17 +42,17 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 
 ## Parity (`packages/maple-parity`)
 
-- The package compares Maple with `@netwin/js-interpreter`. Scripts it runs should run in Maple with the same result,
-  but JavaScript decides: where js-interpreter differs from the language, Maple follows the language and the
-  difference becomes a documented divergence. `src/engines.ts` is the one place in the package that calls
-  js-interpreter.
-- Write each case as an explicit `it`: `expect(parity(code)).toEqual(value)` runs both engines, requires the same
-  result and returns it; `expect(bothThrow(code)).toBe('TypeError')` requires a script error from both and returns
-  the name of Maple's.
-- What Maple rejects goes in `src/divergences.spec.ts` as `expect(divergence(code)).toBe(code)`, and what it answers
-  differently as `expect(differ(code)).toEqual({ maple, jsInterpreter })`. Both assert both sides; add the reason to
-  the README. A divergence that follows the language needs no discussion; one where Maple departs from the language
-  does.
+- The package compares Maple with `@netwin/js-interpreter` and with Node. Scripts js-interpreter runs should run in
+  Maple with the same result, but JavaScript decides: where js-interpreter differs from it, Maple does what Node does
+  and the difference becomes a documented divergence. `src/engines.ts` is the one place in the package that runs
+  js-interpreter or Node.
+- Write each case as an explicit `it`: `expect(parity(code)).toEqual(value)` runs all three engines, requires the same
+  result and returns it; `expect(allThrow(code)).toBe('TypeError')` requires all three to throw and returns the name
+  of Maple's script error.
+- Divergences go in `src/divergences.spec.ts`: where Maple follows JavaScript and js-interpreter does not as
+  `expect(followsJavaScript(code)).toEqual({ maple, jsInterpreter })`, and what Maple rejects as
+  `expect(rejected(code)).toBe(code)`. Both assert all three engines; add the reason to the README. A divergence where
+  Maple follows JavaScript needs no discussion; one where Maple departs from it does.
 - `@netwin/maple` maps to `packages/maple/src/index.ts` through tsconfig `paths`, which Vitest reads too.
 
 ## Conventions

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('Number.prototype.toFixed', () => {
   it('rounds to a number of digits', () => {
@@ -15,7 +15,7 @@ describe('Number.prototype.toFixed', () => {
   });
 
   it('out of range throws', () => {
-    expect(bothThrow('return (1).toFixed(101);')).toBe('RangeError');
+    expect(allThrow('return (1).toFixed(101);')).toBe('RangeError');
   });
 
   it('works on numbers from the data', () => {
@@ -63,7 +63,7 @@ describe('Number.prototype.toString', () => {
   });
 
   it('with a bad radix throws', () => {
-    expect(bothThrow('return (1).toString(1);')).toBe('RangeError');
+    expect(allThrow('return (1).toString(1);')).toBe('RangeError');
   });
 });
 

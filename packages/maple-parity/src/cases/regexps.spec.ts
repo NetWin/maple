@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('RegExp.prototype.test', () => {
   it('tells whether a string matches', () => {
@@ -129,7 +129,7 @@ describe('RegExp', () => {
   });
 
   it('constructor with an invalid pattern throws', () => {
-    expect(bothThrow("return new RegExp('(').source;")).toBe('SyntaxError');
+    expect(allThrow("return new RegExp('(').source;")).toBe('SyntaxError');
   });
 
   it('pattern from host data', () => {

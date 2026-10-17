@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('Math.E', () => {
   it("is Euler's number", () => {
@@ -255,7 +255,7 @@ describe('Math.random', () => {
 
 describe('Math', () => {
   it('Math is not callable', () => {
-    expect(bothThrow('return Math();')).toBe('TypeError');
+    expect(allThrow('return Math();')).toBe('TypeError');
   });
   it('typeof Math members', () => {
     expect(parity('return [typeof Math, typeof Math.max, typeof Math.PI];')).toEqual([

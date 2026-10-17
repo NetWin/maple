@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('Array.prototype.pop', () => {
   it('returns the last element and shortens', () => {
@@ -268,7 +268,7 @@ describe('Array.prototype.reduce', () => {
   });
 
   it('of an empty array without initial value throws', () => {
-    expect(bothThrow('return [].reduce(function (a, b) { return a + b; });')).toBe('TypeError');
+    expect(allThrow('return [].reduce(function (a, b) { return a + b; });')).toBe('TypeError');
   });
 });
 
@@ -282,9 +282,7 @@ describe('Array.prototype.reduceRight', () => {
   });
 
   it('of an empty array without initial value throws', () => {
-    expect(bothThrow('return [].reduceRight(function (a, b) { return a + b; });')).toBe(
-      'TypeError'
-    );
+    expect(allThrow('return [].reduceRight(function (a, b) { return a + b; });')).toBe('TypeError');
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothThrow, parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('syntax:VariableDeclaration', () => {
   it('hoists a var as undefined', () => {
@@ -467,11 +467,11 @@ describe('syntax:ThrowStatement', () => {
   });
 
   it('fails the run when nothing catches it', () => {
-    expect(bothThrow('throw new TypeError("not caught");')).toBe('TypeError');
+    expect(allThrow('throw new TypeError("not caught");')).toBe('TypeError');
   });
 
   it('fails the run with a thrown string', () => {
-    expect(bothThrow('throw "plain";')).toBe('Error');
+    expect(allThrow('throw "plain";')).toBe('Error');
   });
 });
 
@@ -609,7 +609,7 @@ describe('syntax:CallExpression', () => {
   });
 
   it('throws when calling a non-function', () => {
-    expect(bothThrow('var notFn = 1; return notFn();')).toBe('TypeError');
+    expect(allThrow('var notFn = 1; return notFn();')).toBe('TypeError');
   });
 });
 
@@ -729,11 +729,11 @@ describe('syntax:MemberExpression', () => {
   });
 
   it('throws reading a property of undefined', () => {
-    expect(bothThrow('var o; return o.x;')).toBe('TypeError');
+    expect(allThrow('var o; return o.x;')).toBe('TypeError');
   });
 
   it('throws reading a property of null', () => {
-    expect(bothThrow('var o = null; return o.x;')).toBe('TypeError');
+    expect(allThrow('var o = null; return o.x;')).toBe('TypeError');
   });
 
   it('creates properties by assignment', () => {
@@ -1197,7 +1197,7 @@ describe('binary:in', () => {
   });
 
   it('throws on a primitive', () => {
-    expect(bothThrow('return "a" in "abc";')).toBe('TypeError');
+    expect(allThrow('return "a" in "abc";')).toBe('TypeError');
   });
 });
 
@@ -1217,7 +1217,7 @@ describe('binary:instanceof', () => {
   });
 
   it('throws for a right side that is no function', () => {
-    expect(bothThrow('return {} instanceof 1;')).toBe('TypeError');
+    expect(allThrow('return {} instanceof 1;')).toBe('TypeError');
   });
 });
 
@@ -1265,7 +1265,7 @@ describe('assign:=', () => {
   });
 
   it('throws for an undeclared name in strict mode', () => {
-    expect(bothThrow('notDeclared = 1; return notDeclared;')).toBe('ReferenceError');
+    expect(allThrow('notDeclared = 1; return notDeclared;')).toBe('ReferenceError');
   });
 
   it('assigns to members', () => {
