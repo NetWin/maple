@@ -2,13 +2,13 @@ import { Builtin } from '../values/builtin.ts';
 import { toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import { IteratorWrapper, MapWrapper, SetWrapper } from '../values/wrappers.ts';
+import { IteratorWrapper, SetWrapper } from '../values/wrappers.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
 import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
 import { JSON_STATICS } from './json-statics.ts';
-import { constructMap, MAP_STATICS } from './map-statics.ts';
+import { MAP_BUILTIN } from './map/map.ts';
 import { MATH_STATICS } from './math-statics.ts';
 import { NUMBER_BUILTIN } from './number/number.ts';
 import { NUMBER_STATIC_PARSE_FLOAT } from './number/statics/parse-float.ts';
@@ -62,14 +62,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   JSON: new Builtin({ name: 'JSON', members: JSON_STATICS }),
   Date: DATE_BUILTIN,
   RegExp: REGEXP_BUILTIN,
-  Map: new Builtin({
-    name: 'Map',
-    length: Map.length,
-    call: (_args, { fail }) => fail('TypeError', "Constructor Map requires 'new'"),
-    construct: constructMap,
-    members: MAP_STATICS,
-    isInstance: (value) => value instanceof MapWrapper
-  }),
+  Map: MAP_BUILTIN,
   Set: new Builtin({
     name: 'Set',
     length: Set.length,

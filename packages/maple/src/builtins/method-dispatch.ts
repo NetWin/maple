@@ -15,7 +15,7 @@ import { DATE_METHODS } from './date/date-methods.ts';
 import { ERROR_METHODS } from './error-methods.ts';
 import { FUNCTION_METHODS } from './function-methods.ts';
 import { ITERATOR_METHODS } from './iterator-methods.ts';
-import { MAP_METHODS } from './map-methods.ts';
+import { MAP_METHODS } from './map/map-methods.ts';
 import { NUMBER_METHODS } from './number/number-methods.ts';
 import { OBJECT_METHODS } from './object-methods.ts';
 import { REGEXP_METHODS } from './regexp/regexp-methods.ts';
