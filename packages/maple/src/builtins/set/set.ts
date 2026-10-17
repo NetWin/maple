@@ -2,6 +2,7 @@ import { Builtin } from '../../values/builtin.ts';
 import { toString } from '../../values/coercion.ts';
 import { iterate } from '../../values/iteration.ts';
 import { SetWrapper } from '../../values/wrappers.ts';
+import { SET_PROTOTYPE } from './set-prototype.ts';
 
 export const SET_BUILTIN: Builtin = new Builtin({
   name: 'Set',
@@ -20,5 +21,6 @@ export const SET_BUILTIN: Builtin = new Builtin({
     }
     return new SetWrapper(set);
   },
-  isInstance: (value) => value instanceof SetWrapper
+  isInstance: (value) => value instanceof SetWrapper,
+  prototype: SET_PROTOTYPE
 });

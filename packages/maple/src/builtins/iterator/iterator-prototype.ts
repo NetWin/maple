@@ -1,5 +1,5 @@
-import type { Method } from '../../values/native.ts';
-import type { IteratorWrapper } from '../../values/wrappers.ts';
+import { Prototype } from '../../values/prototype.ts';
+import { IteratorWrapper } from '../../values/wrappers.ts';
 import { ITERATOR_METHOD_DROP } from './methods/drop.ts';
 import { ITERATOR_METHOD_EVERY } from './methods/every.ts';
 import { ITERATOR_METHOD_FILTER } from './methods/filter.ts';
@@ -18,17 +18,21 @@ import { ITERATOR_METHOD_TO_ARRAY } from './methods/to-array.ts';
  * helpers consume the iterator they are called on; the lazy ones return a new iterator whose
  * callback runs, under the budget, only when a value is pulled.
  */
-export const ITERATOR_METHODS: ReadonlyMap<string, Method<IteratorWrapper>> = new Map([
-  ['drop', ITERATOR_METHOD_DROP],
-  ['every', ITERATOR_METHOD_EVERY],
-  ['filter', ITERATOR_METHOD_FILTER],
-  ['find', ITERATOR_METHOD_FIND],
-  ['flatMap', ITERATOR_METHOD_FLAT_MAP],
-  ['forEach', ITERATOR_METHOD_FOR_EACH],
-  ['map', ITERATOR_METHOD_MAP],
-  ['next', ITERATOR_METHOD_NEXT],
-  ['reduce', ITERATOR_METHOD_REDUCE],
-  ['some', ITERATOR_METHOD_SOME],
-  ['take', ITERATOR_METHOD_TAKE],
-  ['toArray', ITERATOR_METHOD_TO_ARRAY]
-]);
+export const ITERATOR_PROTOTYPE: Prototype<IteratorWrapper> = new Prototype(
+  'Iterator',
+  (value): value is IteratorWrapper => value instanceof IteratorWrapper,
+  {
+    drop: ITERATOR_METHOD_DROP,
+    every: ITERATOR_METHOD_EVERY,
+    filter: ITERATOR_METHOD_FILTER,
+    find: ITERATOR_METHOD_FIND,
+    flatMap: ITERATOR_METHOD_FLAT_MAP,
+    forEach: ITERATOR_METHOD_FOR_EACH,
+    map: ITERATOR_METHOD_MAP,
+    next: ITERATOR_METHOD_NEXT,
+    reduce: ITERATOR_METHOD_REDUCE,
+    some: ITERATOR_METHOD_SOME,
+    take: ITERATOR_METHOD_TAKE,
+    toArray: ITERATOR_METHOD_TO_ARRAY
+  }
+);

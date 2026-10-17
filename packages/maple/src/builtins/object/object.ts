@@ -1,5 +1,6 @@
 import { Builtin } from '../../values/builtin.ts';
 import { type CallContext, isCallable } from '../../values/native.ts';
+import { OBJECT_PROTOTYPE } from './object-prototype.ts';
 import { OBJECT_STATICS } from './object-statics.ts';
 
 export const OBJECT_BUILTIN: Builtin = new Builtin({
@@ -8,7 +9,8 @@ export const OBJECT_BUILTIN: Builtin = new Builtin({
   call: constructObject,
   construct: constructObject,
   isInstance: (value) => typeof value === 'object' && value !== null,
-  members: OBJECT_STATICS
+  members: OBJECT_STATICS,
+  prototype: OBJECT_PROTOTYPE
 });
 
 /**

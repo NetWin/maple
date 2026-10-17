@@ -1,4 +1,5 @@
 import type { CallContext } from './native.ts';
+import type { Prototype } from './prototype.ts';
 
 export type BuiltinCall = (args: ReadonlyArray<unknown>, context: CallContext) => unknown;
 
@@ -17,6 +18,8 @@ export interface BuiltinOptions {
   construct?: BuiltinCall;
   /** The `instanceof` test; absent for globals that are not constructors. */
   isInstance?: (value: unknown) => boolean;
+  /** What its values answer to, as `Array.prototype`; absent for namespaces such as `Math`. */
+  prototype?: Prototype;
 }
 
 /** A standard global such as `Error`, `Array` or `Math`: a namespace the script can only read. */
@@ -27,6 +30,7 @@ export class Builtin {
   public readonly call: BuiltinCall | undefined;
   public readonly construct: BuiltinCall | undefined;
   public readonly isInstance: ((value: unknown) => boolean) | undefined;
+  public readonly prototype: Prototype | undefined;
 
   constructor(options: BuiltinOptions) {
     this.name = options.name;
@@ -35,6 +39,7 @@ export class Builtin {
     this.call = options.call;
     this.construct = options.construct;
     this.isInstance = options.isInstance;
+    this.prototype = options.prototype;
   }
 
   /** Whether the script sees it as a function, which is what `typeof Error` reports. */

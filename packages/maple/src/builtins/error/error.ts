@@ -2,6 +2,7 @@ import { Builtin } from '../../values/builtin.ts';
 import { toString } from '../../values/coercion.ts';
 import type { CallContext } from '../../values/native.ts';
 import { SandboxError } from '../../values/sandbox-error.ts';
+import { ERROR_PROTOTYPE } from './error-prototype.ts';
 
 /** Matches every error; the subtypes below match by the constructor they were made with. */
 export const ERROR_BUILTIN: Builtin = new Builtin({
@@ -9,7 +10,8 @@ export const ERROR_BUILTIN: Builtin = new Builtin({
   length: Error.length,
   call: ([message], context) => createError('Error', message, context),
   construct: ([message], context) => createError('Error', message, context),
-  isInstance: (value) => value instanceof SandboxError
+  isInstance: (value) => value instanceof SandboxError,
+  prototype: ERROR_PROTOTYPE
 });
 
 export const TYPE_ERROR_BUILTIN: Builtin = new Builtin({
@@ -17,7 +19,8 @@ export const TYPE_ERROR_BUILTIN: Builtin = new Builtin({
   length: TypeError.length,
   call: ([message], context) => createError('TypeError', message, context),
   construct: ([message], context) => createError('TypeError', message, context),
-  isInstance: (value) => value instanceof SandboxError && value.kind === 'TypeError'
+  isInstance: (value) => value instanceof SandboxError && value.kind === 'TypeError',
+  prototype: ERROR_PROTOTYPE
 });
 
 export const RANGE_ERROR_BUILTIN: Builtin = new Builtin({
@@ -25,7 +28,8 @@ export const RANGE_ERROR_BUILTIN: Builtin = new Builtin({
   length: RangeError.length,
   call: ([message], context) => createError('RangeError', message, context),
   construct: ([message], context) => createError('RangeError', message, context),
-  isInstance: (value) => value instanceof SandboxError && value.kind === 'RangeError'
+  isInstance: (value) => value instanceof SandboxError && value.kind === 'RangeError',
+  prototype: ERROR_PROTOTYPE
 });
 
 export const REFERENCE_ERROR_BUILTIN: Builtin = new Builtin({
@@ -33,7 +37,8 @@ export const REFERENCE_ERROR_BUILTIN: Builtin = new Builtin({
   length: ReferenceError.length,
   call: ([message], context) => createError('ReferenceError', message, context),
   construct: ([message], context) => createError('ReferenceError', message, context),
-  isInstance: (value) => value instanceof SandboxError && value.kind === 'ReferenceError'
+  isInstance: (value) => value instanceof SandboxError && value.kind === 'ReferenceError',
+  prototype: ERROR_PROTOTYPE
 });
 
 export const SYNTAX_ERROR_BUILTIN: Builtin = new Builtin({
@@ -41,7 +46,8 @@ export const SYNTAX_ERROR_BUILTIN: Builtin = new Builtin({
   length: SyntaxError.length,
   call: ([message], context) => createError('SyntaxError', message, context),
   construct: ([message], context) => createError('SyntaxError', message, context),
-  isInstance: (value) => value instanceof SandboxError && value.kind === 'SyntaxError'
+  isInstance: (value) => value instanceof SandboxError && value.kind === 'SyntaxError',
+  prototype: ERROR_PROTOTYPE
 });
 
 export const URI_ERROR_BUILTIN: Builtin = new Builtin({
@@ -49,7 +55,8 @@ export const URI_ERROR_BUILTIN: Builtin = new Builtin({
   length: URIError.length,
   call: ([message], context) => createError('URIError', message, context),
   construct: ([message], context) => createError('URIError', message, context),
-  isInstance: (value) => value instanceof SandboxError && value.kind === 'URIError'
+  isInstance: (value) => value instanceof SandboxError && value.kind === 'URIError',
+  prototype: ERROR_PROTOTYPE
 });
 
 export const EVAL_ERROR_BUILTIN: Builtin = new Builtin({
@@ -57,7 +64,8 @@ export const EVAL_ERROR_BUILTIN: Builtin = new Builtin({
   length: EvalError.length,
   call: ([message], context) => createError('EvalError', message, context),
   construct: ([message], context) => createError('EvalError', message, context),
-  isInstance: (value) => value instanceof SandboxError && value.kind === 'EvalError'
+  isInstance: (value) => value instanceof SandboxError && value.kind === 'EvalError',
+  prototype: ERROR_PROTOTYPE
 });
 
 function createError(kind: string, message: unknown, context: CallContext): SandboxError {

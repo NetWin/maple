@@ -2,6 +2,7 @@ import { Builtin } from '../../values/builtin.ts';
 import { toString } from '../../values/coercion.ts';
 import { iterate } from '../../values/iteration.ts';
 import { MapWrapper } from '../../values/wrappers.ts';
+import { MAP_PROTOTYPE } from './map-prototype.ts';
 import { MAP_STATICS } from './map-statics.ts';
 
 export const MAP_BUILTIN: Builtin = new Builtin({
@@ -34,5 +35,6 @@ export const MAP_BUILTIN: Builtin = new Builtin({
     return new MapWrapper(map);
   },
   members: MAP_STATICS,
-  isInstance: (value) => value instanceof MapWrapper
+  isInstance: (value) => value instanceof MapWrapper,
+  prototype: MAP_PROTOTYPE
 });

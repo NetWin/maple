@@ -1,5 +1,6 @@
 import { Builtin } from '../../values/builtin.ts';
 import type { CallContext } from '../../values/native.ts';
+import { ARRAY_PROTOTYPE } from './array-prototype.ts';
 import { ARRAY_STATICS } from './array-statics.ts';
 
 /** The largest length an array can have, as in the language. */
@@ -11,7 +12,8 @@ export const ARRAY_BUILTIN: Builtin = new Builtin({
   call: constructArray,
   construct: constructArray,
   isInstance: (arr) => Array.isArray(arr),
-  members: ARRAY_STATICS
+  members: ARRAY_STATICS,
+  prototype: ARRAY_PROTOTYPE
 });
 
 /**

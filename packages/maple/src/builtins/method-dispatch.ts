@@ -1,26 +1,37 @@
-import { isPlainObject } from '../support/is-plain-object.ts';
 import { type Fail, readMember } from '../values/members.ts';
-import { isCallable, type Method, NativeFunction } from '../values/native.ts';
-import { SandboxError } from '../values/sandbox-error.ts';
-import {
-  DateWrapper,
-  IteratorWrapper,
-  MapWrapper,
-  RegExpWrapper,
-  SetWrapper
-} from '../values/wrappers.ts';
-import { ARRAY_METHODS } from './array/array-methods.ts';
-import { BOOLEAN_METHODS } from './boolean/boolean-methods.ts';
-import { DATE_METHODS } from './date/date-methods.ts';
-import { ERROR_METHODS } from './error/error-methods.ts';
-import { FUNCTION_METHODS } from './function/function-methods.ts';
-import { ITERATOR_METHODS } from './iterator/iterator-methods.ts';
-import { MAP_METHODS } from './map/map-methods.ts';
-import { NUMBER_METHODS } from './number/number-methods.ts';
-import { OBJECT_METHODS } from './object/object-methods.ts';
-import { REGEXP_METHODS } from './regexp/regexp-methods.ts';
-import { SET_METHODS } from './set/set-methods.ts';
-import { STRING_METHODS } from './string/string-methods.ts';
+import type { NativeFunction } from '../values/native.ts';
+import type { Prototype } from '../values/prototype.ts';
+import { ARRAY_PROTOTYPE } from './array/array-prototype.ts';
+import { BOOLEAN_PROTOTYPE } from './boolean/boolean-prototype.ts';
+import { DATE_PROTOTYPE } from './date/date-prototype.ts';
+import { ERROR_PROTOTYPE } from './error/error-prototype.ts';
+import { FUNCTION_PROTOTYPE } from './function/function-prototype.ts';
+import { ITERATOR_PROTOTYPE } from './iterator/iterator-prototype.ts';
+import { MAP_PROTOTYPE } from './map/map-prototype.ts';
+import { NUMBER_PROTOTYPE } from './number/number-prototype.ts';
+import { OBJECT_PROTOTYPE } from './object/object-prototype.ts';
+import { REGEXP_PROTOTYPE } from './regexp/regexp-prototype.ts';
+import { SET_PROTOTYPE } from './set/set-prototype.ts';
+import { STRING_PROTOTYPE } from './string/string-prototype.ts';
+
+/**
+ * Every prototype a value can have, tried in order, so arrays find theirs before plain objects
+ * would and functions come last.
+ */
+const PROTOTYPES: ReadonlyArray<Prototype> = [
+  STRING_PROTOTYPE,
+  NUMBER_PROTOTYPE,
+  BOOLEAN_PROTOTYPE,
+  ARRAY_PROTOTYPE,
+  OBJECT_PROTOTYPE,
+  REGEXP_PROTOTYPE,
+  DATE_PROTOTYPE,
+  MAP_PROTOTYPE,
+  SET_PROTOTYPE,
+  ERROR_PROTOTYPE,
+  ITERATOR_PROTOTYPE,
+  FUNCTION_PROTOTYPE
+];
 
 /** Reads a property as scripts see it: an own property, otherwise the receiver type's method. */
 export function getMember(target: unknown, key: string, fail: Fail): unknown {
@@ -29,74 +40,17 @@ export function getMember(target: unknown, key: string, fail: Fail): unknown {
 
 /**
  * The method a receiver type offers under `key`, bound to that receiver, or `undefined`. This is
- * how `s.trim` resolves: through a table for the type, never through a host prototype.
+ * how `s.trim` resolves: through the prototype of the type, never through a host prototype.
  */
 export function resolveMethod(receiver: unknown, key: string): NativeFunction | undefined {
-  const methodDefinition = getMethodDefinition(receiver, key);
-  if (methodDefinition === undefined) {
-    return undefined;
-  }
-  return bind(receiver, key, methodDefinition);
+  return prototypeOf(receiver)?.resolve(receiver, key);
 }
 
 /** Checks if a receiver type has a method under the given key. */
 export function hasMethod(receiver: unknown, key: string): boolean {
-  return getMethodDefinition(receiver, key) !== undefined;
+  return prototypeOf(receiver)?.has(key) ?? false;
 }
 
-/**
- * Gets the method definition for a receiver type under the given key,
- * or `undefined` if none exists.
- */
-function getMethodDefinition(receiver: unknown, key: string): Method<any> | undefined {
-  if (typeof receiver === 'string') {
-    return STRING_METHODS.get(key);
-  }
-  if (typeof receiver === 'number') {
-    return NUMBER_METHODS.get(key);
-  }
-  if (typeof receiver === 'boolean') {
-    return BOOLEAN_METHODS.get(key);
-  }
-  if (Array.isArray(receiver)) {
-    return ARRAY_METHODS.get(key);
-  }
-  if (isPlainObject(receiver)) {
-    return OBJECT_METHODS.get(key);
-  }
-  if (receiver instanceof RegExpWrapper) {
-    return REGEXP_METHODS.get(key);
-  }
-  if (receiver instanceof DateWrapper) {
-    return DATE_METHODS.get(key);
-  }
-  if (receiver instanceof MapWrapper) {
-    return MAP_METHODS.get(key);
-  }
-  if (receiver instanceof SetWrapper) {
-    return SET_METHODS.get(key);
-  }
-  if (receiver instanceof SandboxError) {
-    return ERROR_METHODS.get(key);
-  }
-  if (receiver instanceof IteratorWrapper) {
-    return ITERATOR_METHODS.get(key);
-  }
-  if (isCallable(receiver)) {
-    return FUNCTION_METHODS.get(key);
-  }
-  return undefined;
-}
-
-function bind<Receiver>(
-  receiver: Receiver,
-  key: string,
-  method: Method<Receiver> | undefined
-): NativeFunction | undefined {
-  if (!method) {
-    return undefined;
-  }
-  return new NativeFunction(key, method.length, (args, context) => {
-    return method.call(receiver, args, context);
-  });
+function prototypeOf(receiver: unknown): Prototype | undefined {
+  return PROTOTYPES.find((prototype) => prototype.receives(receiver));
 }

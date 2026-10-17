@@ -789,7 +789,7 @@ behind `durationMs`, and `atob` and `btoa`.
 
 ## Adding a built-in
 
-1. Register the method under its name in the method table of the receiver type as
+1. Register the method under its name in the prototype of the receiver type as
    `method(String.prototype.name.length, (receiver, args, context) => value)`, or a static as
    `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` in the `members`
    of the namespace. The length is read off the host's own function, so it is the language's; only

@@ -1,6 +1,7 @@
 import { Builtin } from '../../values/builtin.ts';
 import { toPrimitive } from '../../values/coercion.ts';
 import { DateWrapper } from '../../values/wrappers.ts';
+import { DATE_PROTOTYPE } from './date-prototype.ts';
 import { DATE_STATICS } from './date-statics.ts';
 import { dateComponents } from './utils/date-components.ts';
 
@@ -28,5 +29,6 @@ export const DATE_BUILTIN: Builtin = new Builtin({
     return new DateWrapper(new Date(year, month, day, hours, minutes, seconds, milliseconds));
   },
   members: DATE_STATICS,
-  isInstance: (value) => value instanceof DateWrapper
+  isInstance: (value) => value instanceof DateWrapper,
+  prototype: DATE_PROTOTYPE
 });
