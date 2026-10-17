@@ -9,7 +9,9 @@ import { ITERATOR_STATICS } from './iterator-statics.ts';
 import { JSON_STATICS } from './json-statics.ts';
 import { constructMap, MAP_STATICS } from './map-statics.ts';
 import { MATH_STATICS } from './math-statics.ts';
-import { NUMBER_STATICS } from './number-statics.ts';
+import { NUMBER_BUILTIN } from './number/number.ts';
+import { NUMBER_STATIC_PARSE_FLOAT } from './number/statics/parse-float.ts';
+import { NUMBER_STATIC_PARSE_INT } from './number/statics/parse-int.ts';
 import { constructObject, OBJECT_STATICS } from './object-statics.ts';
 import { REGEXP_BUILTIN } from './regexp/regexp.ts';
 import { constructSet } from './set-statics.ts';
@@ -24,8 +26,8 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   undefined,
   NaN: Number.NaN,
   Infinity: Number.POSITIVE_INFINITY,
-  parseInt: NUMBER_STATICS['parseInt'],
-  parseFloat: NUMBER_STATICS['parseFloat'],
+  parseInt: NUMBER_STATIC_PARSE_INT,
+  parseFloat: NUMBER_STATIC_PARSE_FLOAT,
   isNaN: new NativeFunction('isNaN', isNaN.length, ([value]) => Number.isNaN(toNumber(value))),
   isFinite: new NativeFunction('isFinite', isFinite.length, ([value]) =>
     Number.isFinite(toNumber(value))
@@ -37,12 +39,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   atob: base64Function('atob', atob),
   btoa: base64Function('btoa', btoa),
   String: STRING_BUILTIN,
-  Number: new Builtin({
-    name: 'Number',
-    length: Number.length,
-    call: (args) => (args.length === 0 ? 0 : toNumber(args[0])),
-    members: NUMBER_STATICS
-  }),
+  Number: NUMBER_BUILTIN,
   Boolean: new Builtin({
     name: 'Boolean',
     length: Boolean.length,
