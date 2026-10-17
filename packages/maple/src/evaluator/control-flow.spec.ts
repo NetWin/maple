@@ -194,6 +194,22 @@ describe('control flow', () => {
       expect(run('let k = ""; for (const i in "ab") { k += i; } return k;')).toBe('01');
     });
 
+    it('skips a key deleted before its turn but no key added during the loop', () => {
+      const visit = (body: string): unknown =>
+        run(
+          `const o = { a: 1, b: 2 }; const seen = []; for (const k in o) { seen.push(k); ${body} } return seen;`
+        );
+
+      expect(visit('delete o.b;')).toEqual(['a']);
+      expect(visit('o.c = 3;')).toEqual(['a', 'b']);
+      expect(visit('delete o.b; o.b = 5;')).toEqual(['a', 'b']);
+      expect(
+        run(
+          'const a = [1, 2, 3]; const seen = []; for (const i in a) { seen.push(i); a.length = 1; } return seen;'
+        )
+      ).toEqual(['0']);
+    });
+
     it('does nothing for null, undefined and other primitives', () => {
       expect(run('let n = 0; for (const k in null) { n++; } return n;')).toBe(0);
       expect(run('let n = 0; for (const k in undefined) { n++; } return n;')).toBe(0);

@@ -47,7 +47,13 @@ export function* enumerableKeys(value: unknown): Generator<string> {
     return;
   }
   if (Array.isArray(value) || isPlainObject(value)) {
-    yield* Object.keys(value);
+    // The keys are taken when the loop starts, so one added later is not visited, but one deleted
+    // before its turn is skipped, as the language requires
+    for (const key of Object.keys(value)) {
+      if (Object.hasOwn(value, key)) {
+        yield key;
+      }
+    }
   }
 }
 

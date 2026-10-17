@@ -184,6 +184,19 @@ describe('syntax:ForInStatement', () => {
     expect(parity('var k, last; for (k in { a: 1, b: 2 }) { last = k; } return last;')).toBe('b');
   });
 
+  it('skips a key deleted before its turn and visits no key added during the loop', () => {
+    expect(
+      parity(
+        'var o = { a: 1, b: 2 }, seen = []; for (var k in o) { seen.push(k); delete o.b; o.c = 3; } return seen;'
+      )
+    ).toStrictEqual(['a']);
+    expect(
+      parity(
+        'var a = [1, 2, 3], seen = []; for (var i in a) { seen.push(i); a.length = 1; } return seen;'
+      )
+    ).toStrictEqual(['0']);
+  });
+
   it('runs no iterations over null and undefined', () => {
     expect(
       parity('var n = 0; for (var k in null) { n++; } for (var j in undefined) { n++; } return n;')

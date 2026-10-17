@@ -580,7 +580,8 @@ message is the value converted to a string and whose `stack` lists the frames at
 
 All iteration goes through one internal protocol that understands arrays, strings, Map, Set and
 iterator wrappers. Plain objects are not iterable; `for...in` and `Object.keys` enumerate own
-enumerable keys in insertion order.
+enumerable keys in insertion order. `for...in` takes the keys when the loop starts, so a key added
+during the loop is not visited, while one deleted before its turn is skipped.
 
 ## Host functions
 
