@@ -13,7 +13,7 @@ import { ARRAY_METHODS } from './array/array-methods.ts';
 import { BOOLEAN_METHODS } from './boolean/boolean-methods.ts';
 import { DATE_METHODS } from './date/date-methods.ts';
 import { ERROR_METHODS } from './error/error-methods.ts';
-import { FUNCTION_METHODS } from './function-methods.ts';
+import { FUNCTION_METHODS } from './function/function-methods.ts';
 import { ITERATOR_METHODS } from './iterator/iterator-methods.ts';
 import { MAP_METHODS } from './map/map-methods.ts';
 import { NUMBER_METHODS } from './number/number-methods.ts';
