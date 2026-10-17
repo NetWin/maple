@@ -44,18 +44,37 @@ Tests are grouped under a `describe` named after the built-in member (`Array.pro
 Each one has a test in `src/divergences.spec.ts` that asserts both sides, so it fails as soon as either engine
 changes: js-interpreter stops running the code, Maple starts to, or the two results agree.
 
-| Divergence                                                                                                                    | Why                                                                                                                                                              |
-| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `this`, `new` on a script function, `F.prototype`, `.constructor`, `instanceof F`                                             | Maple has no script-visible prototypes or receivers. An object's behaviour comes from its type.                                                                  |
-| `Object.create`, `Object.getPrototypeOf`, `isPrototypeOf`                                                                     | The same object model: there is no prototype chain to create or inspect.                                                                                         |
-| `call`, `apply`, `bind`                                                                                                       | Scripts have no `this`, and letting them pick a built-in method's receiver needs per-method receiver checks first; spread arguments and closures cover the uses. |
-| Getters and setters                                                                                                           | They would run script code on a plain property read or write, host conversion included.                                                                          |
-| `defineProperty`, `defineProperties`, `getOwnPropertyDescriptor`, `propertyIsEnumerable`, `isExtensible`, `preventExtensions` | Maple objects have no per-property attributes and no extensibility flag apart from freezing.                                                                     |
-| `new String`, `new Number`, `new Boolean`, `Object(primitive)`, `instanceof String` / `Number` / `Boolean`                    | There are no primitive wrapper objects. They are a well-known trap and would add a value kind; they can come later.                                              |
-| `eval`, the `Function` constructor and its members (`Function.toString`, `Function.valueOf`, `Function.prototype`)            | Creating code from a string is the escape the sandbox exists to prevent, so the global is not reachable at all.                                                  |
-| `window`, `self`, the global `this`, the global `constructor`                                                                 | There is no global object: globals are read-only bindings, and the host decides what exists.                                                                     |
-| A property added to a built-in function or a namespace: `[].push.cache = 1`, `parseInt.cache = 1`, `Math.answer = 42`         | Built-ins are shared by every run, so the property would carry over into the next. Values a run creates take properties.                                         |
-| `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`                                                                  | A run is synchronous and ends with its result, so nothing can be scheduled.                                                                                      |
-| `with`, implicit globals, `arguments.callee`                                                                                  | Every script runs in strict mode. js-interpreter runs sloppy code and has no `callee`, where strict mode throws.                                                 |
-| A method called without its receiver: `const p = [].push; p(1)`, `(0, a.push)(1)`, `arr.map("".trim)`                         | As in strict mode, a plain call has no receiver, so it is a `TypeError`. js-interpreter passes the global object instead.                                        |
-| `String(Math)`, `"" + JSON`: Maple gives `[object Math]`, js-interpreter `[object Object]`                                    | A namespace converts with its own tag, as in the language; js-interpreter tags every object as a plain one.                                                      |
+### Maple follows the language
+
+js-interpreter differs from JavaScript here; Maple does what the language does.
+
+| Divergence                                                                                            | Why                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `with`, implicit globals, `arguments.callee`                                                          | Every script runs in strict mode, where these are errors. js-interpreter runs sloppy code and has no `callee`.            |
+| A method called without its receiver: `const p = [].push; p(1)`, `(0, a.push)(1)`, `arr.map("".trim)` | As in strict mode, a plain call has no receiver, so it is a `TypeError`. js-interpreter passes the global object instead. |
+| `window`, `self`, `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`                        | Host APIs, not part of the language. A run is synchronous and ends with its result, so nothing can be scheduled either.   |
+| `String(Math)`, `"" + JSON`: Maple gives `[object Math]`, js-interpreter `[object Object]`            | A namespace converts with its own tag, as in the language; js-interpreter tags every object as a plain one.               |
+
+### Maple departs from the language
+
+On purpose: these are what the sandbox leaves out.
+
+| Divergence                                                                                                         | Why                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `this`, `new` on a script function, `F.prototype`, `.constructor`, `instanceof F`                                  | Maple has no script-visible prototypes or receivers. An object's behaviour comes from its type.                 |
+| `Object.create`, `Object.getPrototypeOf`, `isPrototypeOf`                                                          | The same object model: there is no prototype chain to create or inspect.                                        |
+| Getters and setters                                                                                                | They would run script code on a plain property read or write, host conversion included.                         |
+| `new String`, `new Number`, `new Boolean`, `Object(primitive)`, `instanceof String` / `Number` / `Boolean`         | There are no primitive wrapper objects. They are a well-known trap and would add a value kind.                  |
+| `eval`, the `Function` constructor and its members (`Function.toString`, `Function.valueOf`, `Function.prototype`) | Creating code from a string is the escape the sandbox exists to prevent, so the global is not reachable at all. |
+| The global `this`, the global `constructor`                                                                        | There is no global object: globals are read-only bindings, and the host decides what exists.                    |
+
+### Not supported yet
+
+Planned; each entry goes once Maple supports it.
+
+| Divergence                                                                                                            | Why                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| A property added to a built-in function or a namespace: `[].push.cache = 1`, `parseInt.cache = 1`, `Math.answer = 42` | Built-ins are shared by every run, so the property must not carry over into the next; it needs state that lives as long as the run. |
+| `isExtensible`, `preventExtensions`                                                                                   | Maple has no extensibility flag apart from freezing yet.                                                                            |
+| `call`, `apply`, `bind`                                                                                               | Every built-in method checks its receiver now, so they can come. Spread arguments and closures cover the uses until then.           |
+| `defineProperty`, `defineProperties`, `getOwnPropertyDescriptor`, `propertyIsEnumerable`                              | Data descriptors need per-property attributes on Maple's own values first. Accessors stay out, as getters and setters do.           |
