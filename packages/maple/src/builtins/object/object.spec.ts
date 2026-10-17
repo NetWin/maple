@@ -210,7 +210,7 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     ).toEqual(['TypeError', 1, true]);
     expect(
       run('const l = Object.freeze([1]); try { l.push(2); } catch (e) { return [e.message, l]; }')
-    ).toEqual(['Cannot call push on a read-only array', [1]]);
+    ).toEqual(['Cannot add property 1, object is not extensible', [1]]);
     expect(
       run(
         'const e = Object.freeze(new Error("x")); try { e.message = "y"; } catch (t) { return [t.name, e.message]; }'
@@ -236,5 +236,65 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     expect(run('const o = Object.freeze({ a: [1] }); o.a.push(2); return o;')).toEqual({
       a: [1, 2]
     });
+  });
+});
+
+describe('Object.preventExtensions and isExtensible', () => {
+  it('take no new property, with the message JavaScript gives', () => {
+    for (const value of [
+      '{ a: 1 }',
+      '() => 1',
+      'new Error("m")',
+      'new Map()',
+      'new Date(0)',
+      '/a/'
+    ]) {
+      expect(
+        runAndCatch(maple, `const v = Object.preventExtensions(${value}); v.b = 2;`).sandboxError
+          ?.message
+      ).toBe('Cannot add property b, object is not extensible');
+    }
+  });
+
+  it('report it, false for primitives', () => {
+    expect(
+      run(
+        'const o = {}; const f = () => 1; Object.preventExtensions(f); return [Object.isExtensible(o), Object.isExtensible(f), Object.isExtensible(1), Object.preventExtensions(1)];'
+      )
+    ).toEqual([true, false, false, 1]);
+  });
+
+  it('make a value frozen exactly when it then has nothing writable or deletable', () => {
+    expect(
+      run(
+        'const pe = Object.preventExtensions; return [pe(new Date(0)), pe(new Map()), pe(() => 1), pe(/a/), pe({}), pe({ a: 1 })].map(Object.isFrozen);'
+      )
+    ).toEqual([true, true, false, false, true, false]);
+  });
+
+  it('keep a built-in not extensible only for the run that made it so', () => {
+    expect(run('Object.preventExtensions(Math); return Object.isExtensible(Math);')).toBe(false);
+    expect(run('Math.x = 1; return [Object.isExtensible(Math), Math.x];')).toEqual([true, 1]);
+  });
+
+  it('let the array methods add nothing but remove and reorder', () => {
+    const message = (code: string): string | undefined =>
+      runAndCatch(maple, `const a = Object.preventExtensions([1, 2]); ${code}`).sandboxError
+        ?.message;
+
+    expect(message('a.push(3);')).toBe('Cannot add property 2, object is not extensible');
+    expect(message('a.unshift(0);')).toBe('Cannot add property 2, object is not extensible');
+    expect(message('a.splice(0, 1, 7, 8);')).toBe(
+      'Cannot add property 2, object is not extensible'
+    );
+    expect(message('a[2] = 3;')).toBe('Cannot add property 2, object is not extensible');
+    expect(
+      run(
+        'const a = Object.preventExtensions([3, 1, 2]); a.sort(); a.reverse(); a.splice(0, 1, 9); a.shift(); return a;'
+      )
+    ).toEqual([2, 1]);
+    expect(
+      runAndCatch(maple, 'Object.preventExtensions(new Array(2)).fill(0);').sandboxError?.message
+    ).toBe('Cannot add property 0, object is not extensible');
   });
 });

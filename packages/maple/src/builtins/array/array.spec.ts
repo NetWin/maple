@@ -167,7 +167,7 @@ describe('array methods', () => {
 
       expect(runAndCatch(maple, 'list.push(4);', data).sandboxError).toMatchObject({
         name: 'TypeError',
-        message: 'Cannot call push on a read-only array'
+        message: 'Cannot add property 3, object is not extensible'
       });
       expect(runAndCatch(maple, 'list.sort();', data).sandboxError?.name).toBe('TypeError');
       expect(runAndCatch(maple, 'list.pop();', data).sandboxError?.name).toBe('TypeError');

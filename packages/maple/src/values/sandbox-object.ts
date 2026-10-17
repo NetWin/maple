@@ -116,8 +116,11 @@ export abstract class SandboxObject {
       return fixed.set(this, value);
     }
     const added = properties.getAdded(key);
-    if (added ? !added.writable : !properties.isExtensible) {
+    if (added && !added.writable) {
       return fail('TypeError', `Cannot assign to read-only property '${key}'`);
+    }
+    if (!added && !properties.isExtensible) {
+      return fail('TypeError', `Cannot add property ${key}, object is not extensible`);
     }
     if (added) {
       added.value = value;
@@ -152,6 +155,15 @@ export abstract class SandboxObject {
       ...this.fixed.keys(),
       ...added.filter((key) => !isArrayIndex(key))
     ];
+  }
+
+  /** `Object.preventExtensions`: no new property from now on, which cannot be undone. */
+  public preventExtensions(runState: RunState): void {
+    this.getOwnProperties(runState).preventExtensions();
+  }
+
+  public isExtensible(runState: RunState): boolean {
+    return this.getOwnProperties(runState).isExtensible;
   }
 
   /** `Object.seal` and `Object.freeze`: not extensible, and every own property locked down. */

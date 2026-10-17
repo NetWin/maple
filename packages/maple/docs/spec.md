@@ -426,7 +426,7 @@ Static: `Number.isInteger`, `Number.isFinite`, `Number.isNaN`, `Number.isSafeInt
 
 Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, `Object.assign`,
 `Object.hasOwn`, `Object.groupBy`, `Object.is`, `Object.getOwnPropertyNames`, `Object.freeze`,
-`Object.isFrozen`.
+`Object.isFrozen`, `Object.preventExtensions`, `Object.isExtensible`.
 
 `getOwnPropertyNames` lists exactly the own names, enumerable or not, so
 `getOwnPropertyNames([1])` is `['0', 'length']`, with array indices first as in JavaScript, also
@@ -435,10 +435,17 @@ new properties and makes every own property read-only, and returns it; for anyth
 nothing. A frozen Map can still `set`, as in
 JavaScript. A frozen RegExp keeps its `lastIndex`: assigning it throws a `TypeError`, and with `g` or
 `y` so do `exec`, `test`, `match`, `search`, `replace` and `replaceAll`, which would write it;
-`split` and `matchAll` match on a copy and still work. `isFrozen` is `true` for primitives, for collections that came in with the
-input, and for whatever `freeze` was given; for a built-in function or a namespace, that is what
-the current run gave it. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
-`create`, …) and `seal` / `preventExtensions` are not available.
+`split` and `matchAll` match on a copy and still work.
+
+`preventExtensions` makes a value take no new property from then on, so an assignment fails with
+`Cannot add property x, object is not extensible`; its existing properties stay writable and
+deletable, and an array can still shrink or grow its `length`, while `push`, `unshift` and a new
+index fail. `isExtensible` is `false` for primitives. `isFrozen` is derived from the properties, as
+in JavaScript: it is `true` for primitives, for collections that came in with the input, for
+whatever `freeze` was given, and for a value that is no longer extensible and has nothing left to
+write or delete, such as `Object.preventExtensions(new Date())`. For a built-in function or a
+namespace, all of this is what the current run made of it. The descriptor and prototype functions
+(`defineProperty`, `getPrototypeOf`, `create`, …) and `seal` are not available.
 
 `Object(...)` and `new Object(...)` do the same: a fresh object for no argument, `null` or
 `undefined`, and the argument itself when it is an object, array or function. A primitive would

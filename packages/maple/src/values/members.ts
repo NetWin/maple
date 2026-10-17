@@ -104,8 +104,13 @@ export function setMember(
     return target.setProperty(key, value, context);
   }
 
-  if (Object.isFrozen(target)) {
+  // Arrays and plain objects are the host's own, so their attributes decide, as in JavaScript
+  const own = Object.getOwnPropertyDescriptor(target, key);
+  if (own && own.writable === false) {
     return fail('TypeError', `Cannot assign to read-only property '${key}'`);
+  }
+  if (!own && !Object.isExtensible(target)) {
+    return fail('TypeError', `Cannot add property ${key}, object is not extensible`);
   }
 
   if (Array.isArray(target)) {
@@ -133,6 +138,11 @@ export function setMember(
   }
 
   if (isPlainObject(target)) {
+    // An existing property keeps its attributes; a new one is created as an assignment creates it
+    if (own) {
+      Reflect.set(target, key, value);
+      return;
+    }
     Object.defineProperty(target, key, {
       value,
       enumerable: true,
@@ -163,11 +173,10 @@ export function deleteMember(target: unknown, key: string, context: MemberContex
     return true;
   }
 
-  if (Object.isFrozen(target)) {
+  if (!Reflect.deleteProperty(target, key)) {
     return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
   }
-
-  return Reflect.deleteProperty(target, key);
+  return true;
 }
 
 /** The `in` operator over own properties, which is all the sandbox has. */

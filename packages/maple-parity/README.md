@@ -57,6 +57,8 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | A method called without its receiver: `const p = [].push; p(1)`, `(0, a.push)(1)`, `arr.map("".trim)` | As in strict mode, a plain call has no receiver, so it is a `TypeError`. js-interpreter passes the global object instead. |
 | `window`, `self`, `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`                        | Host APIs, not part of JavaScript. A run is synchronous and ends with its result, so nothing can be scheduled either.     |
 | `String(Math)`, `"" + JSON`: Maple gives `[object Math]`, js-interpreter `[object Object]`            | A namespace converts with its own tag, as in JavaScript; js-interpreter tags every object as a plain one.                 |
+| `Object.isExtensible(5)`: Maple gives `false`, js-interpreter `true`                                  | A primitive is never extensible since ES2015; js-interpreter follows ES5.                                                 |
+| `push` on an array after `Object.preventExtensions`                                                   | It throws a `TypeError`, as in JavaScript; js-interpreter changes nothing and throws nothing.                             |
 
 ### Maple departs from JavaScript
 
@@ -77,6 +79,5 @@ Planned; each entry goes once Maple supports it.
 
 | Divergence                                                                               | Why                                                                                                                       |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `isExtensible`, `preventExtensions`                                                      | Maple has no extensibility flag apart from freezing yet.                                                                  |
 | `call`, `apply`, `bind`                                                                  | Every built-in method checks its receiver now, so they can come. Spread arguments and closures cover the uses until then. |
 | `defineProperty`, `defineProperties`, `getOwnPropertyDescriptor`, `propertyIsEnumerable` | Data descriptors need per-property attributes on Maple's own values first. Accessors stay out, as getters and setters do. |

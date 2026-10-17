@@ -127,6 +127,30 @@ describe('String:namespace', () => {
   });
 });
 
+// ES5 has no notion of a primitive being not extensible, and js-interpreter lets a push on an array
+// that is not extensible fail silently.
+
+describe('Object.isExtensible', () => {
+  it('answers false for a primitive', () => {
+    expect(followsJavaScript('return [Object.isExtensible(5), Object.isExtensible("s")];')).toEqual(
+      {
+        maple: [false, false],
+        jsInterpreter: [true, true]
+      }
+    );
+  });
+});
+
+describe('Object.preventExtensions', () => {
+  it('makes a push on the array throw', () => {
+    expect(
+      followsJavaScript(
+        'var a = Object.preventExtensions([1]); try { a.push(2); } catch (e) { return e.name; } return a;'
+      )
+    ).toEqual({ maple: 'TypeError', jsInterpreter: [1] });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes or receivers. An object's behaviour
@@ -299,22 +323,6 @@ describe('constructor', () => {
 });
 
 // Not supported yet: each entry goes once Maple supports it.
-
-// Maple has no extensibility flag apart from freezing yet.
-
-describe('Object.isExtensible', () => {
-  it('has no Object.isExtensible', () => {
-    expect(rejected('return Object.isExtensible({});')).toBe(MapleErrorCode.RUNTIME_ERROR);
-  });
-});
-
-describe('Object.preventExtensions', () => {
-  it('has no Object.preventExtensions', () => {
-    expect(rejected('var o = Object.preventExtensions({}); return o;')).toBe(
-      MapleErrorCode.RUNTIME_ERROR
-    );
-  });
-});
 
 // Every built-in method checks its receiver now, so these can come; spread arguments and closures
 // cover the uses until then.

@@ -67,7 +67,7 @@ describe('RegExp', () => {
       "Cannot assign to read-only property 'lastIndex' of a RegExp"
     );
     expect(runAndCatch(maple, 'pattern.label = 1;', data).sandboxError?.message).toBe(
-      "Cannot assign to read-only property 'label'"
+      'Cannot add property label, object is not extensible'
     );
   });
 

@@ -365,7 +365,7 @@ describe('properties added to errors', () => {
     expect(
       runAndCatch(maple, 'const e = Object.freeze(new Error("m")); e.code = 1;').sandboxError
         ?.message
-    ).toBe("Cannot assign to read-only property 'code'");
+    ).toBe('Cannot add property code, object is not extensible');
     expect(
       run('const e = new Error("m"); e.code = 1; Object.freeze(e); return Object.isFrozen(e);')
     ).toBe(true);

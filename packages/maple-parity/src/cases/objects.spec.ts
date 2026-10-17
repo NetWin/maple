@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parity } from '../parity.ts';
+import { allThrow, parity } from '../parity.ts';
 
 describe('object values', () => {
   it('object literal with mixed values', () => {
@@ -246,5 +246,53 @@ describe('NaN', () => {
         "return [Boolean(0), Boolean(''), Boolean('0'), Boolean(NaN), Boolean({}), Boolean([]), Boolean(null), Boolean(undefined), Boolean(1)];"
       )
     ).toEqual([false, false, true, false, true, true, false, false, true]);
+  });
+});
+
+describe('Object.isExtensible', () => {
+  it('answers for objects, arrays, functions and namespaces', () => {
+    expect(
+      parity(
+        'return [Object.isExtensible({}), Object.isExtensible([]), Object.isExtensible(function () {}), Object.isExtensible(Math)];'
+      )
+    ).toEqual([true, true, true, true]);
+  });
+});
+
+describe('Object.preventExtensions', () => {
+  it('returns the object, which then takes no new property', () => {
+    expect(
+      parity('var o = {}; return [Object.preventExtensions(o) === o, Object.isExtensible(o)];')
+    ).toEqual([true, false]);
+    expect(allThrow('var o = Object.preventExtensions({ a: 1 }); o.b = 2;')).toBe('TypeError');
+  });
+
+  it('leaves the existing properties writable and deletable', () => {
+    expect(
+      parity('var o = Object.preventExtensions({ a: 1, b: 2 }); o.a = 5; delete o.b; return o;')
+    ).toEqual({
+      a: 5
+    });
+  });
+
+  it('lets an array shrink and grow its length but take no new index', () => {
+    expect(
+      parity('var a = Object.preventExtensions([1, 2]); a.pop(); a.length = 3; return a.length;')
+    ).toBe(3);
+    expect(allThrow('var a = Object.preventExtensions([1]); a[5] = 1;')).toBe('TypeError');
+  });
+
+  it('applies to functions, errors, regexps and dates', () => {
+    expect(allThrow('var f = Object.preventExtensions(function () {}); f.x = 1;')).toBe(
+      'TypeError'
+    );
+    expect(allThrow('var e = Object.preventExtensions(new Error("m")); e.x = 1;')).toBe(
+      'TypeError'
+    );
+    expect(
+      parity(
+        'var e = Object.preventExtensions(new Error("m")); e.message = "n"; var r = Object.preventExtensions(/a/g); r.lastIndex = 2; var d = Object.preventExtensions(new Date(0)); d.setTime(5); return [e.message, r.lastIndex, d.getTime()];'
+      )
+    ).toEqual(['n', 2, 5]);
   });
 });
