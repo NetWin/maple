@@ -2,11 +2,10 @@ import { Builtin } from '../values/builtin.ts';
 import { toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
-import { IteratorWrapper } from '../values/wrappers.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
 import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
-import { ITERATOR_STATICS } from './iterator-statics.ts';
+import { ITERATOR_BUILTIN } from './iterator/iterator.ts';
 import { JSON_STATICS } from './json-statics.ts';
 import { MAP_BUILTIN } from './map/map.ts';
 import { MATH_STATICS } from './math-statics.ts';
@@ -64,13 +63,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   RegExp: REGEXP_BUILTIN,
   Map: MAP_BUILTIN,
   Set: SET_BUILTIN,
-  Iterator: new Builtin({
-    name: 'Iterator',
-    length: Iterator.length,
-    call: (_args, { fail }) => fail('TypeError', "Constructor Iterator requires 'new'"),
-    members: ITERATOR_STATICS,
-    isInstance: (value) => value instanceof IteratorWrapper
-  })
+  Iterator: ITERATOR_BUILTIN
 });
 
 /**
