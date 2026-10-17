@@ -93,8 +93,24 @@ function convert(
     return wrapper;
   }
   if (value instanceof RegExp) {
+    const { lastIndex }: { lastIndex: unknown } = value;
+
+    // JS would allow to assign any value to lastIndex.
+    // Assigning an object to it would mean the script could potentially mutate it
+    // which would let the script mutate it and bleed into the host environment.
+    // Let's be honest, that's a host problem not a sandbox one but let's prevent it anyway
+    // e.g.
+    //   Host:   `const r = new RegExp('a/g'); r.lastIndex = { foo: 1 };`
+    //   Script: `r.lastIndex.foo = 2;` <- would mutate the host object
+    if (typeof lastIndex !== 'number') {
+      throw unsupported(
+        `${path}.lastIndex`,
+        typeof lastIndex === 'object' && lastIndex !== null ? describe(lastIndex) : typeof lastIndex
+      );
+    }
+
     const copy = new RegExp(value.source, value.flags);
-    copy.lastIndex = value.lastIndex;
+    copy.lastIndex = lastIndex;
     const wrapper = new RegExpWrapper(copy, freeze);
     copies.set(value, wrapper);
     return wrapper;

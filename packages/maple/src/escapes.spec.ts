@@ -209,6 +209,15 @@ describe('escape attempts', () => {
       expect(data.when.getTime()).toBe(0);
       expect(data.lookup.size).toBe(1);
     });
+
+    it('including a host object left in the lastIndex of a regexp', () => {
+      const host = { n: 0 };
+      const regexp = /a/g;
+      // @ts-expect-error - assigning a host object to lastIndex is normally not allowed in TypeScript
+      regexp.lastIndex = host;
+      expect(() => run('r.lastIndex.n = 1;', { r: regexp })).toThrow(TypeError);
+      expect(host.n).toBe(0);
+    });
   });
 
   describe('functions never cross the boundary', () => {

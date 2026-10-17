@@ -262,7 +262,8 @@ accepts:
   own enumerable properties, so an array keeps its holes and named properties such as the `index`,
   `input` and `groups` of a match result. Cycles and shared references are preserved, also for a
   `Date` or `RegExp` reached twice.
-- `Date`, `RegExp`, `Map` and `Set`, copied into wrappers with converted contents.
+- `Date`, `RegExp`, `Map` and `Set`, copied into wrappers with converted contents. A `RegExp`'s
+  `lastIndex` must be a number, since the host may have left any value in it.
 - Functions, which become host function values, or intrinsics if they carry the `intrinsic` mark.
   They may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
 

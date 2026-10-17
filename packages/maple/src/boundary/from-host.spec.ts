@@ -26,6 +26,14 @@ function firstEntry(map: ReadonlyMap<unknown, unknown>): [unknown, unknown] {
   return first;
 }
 
+/** A regexp whose `lastIndex` holds whatever the host left in it. */
+function withLastIndex(lastIndex: unknown): RegExp {
+  const regexp = /a/g;
+  // @ts-expect-error - assigning a host object to lastIndex is normally not allowed in TypeScript
+  regexp.lastIndex = lastIndex;
+  return regexp;
+}
+
 describe('fromHost', () => {
   it('passes primitives through, including the ones JSON would lose', () => {
     expect(fromHost(1)).toBe(1);
@@ -124,6 +132,26 @@ describe('fromHost', () => {
     expect(() => fromHost(Object('boxed'), 'data')).toThrow(
       new TypeError('Unsupported value at data: String')
     );
+  });
+
+  it('rejects a RegExp whose lastIndex is not a number', () => {
+    expect(() => fromHost({ r: withLastIndex({ n: 1 }) }, 'data')).toThrow(
+      new TypeError('Unsupported value at data.r.lastIndex: Object')
+    );
+    expect(() => fromHost(withLastIndex('1'), 'data')).toThrow(
+      new TypeError('Unsupported value at data.lastIndex: string')
+    );
+    expect(() => fromHost(withLastIndex(null), 'data')).toThrow(
+      new TypeError('Unsupported value at data.lastIndex: object')
+    );
+    expect(() =>
+      fromHost(
+        withLastIndex(() => 1),
+        'data'
+      )
+    ).toThrow(new TypeError('Unsupported value at data.lastIndex: function'));
+    const copy = fromHost(withLastIndex(Number.NaN));
+    expect(copy instanceof RegExpWrapper && copy.regexp.lastIndex).toBeNaN();
   });
 
   it('wraps Date, RegExp, Map and Set as read-only copies with converted contents', () => {
