@@ -787,16 +787,15 @@ behind `durationMs`, and `atob` and `btoa`.
 
 ## Adding a built-in
 
-1. Add a row to the dispatch table of the receiver type (`builtins/string-methods.ts`,
-   `builtins/array-methods.ts`, …) in the form
-   `['name', method(String.prototype.name.length, (receiver, args, context) => value)]`, or a
-   `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` to the `members` of
-   the namespace (`builtins/array-statics.ts`, `builtins/object-statics.ts`, …). The length is
-   read off the host's own function, so it is the language's; only where TypeScript's `lib` has
-   no typing for it (Annex B, deprecated members) is it written out, with a comment saying why.
-2. Convert every argument hook-free first (`toString`, `toNumber`, `optionalNumber`, …) so the host
-   only ever sees primitives. If the method takes a callback, invoke it through `context.call` so
-   it runs under the budget. Never hand a script closure to a host implementation.
+1. Register the method under its name in the method table of the receiver type as
+   `method(String.prototype.name.length, (receiver, args, context) => value)`, or a static as
+   `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` in the `members`
+   of the namespace. The length is read off the host's own function, so it is the language's; only
+   where TypeScript's `lib` has no typing for it ([Annex B](https://262.ecma-international.org/6.0/index.html#sec-additional-ecmascript-features-for-web-browsers), deprecated members) is it written out,
+   with a comment saying why.
+2. Convert every argument hook-free first (`toString`, `toNumber`, `optionalNumberArgument`, …) so
+   the host only ever sees primitives. If the method takes a callback, invoke it through
+   `context.call` so it runs under the budget. Never hand a script closure to a host implementation.
 3. If the method needs no callback and cannot observe prototypes, it may delegate to the host
    implementation on a Maple-owned value (for example `Array.prototype.with`). Wrap it in
    `guardHostErrors` when the language specifies a `RangeError`, `URIError` or `SyntaxError` for it,
