@@ -818,8 +818,9 @@ behind `durationMs`, and `atob` and `btoa`.
    `method(String.prototype.name.length, (receiver, args, context) => value)`, or a static as
    `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` in the `members`
    of the namespace. The length is read off the host's own function, so it is JavaScript's; only
-   where TypeScript's `lib` has no typing for it ([Annex B](https://262.ecma-international.org/6.0/index.html#sec-additional-ecmascript-features-for-web-browsers), deprecated members) is it written out,
-   with a comment saying why.
+   where TypeScript's `lib` has no typing for it ([Annex B](https://262.ecma-international.org/6.0/index.html#sec-additional-ecmascript-features-for-web-browsers) members such as `getYear`) is it written out,
+   with a comment saying why. A member the `lib` marks as deprecated, such as `substr` or `escape`, is still the
+   host's, under an `oxlint-disable` for `typescript/no-deprecated` that says why.
 2. Convert every argument hook-free first (`toString`, `toNumber`, `optionalNumberArgument`, …) so
    the host only ever sees primitives. If the method takes a callback, invoke it through
    `context.call` so it runs under the budget. Never hand a script closure to a host implementation.

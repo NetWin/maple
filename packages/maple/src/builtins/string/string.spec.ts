@@ -168,6 +168,10 @@ describe('ES2024 and legacy string methods', () => {
     expect(run('return "abcdef".substr(4, 99);')).toBe('ef');
     expect(run('return "abcdef".substr();')).toBe('abcdef');
     expect(run('return "abcdef".substr("1", "2");')).toBe('bc');
+    expect(run('return ["abcdef".substr(1, undefined), "abcdef".substr(1, NaN)];')).toEqual([
+      'bcdef',
+      ''
+    ]);
   });
 
   it('alias trimLeft and trimRight', () => {
