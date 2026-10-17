@@ -1,4 +1,4 @@
-import { toNumber } from '../coercion.ts';
+import { type Primitive, toNumber } from '../coercion.ts';
 import { ExtraProperties } from '../extra-properties.ts';
 import { type FixedProperties, SandboxObject } from '../sandbox-object.ts';
 
@@ -27,8 +27,13 @@ const REGEXP_PROPERTIES: FixedProperties<RegExpWrapper> = new Map([
 
 export class RegExpWrapper extends SandboxObject {
   public readonly regexp: RegExp;
+
   /** Came in with the input, so `lastIndex` stays as it is and matching runs on a copy. */
   public readonly readOnly: boolean;
+
+  public readonly tag = 'RegExp';
+
+  protected readonly fixed: FixedProperties<RegExpWrapper> = REGEXP_PROPERTIES;
 
   constructor(regexp: RegExp, readOnly = false) {
     super(new ExtraProperties(readOnly));
@@ -36,11 +41,7 @@ export class RegExpWrapper extends SandboxObject {
     this.readOnly = readOnly;
   }
 
-  protected get fixed(): FixedProperties<RegExpWrapper> {
-    return REGEXP_PROPERTIES;
-  }
-
-  public get tag(): string {
-    return 'RegExp';
+  public override toPrimitive(): Primitive {
+    return String(this.regexp);
   }
 }

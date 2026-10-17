@@ -33,14 +33,16 @@ describe('Array.prototype.map', () => {
   `expect(bothThrow('return null.x;')).toBe('TypeError')`. The messages are not compared, because Maple's are the
   better ones.
 - `divergence(code)` requires js-interpreter to run the script and returns the `MapleErrorCode` Maple rejects it with.
+- `differ(code)` requires both engines to run the script with different results and returns both, as
+  `{ maple, jsInterpreter }`.
 
 Tests are grouped under a `describe` named after the built-in member (`Array.prototype.map`) or the syntax
 (`syntax:LabeledStatement`, `binary:>>>`) they cover, so the case files show what is covered.
 
 ## Divergences
 
-Each one has a test in `src/divergences.spec.ts` that asserts both sides, so it fails as soon as js-interpreter stops
-running the code or Maple starts to.
+Each one has a test in `src/divergences.spec.ts` that asserts both sides, so it fails as soon as either engine
+changes: js-interpreter stops running the code, Maple starts to, or the two results agree.
 
 | Divergence                                                                                                                    | Why                                                                                                                                                              |
 | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -58,3 +60,4 @@ running the code or Maple starts to.
 | `with`, implicit globals, `arguments.callee`                                                                                  | Every script runs in strict mode. js-interpreter runs sloppy code and has no `callee`, where strict mode throws.                                                 |
 | A method called without its receiver: `const p = [].push; p(1)`, `(0, a.push)(1)`, `arr.map("".trim)`                         | As in strict mode, a plain call has no receiver, so it is a `TypeError`. js-interpreter passes the global object instead.                                        |
 | `debugger`                                                                                                                    | There is no debugger to stop in; the statement is rejected rather than ignored.                                                                                  |
+| `String(Math)`, `"" + JSON`: Maple gives `[object Math]`, js-interpreter `[object Object]`                                    | A namespace converts with its own tag, as in the language; js-interpreter tags every object as a plain one.                                                      |

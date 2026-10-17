@@ -64,3 +64,20 @@ export function divergence(code: string, { sloppy = false } = {}): MapleErrorCod
   }
   return actual.error.code;
 }
+
+/**
+ * Requires both engines to run `code` and to return different values, and returns both, so a
+ * divergence in what Maple answers fails the moment the two agree or either one throws.
+ */
+export function differ(code: string): { maple: unknown; jsInterpreter: unknown } {
+  const reference = runJsInterpreter(code);
+  if (!reference.ok) {
+    throw new Error(`js-interpreter threw: ${String(reference.error)}`);
+  }
+  const actual = runMaple(code);
+  if (!actual.ok) {
+    throw new Error(`Maple threw: ${String(actual.error)}`);
+  }
+  expect(actual.value).not.toStrictEqual(reference.value);
+  return { maple: actual.value, jsInterpreter: reference.value };
+}

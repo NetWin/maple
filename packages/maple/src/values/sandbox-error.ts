@@ -1,5 +1,5 @@
 import type { Node } from 'acorn';
-import { toString } from './coercion.ts';
+import { type Primitive, toString } from './coercion.ts';
 import { ExtraProperties } from './extra-properties.ts';
 import { type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
@@ -29,11 +29,18 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
 /** An error object as the script sees it: name, message and a stack of script positions. */
 export class SandboxError extends SandboxObject {
   public name: string;
+
   public message: string;
+
   /** The constructor it came from, which `instanceof` checks; `name` is only the display. */
   public readonly kind: string;
+
   /** Frozen at creation like the host does it, so a later rename does not rewrite history. */
   public readonly stack: string;
+
+  public readonly tag = 'Error';
+
+  protected readonly fixed: FixedProperties<SandboxError> = ERROR_PROPERTIES;
 
   constructor(name: string, message: string, kind: string = name, frames: string = '') {
     super(new ExtraProperties());
@@ -44,12 +51,9 @@ export class SandboxError extends SandboxObject {
     this.stack = frames === '' ? header : `${header}\n${frames}`;
   }
 
-  protected get fixed(): FixedProperties<SandboxError> {
-    return ERROR_PROPERTIES;
-  }
-
-  public get tag(): string {
-    return 'Error';
+  /** What the language's `Error.prototype.toString` gives: `name: message`, or `name` alone. */
+  public override toPrimitive(): Primitive {
+    return this.message === '' ? this.name : `${this.name}: ${this.message}`;
   }
 
   /** The fixed part of the error as the host receives it; the boundary adds `properties`. */

@@ -1,3 +1,4 @@
+import { FUNCTION_PLACEHOLDER, type Primitive, type PrimitiveHint } from './coercion.ts';
 import { ExtraProperties } from './extra-properties.ts';
 import type { Fail } from './members.ts';
 import type { CallContext } from './native.ts';
@@ -36,13 +37,24 @@ export interface BuiltinOptions {
  */
 export class Builtin extends SandboxObject {
   public readonly name: string;
+
   public readonly length: number | undefined;
+
   public readonly call: BuiltinCall | undefined;
+
   public readonly construct: BuiltinCall | undefined;
+
   public readonly isInstance: ((value: unknown) => boolean) | undefined;
+
   public readonly prototype: Prototype | undefined;
+
+  /** Whether the script sees it as a function, which is what `typeof Error` reports. */
+  public override readonly isCallable: boolean;
+
+  public readonly tag: string;
+
   /** `length` and `name` when it is callable, then its static members. */
-  readonly #fixed: FixedProperties<Builtin>;
+  protected readonly fixed: FixedProperties<Builtin>;
 
   constructor(options: BuiltinOptions) {
     super(ExtraProperties.NONE);
@@ -51,7 +63,7 @@ export class Builtin extends SandboxObject {
     const members = Object.entries(options.members ?? {}).map(
       ([key, member]): [string, FixedProperty<Builtin>] => [key, { get: () => member }]
     );
-    this.#fixed = new Map([
+    this.fixed = new Map([
       ...(options.length === undefined ? [] : FUNCTION_PROPERTIES),
       ...members
     ]);
@@ -59,14 +71,8 @@ export class Builtin extends SandboxObject {
     this.construct = options.construct;
     this.isInstance = options.isInstance;
     this.prototype = options.prototype;
-  }
-
-  protected get fixed(): FixedProperties<Builtin> {
-    return this.#fixed;
-  }
-
-  public get tag(): string {
-    return this.callable ? 'Function' : this.name;
+    this.isCallable = options.call !== undefined || options.construct !== undefined;
+    this.tag = this.isCallable ? 'Function' : options.name;
   }
 
   /** Not even a key it does not have can be deleted, so a global reads as fixed as it is. */
@@ -74,8 +80,8 @@ export class Builtin extends SandboxObject {
     return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
   }
 
-  /** Whether the script sees it as a function, which is what `typeof Error` reports. */
-  public get callable(): boolean {
-    return this.call !== undefined || this.construct !== undefined;
+  /** A namespace converts as the language has it, `[object Math]`. */
+  public override toPrimitive(hint: PrimitiveHint): Primitive {
+    return this.isCallable ? FUNCTION_PLACEHOLDER : super.toPrimitive(hint);
   }
 }

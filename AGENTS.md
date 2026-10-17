@@ -45,8 +45,9 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 - Write each case as an explicit `it`: `expect(parity(code)).toEqual(value)` runs both engines, requires the same
   result and returns it; `expect(bothThrow(code)).toBe('TypeError')` requires a script error from both and returns
   the name of Maple's.
-- What Maple rejects on purpose goes in `src/divergences.spec.ts` as `expect(divergence(code)).toBe(code)`, which
-  asserts both sides, and in the README with its reason. Add one only after discussing it.
+- What Maple rejects on purpose goes in `src/divergences.spec.ts` as `expect(divergence(code)).toBe(code)`, and
+  what it answers differently as `expect(differ(code)).toEqual({ maple, jsInterpreter })`. Both assert both sides;
+  add the reason to the README. Add one only after discussing it.
 - `@netwin/maple` maps to `packages/maple/src/index.ts` through tsconfig `paths`, which Vitest reads too.
 
 ## Conventions

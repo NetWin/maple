@@ -1,3 +1,4 @@
+import type { Primitive, PrimitiveHint } from './coercion.ts';
 import { ExtraProperties } from './extra-properties.ts';
 import type { Fail, MethodLookup } from './members.ts';
 
@@ -31,15 +32,23 @@ export const FUNCTION_PROPERTIES: FixedProperties<{
 export abstract class SandboxObject {
   public readonly properties: ExtraProperties;
 
+  /** The type as `[object Map]` prints it, the name the language keeps as `Symbol.toStringTag`. */
+  public abstract readonly tag: string;
+
+  /** Whether the script can call it, which is what `typeof` reports as `function`. */
+  public readonly isCallable: boolean = false;
+
+  /** Shared by every value of the kind, apart from globals, whose members differ. */
+  protected abstract readonly fixed: FixedProperties<this>;
+
   protected constructor(properties: ExtraProperties) {
     this.properties = properties;
   }
 
-  /** Shared by every value of the kind, apart from globals, whose members differ. */
-  protected abstract get fixed(): FixedProperties<this>;
-
-  /** The type as `[object Map]` prints it, the name the language keeps as `Symbol.toStringTag`. */
-  public abstract get tag(): string;
+  /** ToPrimitive without hooks, so a script cannot influence a conversion: `[object Map]`. */
+  public toPrimitive(_hint: PrimitiveHint): Primitive {
+    return `[object ${this.tag}]`;
+  }
 
   public getProperty(key: string, methodLookup: MethodLookup): unknown {
     const property = this.fixed.get(key);

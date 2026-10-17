@@ -1,12 +1,7 @@
 import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { isArgumentsObject } from './arguments-object.ts';
-import { Builtin } from './builtin.ts';
-import { Closure } from './closure.ts';
-import { NativeFunction } from './native.ts';
 import { SandboxError, SandboxThrow } from './sandbox-error.ts';
-import { DateWrapper } from './wrappers/date-wrapper.ts';
-import { RegExpWrapper } from './wrappers/regexp-wrapper.ts';
-import { isWrapper } from './wrappers/wrapper.ts';
+import { SandboxObject } from './sandbox-object.ts';
 
 export type Primitive = undefined | null | boolean | number | string;
 
@@ -36,29 +31,17 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
   ) {
     return value;
   }
-  if (typeof value === 'function' || value instanceof Closure || value instanceof NativeFunction) {
+  if (typeof value === 'function') {
     return FUNCTION_PLACEHOLDER;
-  }
-  if (value instanceof Builtin) {
-    return value.callable ? FUNCTION_PLACEHOLDER : OBJECT_PLACEHOLDER;
   }
   if (typeof value !== 'object') {
     throw new Error(`A ${typeof value} reached the sandbox`);
   }
-  if (value instanceof SandboxError) {
-    return value.message === '' ? value.name : `${value.name}: ${value.message}`;
+  if (value instanceof SandboxObject) {
+    return value.toPrimitive(hint);
   }
   if (Array.isArray(value)) {
     return joinArray(value, new Set());
-  }
-  if (value instanceof DateWrapper) {
-    return hint === 'number' ? value.date.getTime() : value.date.toString();
-  }
-  if (value instanceof RegExpWrapper) {
-    return String(value.regexp);
-  }
-  if (isWrapper(value)) {
-    return `[object ${value.tag}]`;
   }
   if (isArgumentsObject(value)) {
     return ARGUMENTS_PLACEHOLDER;
@@ -87,14 +70,7 @@ export function toBoolean(value: unknown): boolean {
 
 /** The `typeof` operator; closures are the only sandbox values that report `function`. */
 export function typeOf(value: unknown): string {
-  if (
-    value instanceof Closure ||
-    value instanceof NativeFunction ||
-    (value instanceof Builtin && value.callable)
-  ) {
-    return 'function';
-  }
-  return typeof value;
+  return value instanceof SandboxObject && value.isCallable ? 'function' : typeof value;
 }
 
 /** The `==` algorithm of the specification, with the hook-free ToPrimitive above. */

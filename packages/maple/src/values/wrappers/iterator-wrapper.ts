@@ -5,16 +5,12 @@ import { type FixedProperties, NO_FIXED_PROPERTIES, SandboxObject } from '../san
 export class IteratorWrapper extends SandboxObject {
   public readonly iterator: Iterator<unknown>;
 
+  public readonly tag = 'Iterator';
+
+  protected readonly fixed: FixedProperties<IteratorWrapper> = NO_FIXED_PROPERTIES;
+
   constructor(iterator: Iterator<unknown>) {
     super(new ExtraProperties());
     this.iterator = iterator;
-  }
-
-  protected get fixed(): FixedProperties<IteratorWrapper> {
-    return NO_FIXED_PROPERTIES;
-  }
-
-  public get tag(): string {
-    return 'Iterator';
   }
 }

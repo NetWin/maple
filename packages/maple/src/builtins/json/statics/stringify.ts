@@ -118,7 +118,7 @@ function serialize(
   }
 
   if (current instanceof Builtin) {
-    return current.callable ? undefined : '{}';
+    return current.isCallable ? undefined : '{}';
   }
 
   if (ancestors.includes(current)) {

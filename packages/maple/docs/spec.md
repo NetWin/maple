@@ -355,8 +355,8 @@ in `o.g is not a function`.
 
 Implicit conversions (`+`, template literals, `==`, comparison, `String(x)`, `Number(x)`) follow
 the ECMAScript algorithms, with one deliberate difference: they never call script-defined
-`toString` or `valueOf`. A plain object converts to `'[object Object]'` and `NaN`, an arguments
-object to `'[object Arguments]'`, an array joins its elements, a Date wrapper converts like a
+`toString` or `valueOf`. A plain object converts to `'[object Object]'` and `NaN`, a namespace
+such as `Math` to `'[object Math]'`, an arguments object to `'[object Arguments]'`, an array joins its elements, a Date wrapper converts like a
 native Date, a closure or host function converts to the fixed string `[function]`. `typeof` of an undeclared name is `'undefined'` and does not
 throw. Number-to-string conversion is the host's and is therefore exact
 (`0.1 + 0.2`, `1e21`, `-0` behave as in the host).

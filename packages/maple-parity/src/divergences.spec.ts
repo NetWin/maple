@@ -1,10 +1,10 @@
 import { MapleErrorCode } from '@netwin/maple';
 import { describe, expect, it } from 'vitest';
-import { divergence } from './parity.ts';
+import { differ, divergence } from './parity.ts';
 
-// Everything js-interpreter runs that Maple rejects on purpose. Each test asserts both sides, so
-// it fails once js-interpreter stops running the code or Maple starts to, and the entry has to be
-// revisited. The README lists the same divergences with their reasons.
+// Everything js-interpreter runs that Maple rejects or answers differently on purpose. Each test
+// asserts both sides, so it fails once either engine changes, and the entry has to be revisited.
+// The README lists the same divergences with their reasons.
 
 // The object model: Maple has no script-visible prototypes or receivers. An object's behaviour
 // comes from its type, so `this`, constructors and prototype chains are left out, not sandboxed.
@@ -373,5 +373,17 @@ describe('call:method without its receiver', () => {
 describe('syntax:DebuggerStatement', () => {
   it('rejects debugger', () => {
     expect(divergence('debugger; return 1;')).toBe(MapleErrorCode.DISALLOWED_SYNTAX);
+  });
+});
+
+// A namespace converts with its own tag, as the language has it; js-interpreter gives every object
+// the tag of a plain one.
+
+describe('String:namespace', () => {
+  it('converts Math and JSON with their own tag', () => {
+    expect(differ('return [String(Math), "" + JSON];')).toEqual({
+      maple: ['[object Math]', '[object JSON]'],
+      jsInterpreter: ['[object Object]', '[object Object]']
+    });
   });
 });

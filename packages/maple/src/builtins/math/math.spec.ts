@@ -66,6 +66,7 @@ describe('Math', () => {
     expect(run('return Math.foo;')).toBeUndefined();
     expect(run('return "max" in Math;')).toBe(true);
     expect(run('return Math instanceof Object;')).toBe(true);
+    expect(run('return [String(Math), `${JSON}`];')).toEqual(['[object Math]', '[object JSON]']);
     expect(runAndCatch(maple, 'Math.PI = 3;').sandboxError?.message).toBe(
       "Cannot assign to read-only property 'PI' of a Math"
     );

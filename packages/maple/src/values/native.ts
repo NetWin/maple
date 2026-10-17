@@ -1,6 +1,5 @@
 import type { HostFunction, Intrinsic } from '../boundary/host.ts';
-import { Builtin } from './builtin.ts';
-import { Closure } from './closure.ts';
+import { FUNCTION_PLACEHOLDER, type Primitive } from './coercion.ts';
 import { ExtraProperties } from './extra-properties.ts';
 import type { Charge, Fail } from './members.ts';
 import {
@@ -44,23 +43,28 @@ export type NativeImplementation = (
  */
 export class NativeFunction extends SandboxObject {
   public readonly name: string;
+
   /** What the language gives the built-in as `length`, read off the host's own function. */
   public readonly length: number | undefined;
+
   public readonly invoke: NativeImplementation;
+
+  public readonly tag = 'Function';
+
+  public override readonly isCallable = true;
+
+  protected readonly fixed: FixedProperties<NativeFunction>;
 
   constructor(name: string, length: number | undefined, invoke: NativeImplementation) {
     super(ExtraProperties.NONE);
     this.name = name;
     this.length = length;
     this.invoke = invoke;
+    this.fixed = length === undefined ? NO_FIXED_PROPERTIES : FUNCTION_PROPERTIES;
   }
 
-  protected get fixed(): FixedProperties<NativeFunction> {
-    return this.length === undefined ? NO_FIXED_PROPERTIES : FUNCTION_PROPERTIES;
-  }
-
-  public get tag(): string {
-    return 'Function';
+  public override toPrimitive(): Primitive {
+    return FUNCTION_PLACEHOLDER;
   }
 
   /** As on a primitive, the write fails whatever the key, since the function cannot hold one. */
@@ -87,11 +91,7 @@ export function method<Receiver>(length: number, call: MethodCall<Receiver>): Me
 }
 
 export function isCallable(value: unknown): boolean {
-  return (
-    value instanceof Closure ||
-    value instanceof NativeFunction ||
-    (value instanceof Builtin && value.callable)
-  );
+  return value instanceof SandboxObject && value.isCallable;
 }
 
 /**
