@@ -8,7 +8,7 @@ import { DATE_BUILTIN } from './date/date.ts';
 import { ITERATOR_BUILTIN } from './iterator/iterator.ts';
 import { JSON_BUILTIN } from './json/json.ts';
 import { MAP_BUILTIN } from './map/map.ts';
-import { MATH_STATICS } from './math-statics.ts';
+import { MATH_BUILTIN } from './math/math.ts';
 import { NUMBER_BUILTIN } from './number/number.ts';
 import { NUMBER_STATIC_PARSE_FLOAT } from './number/statics/parse-float.ts';
 import { NUMBER_STATIC_PARSE_INT } from './number/statics/parse-int.ts';
@@ -41,7 +41,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   String: STRING_BUILTIN,
   Number: NUMBER_BUILTIN,
   Boolean: BOOLEAN_BUILTIN,
-  Math: new Builtin({ name: 'Math', members: MATH_STATICS }),
+  Math: MATH_BUILTIN,
   Error: errorConstructor('Error', Error.length),
   TypeError: errorConstructor('TypeError', TypeError.length),
   RangeError: errorConstructor('RangeError', RangeError.length),
