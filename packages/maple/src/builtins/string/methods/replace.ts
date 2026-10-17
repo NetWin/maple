@@ -8,7 +8,8 @@ import { matcherOf } from '../../regexp/utils/matcher-of.ts';
 export const STRING_METHOD_REPLACE: Method<string> = method(
   String.prototype.replace.length,
   (s, [pattern, replacement], context) => {
-    const search = pattern instanceof RegExpWrapper ? matcherOf(pattern) : toString(pattern);
+    const search =
+      pattern instanceof RegExpWrapper ? matcherOf(pattern, context.fail) : toString(pattern);
     if (!isCallable(replacement)) {
       return s.replace(search, toString(replacement));
     }

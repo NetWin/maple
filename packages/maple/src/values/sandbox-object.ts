@@ -4,8 +4,8 @@ import type { Fail, MethodLookup } from './members.ts';
 /** A property every value of a kind has, such as a Map's `size` or a RegExp's `lastIndex`. */
 export interface FixedProperty<T> {
   get(target: T): unknown;
-  /** Absent for a read-only property; `false` when the value refuses, as a frozen error does. */
-  set?(target: T, value: unknown): boolean;
+  /** Absent for a read-only property. */
+  set?(target: T, value: unknown): void;
 }
 
 export type FixedProperties<T> = ReadonlyMap<string, FixedProperty<T>>;
@@ -57,16 +57,15 @@ export abstract class SandboxObject {
       }
       return;
     }
-    if (property.set === undefined) {
+    // Freezing makes the writable ones read-only too, as with `lastIndex` on a frozen RegExp
+    if (property.set === undefined || this.properties.locked) {
       const article = /^[AEIOU]/.test(this.tag) ? 'an' : 'a';
       return fail(
         'TypeError',
         `Cannot assign to read-only property '${key}' of ${article} ${this.tag}`
       );
     }
-    if (!property.set(this, value)) {
-      return fail('TypeError', `Cannot assign to read-only property '${key}'`);
-    }
+    property.set(this, value);
   }
 
   /** A fixed property stays: deleting it changes nothing. */

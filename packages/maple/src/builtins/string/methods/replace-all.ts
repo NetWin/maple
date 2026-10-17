@@ -8,10 +8,11 @@ import { matcherOf } from '../../regexp/utils/matcher-of.ts';
 export const STRING_METHOD_REPLACE_ALL: Method<string> = method(
   String.prototype.replaceAll.length,
   (s, [pattern, replacement], context) => {
-    const search = pattern instanceof RegExpWrapper ? matcherOf(pattern) : toString(pattern);
-    if (search instanceof RegExp && !search.global) {
+    if (pattern instanceof RegExpWrapper && !pattern.regexp.global) {
       return context.fail('TypeError', 'replaceAll must be called with a global RegExp');
     }
+    const search =
+      pattern instanceof RegExpWrapper ? matcherOf(pattern, context.fail) : toString(pattern);
     if (!isCallable(replacement)) {
       return s.replaceAll(search, toString(replacement));
     }

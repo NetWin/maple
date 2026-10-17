@@ -2,18 +2,14 @@ import { toNumber } from '../coercion.ts';
 import { ExtraProperties } from '../extra-properties.ts';
 import { type FixedProperties, SandboxObject } from '../sandbox-object.ts';
 
-/** What a regexp shows; `lastIndex` is the one that can be written, unless it is read-only. */
+/** What a regexp shows; `lastIndex` is the one that can be written. */
 const REGEXP_PROPERTIES: FixedProperties<RegExpWrapper> = new Map([
   [
     'lastIndex',
     {
       get: (r) => r.regexp.lastIndex,
       set: (r, value) => {
-        if (r.readOnly) {
-          return false;
-        }
         r.regexp.lastIndex = toNumber(value);
-        return true;
       }
     }
   ],

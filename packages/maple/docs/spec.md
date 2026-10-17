@@ -431,7 +431,9 @@ Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, 
 `getOwnPropertyNames([1])` is `['0', 'length']`. `freeze` makes an object, array or error the
 script owns read-only, freezes the properties a script added to a closure or a wrapper, and
 returns it; for anything else it changes nothing. A frozen Map can still `set`, as in the
-language. `isFrozen` is `true` for primitives, built-in and host functions and namespaces, which
+language. A frozen RegExp keeps its `lastIndex`: assigning it throws a `TypeError`, and with `g` or
+`y` so do `exec`, `test`, `match`, `search`, `replace` and `replaceAll`, which would write it;
+`split` and `matchAll` match on a copy and still work. `isFrozen` is `true` for primitives, built-in and host functions and namespaces, which
 cannot be written to, for collections that came in with the input, and for whatever `freeze` was
 given. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
 `create`, …) and `seal` / `preventExtensions` are not available.

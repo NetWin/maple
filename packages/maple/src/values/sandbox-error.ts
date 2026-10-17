@@ -3,18 +3,14 @@ import { toString } from './coercion.ts';
 import { ExtraProperties } from './extra-properties.ts';
 import { type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
-/** `name` and `message` take any value as a string; a frozen error refuses both. */
+/** `name` and `message` take any value as a string. */
 const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
   [
     'name',
     {
       get: (error) => error.name,
       set: (error, value) => {
-        if (Object.isFrozen(error)) {
-          return false;
-        }
         error.name = toString(value);
-        return true;
       }
     }
   ],
@@ -23,11 +19,7 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
     {
       get: (error) => error.message,
       set: (error, value) => {
-        if (Object.isFrozen(error)) {
-          return false;
-        }
         error.message = toString(value);
-        return true;
       }
     }
   ],

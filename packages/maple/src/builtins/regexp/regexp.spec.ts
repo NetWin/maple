@@ -64,11 +64,48 @@ describe('RegExp', () => {
     expect(run('return pattern.test("a");', data)).toBe(true);
     expect(run('return pattern instanceof RegExp;', data)).toBe(true);
     expect(runAndCatch(maple, 'pattern.lastIndex = 0;', data).sandboxError?.message).toBe(
-      "Cannot assign to read-only property 'lastIndex'"
+      "Cannot assign to read-only property 'lastIndex' of a RegExp"
     );
     expect(runAndCatch(maple, 'pattern.label = 1;', data).sandboxError?.message).toBe(
       "Cannot assign to read-only property 'label'"
     );
+  });
+
+  type Row = { flags: string; code: string };
+
+  // A sticky regexp that is not global fails replaceAll before lastIndex comes into it
+  it.each`
+    flags  | code
+    ${'g'} | ${'r.lastIndex = 1;'}
+    ${'y'} | ${'r.lastIndex = 1;'}
+    ${'g'} | ${'r.exec("a");'}
+    ${'y'} | ${'r.exec("a");'}
+    ${'g'} | ${'r.test("a");'}
+    ${'y'} | ${'r.test("a");'}
+    ${'g'} | ${'"a".match(r);'}
+    ${'y'} | ${'"a".match(r);'}
+    ${'g'} | ${'"a".search(r);'}
+    ${'y'} | ${'"a".search(r);'}
+    ${'g'} | ${'"a".replace(r, "b");'}
+    ${'y'} | ${'"a".replace(r, "b");'}
+    ${'g'} | ${'"a".replaceAll(r, "b");'}
+  `('keeps lastIndex as it is once frozen: /a/$flags, $code', ({ flags, code }: Row) => {
+    expect(
+      runAndCatch(maple, `const r = Object.freeze(/a/${flags}); ${code}`).sandboxError?.message
+    ).toBe("Cannot assign to read-only property 'lastIndex' of a RegExp");
+  });
+
+  it('still matches once frozen when it writes no lastIndex', () => {
+    expect(
+      run(
+        'const r = Object.freeze(/a/); return [r.test("a"), r.exec("ba").index, "aa".replace(r, "b"), r.lastIndex];'
+      )
+    ).toEqual([true, 1, 'ba', 0]);
+    expect(
+      run(
+        'const r = Object.freeze(/,/g); return ["a,b".split(r), [..."a,b,c".matchAll(r)].length, r.lastIndex];'
+      )
+    ).toEqual([['a', 'b'], 2, 0]);
   });
 
   it('carries no lastIndex from one run to the next when it is an instance global', () => {
