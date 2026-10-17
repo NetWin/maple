@@ -10,7 +10,7 @@ import {
   SetWrapper
 } from '../values/wrappers.ts';
 import { ARRAY_METHODS } from './array/array-methods.ts';
-import { BOOLEAN_METHODS } from './boolean-methods.ts';
+import { BOOLEAN_METHODS } from './boolean/boolean-methods.ts';
 import { DATE_METHODS } from './date/date-methods.ts';
 import { ERROR_METHODS } from './error-methods.ts';
 import { FUNCTION_METHODS } from './function-methods.ts';

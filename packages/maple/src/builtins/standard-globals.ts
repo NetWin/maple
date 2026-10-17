@@ -1,9 +1,10 @@
 import { Builtin } from '../values/builtin.ts';
-import { toBoolean, toNumber, toString } from '../values/coercion.ts';
+import { toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { SandboxError } from '../values/sandbox-error.ts';
 import { IteratorWrapper, MapWrapper, SetWrapper } from '../values/wrappers.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
+import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
 import { ITERATOR_STATICS } from './iterator-statics.ts';
 import { JSON_STATICS } from './json-statics.ts';
@@ -40,11 +41,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   btoa: base64Function('btoa', btoa),
   String: STRING_BUILTIN,
   Number: NUMBER_BUILTIN,
-  Boolean: new Builtin({
-    name: 'Boolean',
-    length: Boolean.length,
-    call: ([value]) => toBoolean(value)
-  }),
+  Boolean: BOOLEAN_BUILTIN,
   Math: new Builtin({ name: 'Math', members: MATH_STATICS }),
   Error: errorConstructor('Error', Error.length),
   TypeError: errorConstructor('TypeError', TypeError.length),
