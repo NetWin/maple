@@ -257,7 +257,7 @@ describe('optional chaining', () => {
     expect(run('const f = null; return f?.(1);')).toBeUndefined();
   });
 
-  it('stops at parentheses, as the language does', () => {
+  it('stops at parentheses, as JavaScript does', () => {
     expect(sandboxError('return (nothing?.a).b;', data)?.name).toBe('TypeError');
   });
 });

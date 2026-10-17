@@ -5,7 +5,7 @@ import { SandboxError } from '../../../values/sandbox-error.ts';
 
 /**
  * Freezing reaches what the script can write to: objects, arrays, and the properties it added to
- * an error, a script function or a wrapper. Everything else is returned as it is, as the language
+ * an error, a script function or a wrapper. Everything else is returned as it is, as JavaScript
  * does for primitives.
  */
 export const OBJECT_STATIC_FREEZE: NativeFunction = new NativeFunction(

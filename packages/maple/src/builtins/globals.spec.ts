@@ -20,7 +20,7 @@ describe('URI functions', () => {
 });
 
 describe('escape and unescape', () => {
-  it('encode per UTF-16 code unit as the language does', () => {
+  it('encode per UTF-16 code unit as JavaScript does', () => {
     expect(
       run('return [escape("a b"), escape("@*_+-./"), escape("\\u00ff\\u0100"), escape("😀")];')
     ).toEqual(['a%20b', '@*_+-./', '%FF%u0100', '%uD83D%uDE00']);

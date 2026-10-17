@@ -9,7 +9,7 @@ export const DATE_BUILTIN: Builtin = new Builtin({
   name: 'Date',
   length: Date.length,
   call: () => new Date().toString(),
-  // `new Date()`, `new Date(value)` and `new Date(year, month, ...)`, as the language distinguishes them
+  // `new Date()`, `new Date(value)` and `new Date(year, month, ...)`, as JavaScript distinguishes them
   construct: (args) => {
     if (args.length === 0) {
       return new DateWrapper(new Date());

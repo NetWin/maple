@@ -8,7 +8,7 @@ import { NUMBER_STATIC_PARSE_INT } from './statics/parse-int.ts';
 
 /**
  * The `Number.*` functions and constants. `parseInt` and `parseFloat` are the same functions as
- * the globals, as in the language; the predicates take the value as is and never coerce.
+ * the globals, as in JavaScript; the predicates take the value as is and never coerce.
  */
 export const NUMBER_STATICS: Readonly<Record<string, number | NativeFunction>> = {
   MAX_SAFE_INTEGER: Number.MAX_SAFE_INTEGER,

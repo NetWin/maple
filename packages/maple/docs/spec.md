@@ -199,10 +199,10 @@ side, a script function or `String` included, throws a `TypeError`.
 
 A script function has two read-only properties: `length`, the number of parameters before the
 first default or rest parameter, and `name`. An anonymous function or arrow takes the name of the
-binding it is assigned to, as in the language: `const f = () => 1`, `f = function () {}`,
+binding it is assigned to, as in JavaScript: `const f = () => 1`, `f = function () {}`,
 `f ??= () => 1` (and `||=`, `&&=`), `{ f: () => 1 }` and a default parameter `f = () => 1` all
 name it `f`; an assignment to a member such as `o.f = () => 1` names nothing. A built-in function and
-a callable global such as `Array` have the `length` and `name` the language gives them, so
+a callable global such as `Array` have the `length` and `name` JavaScript gives them, so
 `'a'.replace.length` is `2` and `Math.max.name` is `'max'`; each length is read once from the
 host's own function. A host function has no properties at all: its name and arity are the
 host's business. `Math`, `JSON` and the other namespaces have no `length` or `name` either.
@@ -341,7 +341,7 @@ Their methods are listed under [Functions](#functions).
 A method call such as `s.trim()` is resolved by the receiver's type through its prototype, never
 through a host prototype. Each method is one function shared by every value of the type, so
 `a.push === b.push` and `'x'.trim === 'y'.trim`; such a value has no properties of its own. As in
-the language, the receiver comes from the call: `a.push(1)`, `a['push'](1)`, `(a.push)(1)`,
+JavaScript, the receiver comes from the call: `a.push(1)`, `a['push'](1)`, `(a.push)(1)`,
 `a?.push(1)` and `a.push?.(1)` pass `a`, while a plain call such as `const p = a.push; p(1)`,
 `(0, a.push)(1)` or a method passed as a callback has none and is a `TypeError`. A receiver of
 another type is refused the same way, so `({ t: 'x'.trim }).t()` is a `TypeError` where the
@@ -402,7 +402,7 @@ clamped as ToLength does; an optional map function runs as each item is read), `
 holes, which is a `RangeError` unless it is a valid array length; any other arguments become the
 elements.
 
-Holes behave as in the language: `forEach`, `filter`, `flatMap`, `every`, `some`, `reduce` and
+Holes behave as in JavaScript: `forEach`, `filter`, `flatMap`, `every`, `some`, `reduce` and
 `reduceRight` skip them, `map` skips them and keeps them in its result, `indexOf` and
 `lastIndexOf` never find them, and the `find` methods and `includes` see them as `undefined`.
 
@@ -489,7 +489,7 @@ semantics), `source`, `flags`, `global`, `ignoreCase`, `multiline`, `sticky`, `u
 are not available: they are process-wide state and would carry data from one run to the next.
 
 The string methods `match`, `matchAll`, `search`, `replace`, `replaceAll` and `split` accept a
-regexp; given a string instead, `match`, `matchAll` and `search` build one from it as the language
+regexp; given a string instead, `match`, `matchAll` and `search` build one from it as JavaScript
 does. A replacement function receives `(match, ...captures, offset, string, groups?)` and runs
 under the budget. `replaceAll` and `matchAll` require the `g` flag.
 
@@ -501,7 +501,7 @@ matched strings only.
 
 `new Date()`, `new Date(ms)`, `new Date(string)`, `new Date(date)` and
 `new Date(y, m, d?, h?, min?, s?, ms?)` create a wrapper around a native `Date`; `Date()` without
-`new` returns the current time as a string, as the language has it. `Date.now`, `Date.parse` and
+`new` returns the current time as a string, as in JavaScript. `Date.now`, `Date.parse` and
 `Date.UTC` are available. A Date converts to its string form by default and to its time value for
 arithmetic and comparison, so `date2 - date1` is milliseconds and `date + ''` is readable.
 
@@ -538,7 +538,7 @@ Static: `Map.groupBy(items, callback)`, which groups like `Object.groupBy` but k
 it is, so objects group by identity.
 Set: `add`, `has`, `delete`, `clear`, `forEach`, `size`, `keys`, `values`, `entries`, and the set
 algebra `union`, `intersection`, `difference`, `symmetricDifference`, `isSubsetOf`,
-`isSupersetOf`, `isDisjointFrom`. Those take a Set or a Map as the other operand; the language's
+`isSupersetOf`, `isDisjointFrom`. Those take a Set or a Map as the other operand; JavaScript's
 other set-like objects are refused with a `TypeError`, so no script `has` or `keys` is ever
 called by the host.
 
@@ -559,7 +559,7 @@ never leaves the sandbox: at the output boundary it becomes `undefined`.
 `message` and `stack` properties; a second `options` argument is ignored. `name` and `message`
 can be assigned and `stack` is read-only. Any other property the script adds behaves like one of a
 plain object: `e.code = 123` shows up in `Object.keys(e)`, `for...in`, spread and `JSON.stringify`,
-while `name`, `message` and `stack` do not, as in the language. An error that leaves the run
+while `name`, `message` and `stack` do not, as in JavaScript. An error that leaves the run
 carries them as `properties` (see [Output](#output)).
 `stack` lists the script's own frames and nothing of the host, innermost first, in the familiar
 shape, and is fixed when the error is created. `toString()` returns the same `Name: message` text
@@ -797,7 +797,7 @@ Tests live next to the code as `*.spec.ts`. Four groups cover the contract:
   objects, property access on closures and host functions.
 - **Limit tests.** `while (true) {}`, deep recursion, `try { endless } catch {}` and
   `try { endless } finally {}`, runaway recursion through a nested run.
-- **Semantics tests.** Organised by chapter like the language specification: literals, operators,
+- **Semantics tests.** Organised by chapter like the ECMAScript specification: literals, operators,
   statements, functions, each built-in type. String conversion edge cases (`0.1 + 0.2`, `1e21`,
   `-0`). Date tests pin `TZ` so local-time output is identical everywhere.
 - **Error tests.** Each code with its expected message, line and column.
@@ -817,7 +817,7 @@ behind `durationMs`, and `atob` and `btoa`.
 1. Register the method under its name in the prototype of the receiver type as
    `method(String.prototype.name.length, (receiver, args, context) => value)`, or a static as
    `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` in the `members`
-   of the namespace. The length is read off the host's own function, so it is the language's; only
+   of the namespace. The length is read off the host's own function, so it is JavaScript's; only
    where TypeScript's `lib` has no typing for it ([Annex B](https://262.ecma-international.org/6.0/index.html#sec-additional-ecmascript-features-for-web-browsers), deprecated members) is it written out,
    with a comment saying why.
 2. Convert every argument hook-free first (`toString`, `toNumber`, `optionalNumberArgument`, …) so
@@ -825,7 +825,7 @@ behind `durationMs`, and `atob` and `btoa`.
    `context.call` so it runs under the budget. Never hand a script closure to a host implementation.
 3. If the method needs no callback and cannot observe prototypes, it may delegate to the host
    implementation on a Maple-owned value (for example `Array.prototype.with`). Wrap it in
-   `guardHostErrors` when the language specifies a `RangeError`, `URIError` or `SyntaxError` for it,
+   `guardHostErrors` when the spec requires a `RangeError`, `URIError` or `SyntaxError` for it,
    or when it can build a string or array longer than the host allows.
 4. Return only sandbox values: primitives, Maple-created objects and arrays, or wrappers. Never a
    native `Date`, `RegExp`, `Map`, `Set` or function.

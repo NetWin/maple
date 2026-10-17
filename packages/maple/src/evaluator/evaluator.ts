@@ -647,7 +647,7 @@ export class Evaluator {
     switch (node.type) {
       case 'Literal':
         if (node.regex) {
-          // Every evaluation creates a new regexp, as the language specifies for literals
+          // Every evaluation creates a new regexp, as the spec requires for literals
           const { pattern, flags } = node.regex;
           return new RegExpWrapper(
             guardHostErrors(this.failAt(node), () => new RegExp(pattern, flags))
@@ -971,7 +971,7 @@ export class Evaluator {
 
   /**
    * Evaluates the value of a binding, property or default; an anonymous function there takes
-   * `name` as its own, as `var f = function () {}` names `f` in the language.
+   * `name` as its own, as `var f = function () {}` names `f` in JavaScript.
    */
   private evaluateNamed(node: Expression, scope: Scope, name: string | undefined): unknown {
     if (

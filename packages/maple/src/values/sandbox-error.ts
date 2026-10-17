@@ -51,7 +51,7 @@ export class SandboxError extends SandboxObject {
     this.stack = frames === '' ? header : `${header}\n${frames}`;
   }
 
-  /** What the language's `Error.prototype.toString` gives: `name: message`, or `name` alone. */
+  /** What JavaScript's `Error.prototype.toString` gives: `name: message`, or `name` alone. */
   public override toPrimitive(): Primitive {
     return this.message === '' ? this.name : `${this.name}: ${this.message}`;
   }

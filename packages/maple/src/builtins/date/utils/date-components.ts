@@ -1,6 +1,6 @@
 import { toNumber } from '../../../values/coercion.ts';
 
-/** Missing components default like the language's (day 1, the rest 0) instead of becoming NaN. */
+/** Missing components default as in JavaScript (day 1, the rest 0) instead of becoming NaN. */
 export function dateComponents(
   args: ReadonlyArray<unknown>
 ): [number, number, number, number, number, number, number] {

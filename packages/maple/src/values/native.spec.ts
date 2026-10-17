@@ -7,7 +7,7 @@ const fail: Fail = (name, message) => {
 };
 
 describe('guardHostErrors', () => {
-  it('turns the errors the language specifies into sandbox errors', () => {
+  it('turns the errors the spec requires into sandbox errors', () => {
     expect(() =>
       guardHostErrors(fail, () => {
         throw new RangeError('Invalid string length');
@@ -27,7 +27,7 @@ describe('guardHostErrors', () => {
     ).toThrow(overflow);
     expect(() =>
       guardHostErrors(fail, () => {
-        throw new TypeError('not a language error here');
+        throw new TypeError('not a spec-required error here');
       })
     ).toThrow(TypeError);
   });

@@ -3,7 +3,7 @@ import type { CallContext } from '../../values/native.ts';
 import { ARRAY_PROTOTYPE } from './array-prototype.ts';
 import { ARRAY_STATICS } from './array-statics.ts';
 
-/** The largest length an array can have, as in the language. */
+/** The largest length an array can have, as in JavaScript. */
 export const ARRAY_MAX_LENGTH: number = 2 ** 32 - 1;
 
 export const ARRAY_BUILTIN: Builtin = new Builtin({

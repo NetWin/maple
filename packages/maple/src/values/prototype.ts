@@ -2,12 +2,12 @@ import { toString } from './coercion.ts';
 import { type Method, NativeFunction } from './native.ts';
 
 /**
- * What the values of one type answer to, as `Array.prototype` is in the language: its methods and
+ * What the values of one type answer to, as `Array.prototype` is in JavaScript: its methods and
  * which values receive them. A prototype may have no global of its own, as `Function` has none,
  * and several globals may share one, as the error constructors do.
  */
 export class Prototype<Receiver = unknown> {
-  /** The type as the language names it, as in `Array.prototype.push`. */
+  /** The type as JavaScript names it, as in `Array.prototype.push`. */
   public readonly name: string;
 
   readonly #receives: (value: unknown) => boolean;

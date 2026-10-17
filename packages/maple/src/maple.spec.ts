@@ -91,7 +91,7 @@ describe('Maple.run', () => {
       );
     });
 
-    it('sets an array length like the language, with the sandbox conversion', () => {
+    it('sets an array length as JavaScript does, with the sandbox conversion', () => {
       expect(maple.run('const a = [1, 2, 3]; a.length = "1"; return a;').value).toEqual([1]);
       expect(maple.run('const a = []; a.length = [2]; return a.length;').value).toBe(2);
       for (const length of ['-1', '1.5', '2 ** 32', 'NaN']) {

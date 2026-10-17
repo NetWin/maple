@@ -2,7 +2,7 @@ import type { CallContext } from '../../../values/native.ts';
 import { MapWrapper } from '../../../values/wrappers/map-wrapper.ts';
 import { SetWrapper } from '../../../values/wrappers/set-wrapper.ts';
 
-/** The language accepts any object with `size`, `has` and `keys`; Maple only its own collections. */
+/** JavaScript accepts any object with `size`, `has` and `keys`; Maple only its own collections. */
 export function asSetLikeOrThrow(
   other: unknown,
   fail: CallContext['fail'],

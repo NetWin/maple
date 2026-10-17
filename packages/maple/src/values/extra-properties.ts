@@ -9,7 +9,7 @@ export type IExtraProperties = {
 /**
  * What a script added to one of Maple's own values (see `SandboxObject`). Kept apart from the
  * value's fields, so no key reaches them, in a record that inherits nothing, so no key reaches
- * more, and listed in the order the language gives keys: integers first, then the rest as they were
+ * more, and listed in the order JavaScript gives keys: integers first, then the rest as they were
  * added.
  */
 export class ExtraProperties implements IExtraProperties {

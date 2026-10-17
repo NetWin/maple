@@ -11,7 +11,7 @@ export const FUNCTION_PLACEHOLDER = '[function]';
 /** What an object converts to when no hooks are involved. */
 export const OBJECT_PLACEHOLDER = '[object Object]';
 
-/** What the `arguments` object converts to, its tag in the language. */
+/** What the `arguments` object converts to, its tag in JavaScript. */
 export const ARGUMENTS_PLACEHOLDER = '[object Arguments]';
 
 /** The ToPrimitive hint; only a Date converts differently for `number` than for the others. */

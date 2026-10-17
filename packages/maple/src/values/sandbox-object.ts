@@ -14,7 +14,7 @@ export type FixedProperties<T> = ReadonlyMap<string, FixedProperty<T>>;
 /** For the kinds that have no fixed properties, such as Dates and host functions. */
 export const NO_FIXED_PROPERTIES: FixedProperties<unknown> = new Map();
 
-/** What script functions, built-ins and callable globals show, in the order the language lists them. */
+/** What script functions, built-ins and callable globals show, in the order JavaScript lists them. */
 export const FUNCTION_PROPERTIES: FixedProperties<{
   readonly length: number | undefined;
   readonly name: string;
@@ -32,7 +32,7 @@ export const FUNCTION_PROPERTIES: FixedProperties<{
 export abstract class SandboxObject {
   public readonly properties: ExtraProperties;
 
-  /** The type as `[object Map]` prints it, the name the language keeps as `Symbol.toStringTag`. */
+  /** The type as `[object Map]` prints it, the name JavaScript keeps as `Symbol.toStringTag`. */
   public abstract readonly tag: string;
 
   /** Whether the script can call it, which is what `typeof` reports as `function`. */

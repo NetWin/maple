@@ -48,7 +48,7 @@ import { DATE_METHOD_TO_UTC_STRING } from './methods/to-utc-string.ts';
 import { DATE_METHOD_VALUE_OF } from './methods/value-of.ts';
 
 /**
- * Local-time methods depend on the host's timezone, as the language has it. Setters take only
+ * Local-time methods depend on the host's timezone, as in JavaScript. Setters take only
  * the arguments that were passed, because an explicit `undefined` would make the date invalid.
  */
 export const DATE_PROTOTYPE: Prototype<DateWrapper> = new Prototype(

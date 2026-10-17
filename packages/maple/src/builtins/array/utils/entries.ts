@@ -1,6 +1,6 @@
 /**
  * Every index below `length` with its element, holes included as `undefined`.
- * The length is fixed when the loop starts, as the language specifies for these methods.
+ * The length is fixed when the loop starts, as the spec requires for these methods.
  */
 export function indexedEntries(array: ReadonlyArray<unknown>): Array<[number, unknown]> {
   const entries: Array<[number, unknown]> = [];

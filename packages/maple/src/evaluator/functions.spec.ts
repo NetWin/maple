@@ -320,7 +320,7 @@ describe('functions', () => {
   });
 
   describe('length and name of built-in functions', () => {
-    it('are the ones the language gives them', () => {
+    it('are the ones JavaScript gives them', () => {
       const code =
         'return [parseInt.length, Math.max.length, "a".replace.length, [].push.length, Date.UTC.length, Object.keys.length, [].reduce.length];';
       expect(maple.run(code).value).toEqual([2, 2, 2, 1, 7, 1, 1]);

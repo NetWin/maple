@@ -44,7 +44,7 @@ export type NativeImplementation = (
 export class NativeFunction extends SandboxObject {
   public readonly name: string;
 
-  /** What the language gives the built-in as `length`, read off the host's own function. */
+  /** What JavaScript gives the built-in as `length`, read off the host's own function. */
   public readonly length: number | undefined;
 
   public readonly invoke: NativeImplementation;
@@ -79,7 +79,7 @@ export type MethodCall<Receiver> = (
   context: CallContext
 ) => unknown;
 
-/** A dispatch-table entry: a method of one receiver type and the `length` the language gives it. */
+/** A dispatch-table entry: a method of one receiver type and the `length` JavaScript gives it. */
 export interface Method<Receiver> {
   readonly length: number;
   readonly call: MethodCall<Receiver>;
@@ -95,8 +95,8 @@ export function isCallable(value: unknown): boolean {
 }
 
 /**
- * Runs a host built-in on already converted primitives and turns the errors the language
- * specifies for it (`RangeError`, `URIError`, `SyntaxError`) into catchable sandbox errors. The
+ * Runs a host built-in on already converted primitives and turns the errors the spec
+ * requires for it (`RangeError`, `URIError`, `SyntaxError`) into catchable sandbox errors. The
  * host running out of stack is not one of them and still ends the run.
  */
 export function guardHostErrors<T>(fail: Fail, run: () => T): T {
@@ -117,7 +117,7 @@ export function guardHostErrors<T>(fail: Fail, run: () => T): T {
 /**
  * `guardHostErrors` for the `Intl`-backed `toLocale*` methods, whose options can also fail with
  * a `TypeError`, such as a currency style without a currency. Only the host call may run inside,
- * so that a `TypeError` can only be the one the language specifies.
+ * so that a `TypeError` can only be the one the spec requires.
  */
 export function guardIntlErrors<T>(fail: Fail, run: () => T): T {
   try {

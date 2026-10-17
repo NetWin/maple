@@ -12,7 +12,7 @@ export const ITERATOR_METHOD_FLAT_MAP: Method<IteratorWrapper> = method(
     return new IteratorWrapper(
       helpers(i).flatMap((value, index) => {
         const inner = call(value, index);
-        // `flatMap` flattens iterables but, as the language specifies, not strings
+        // `flatMap` flattens iterables but, as the spec requires, not strings
         const iterable = typeof inner === 'string' ? undefined : asHostIterable(inner);
         if (!iterable) {
           return context.fail('TypeError', `${toString(inner)} is not an iterable object`);

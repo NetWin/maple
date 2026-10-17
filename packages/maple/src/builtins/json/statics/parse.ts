@@ -26,7 +26,7 @@ export const JSON_STATIC_PARSE: NativeFunction = new NativeFunction(
 
 /**
  * The reviver visits children before their holder's key and the root last under the key `''`,
- * as the language specifies. The holder comes as a third argument in place of `this`.
+ * as the spec requires. The holder comes as a third argument in place of `this`.
  */
 function revive(
   holder: Record<string, unknown> | Array<unknown>,

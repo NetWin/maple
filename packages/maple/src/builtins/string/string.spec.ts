@@ -160,7 +160,7 @@ describe('ES2024 and legacy string methods', () => {
     expect(run('return "a\\uD800".toWellFormed() === "a\\uFFFD";')).toBe(true);
   });
 
-  it('implement substr like the language', () => {
+  it('implement substr as JavaScript does', () => {
     expect(run('return "abcdef".substr(1, 3);')).toBe('bcd');
     expect(run('return "abcdef".substr(-2);')).toBe('ef');
     expect(run('return "abcdef".substr(-10, 2);')).toBe('ab');

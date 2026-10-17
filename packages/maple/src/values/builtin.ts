@@ -15,7 +15,7 @@ export type BuiltinCall = (args: ReadonlyArray<unknown>, context: CallContext) =
 export interface BuiltinOptions {
   name: string;
   /**
-   * What the language gives a callable global as `length`,
+   * What JavaScript gives a callable global as `length`,
    * read off the host's own; `Math` has none.
    */
   length?: number;
@@ -80,7 +80,7 @@ export class Builtin extends SandboxObject {
     return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
   }
 
-  /** A namespace converts as the language has it, `[object Math]`. */
+  /** A namespace converts as in JavaScript, `[object Math]`. */
   public override toPrimitive(hint: PrimitiveHint): Primitive {
     return this.isCallable ? FUNCTION_PLACEHOLDER : super.toPrimitive(hint);
   }

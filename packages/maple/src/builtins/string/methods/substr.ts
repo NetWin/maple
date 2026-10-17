@@ -3,7 +3,7 @@ import { method, type Method } from '../../../values/native.ts';
 
 /**
  * `substr` is a legacy method that the host's typings mark as deprecated, so it follows the
- * language's algorithm here: a negative start counts from the end, the length is clamped.
+ * spec's algorithm here: a negative start counts from the end, the length is clamped.
  */
 export const STRING_METHOD_SUBSTR: Method<string> = method(
   2 /* deprecated in TypeScript's lib */,
