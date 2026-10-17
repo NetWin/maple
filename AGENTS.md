@@ -40,8 +40,8 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 
 ## Parity (`packages/maple-parity`)
 
-- Everything `@netwin/js-interpreter` runs must work in Maple; Maple may do more, never less. `src/engines.ts` is the
-  one place in the package that calls js-interpreter.
+- Everything `@netwin/js-interpreter` runs must work in Maple; Maple may do more, never less (apart from accepted divergences).
+  `src/engines.ts` is the one place in the package that calls js-interpreter.
 - Write each case as an explicit `it`: `expect(parity(code)).toEqual(value)` runs both engines, requires the same
   result and returns it; `expect(bothThrow(code)).toBe('TypeError')` requires a script error from both and returns
   the name of Maple's.
@@ -52,8 +52,7 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 ## Conventions
 
 - Use kebab-case for file names.
-- Use `#private` fields, and spell out `public` / `protected` on all other members.
-- Write JSDoc that explains why, not what.
+- Use `#private` for state fields only, and spell out `public` / `protected` / `private` on all other members.
 - Use [Conventional Commits](https://www.conventionalcommits.org). The version and changelog come from them, so never
   edit `version` in `packages/maple/package.json` or `CHANGELOG.md` by hand.
 - Don't add attribution to commits or pull requests: no `Co-Authored-By:` or other trailers, no "Generated with" lines
