@@ -6,7 +6,7 @@ import { ARRAY_BUILTIN } from './array/array.ts';
 import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
 import { ITERATOR_BUILTIN } from './iterator/iterator.ts';
-import { JSON_STATICS } from './json-statics.ts';
+import { JSON_BUILTIN } from './json/json.ts';
 import { MAP_BUILTIN } from './map/map.ts';
 import { MATH_STATICS } from './math-statics.ts';
 import { NUMBER_BUILTIN } from './number/number.ts';
@@ -51,7 +51,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   EvalError: errorConstructor('EvalError', EvalError.length),
   Array: ARRAY_BUILTIN,
   Object: OBJECT_BUILTIN,
-  JSON: new Builtin({ name: 'JSON', members: JSON_STATICS }),
+  JSON: JSON_BUILTIN,
   Date: DATE_BUILTIN,
   RegExp: REGEXP_BUILTIN,
   Map: MAP_BUILTIN,
