@@ -1,10 +1,17 @@
-import { Builtin } from '../values/builtin.ts';
 import { toNumber, toString } from '../values/coercion.ts';
 import { guardHostErrors, NativeFunction } from '../values/native.ts';
-import { SandboxError } from '../values/sandbox-error.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
 import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
+import {
+  ERROR_BUILTIN,
+  EVAL_ERROR_BUILTIN,
+  RANGE_ERROR_BUILTIN,
+  REFERENCE_ERROR_BUILTIN,
+  SYNTAX_ERROR_BUILTIN,
+  TYPE_ERROR_BUILTIN,
+  URI_ERROR_BUILTIN
+} from './error/error.ts';
 import { ITERATOR_BUILTIN } from './iterator/iterator.ts';
 import { JSON_BUILTIN } from './json/json.ts';
 import { MAP_BUILTIN } from './map/map.ts';
@@ -42,13 +49,13 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   Number: NUMBER_BUILTIN,
   Boolean: BOOLEAN_BUILTIN,
   Math: MATH_BUILTIN,
-  Error: errorConstructor('Error', Error.length),
-  TypeError: errorConstructor('TypeError', TypeError.length),
-  RangeError: errorConstructor('RangeError', RangeError.length),
-  ReferenceError: errorConstructor('ReferenceError', ReferenceError.length),
-  SyntaxError: errorConstructor('SyntaxError', SyntaxError.length),
-  URIError: errorConstructor('URIError', URIError.length),
-  EvalError: errorConstructor('EvalError', EvalError.length),
+  Error: ERROR_BUILTIN,
+  TypeError: TYPE_ERROR_BUILTIN,
+  RangeError: RANGE_ERROR_BUILTIN,
+  ReferenceError: REFERENCE_ERROR_BUILTIN,
+  SyntaxError: SYNTAX_ERROR_BUILTIN,
+  URIError: URI_ERROR_BUILTIN,
+  EvalError: EVAL_ERROR_BUILTIN,
   Array: ARRAY_BUILTIN,
   Object: OBJECT_BUILTIN,
   JSON: JSON_BUILTIN,
@@ -81,23 +88,4 @@ function uriFunction(name: string, host: (text: string) => string): NativeFuncti
   return new NativeFunction(name, host.length, ([text], { fail }) =>
     guardHostErrors(fail, () => host(toString(text)))
   );
-}
-
-/** `Error` matches every error; the subtypes match by the constructor they were made with. */
-function errorConstructor(kind: string, length: number): Builtin {
-  const create = (args: ReadonlyArray<unknown>, context: { stackTrace(): string }): SandboxError =>
-    new SandboxError(
-      kind,
-      args[0] === undefined ? '' : toString(args[0]),
-      kind,
-      context.stackTrace()
-    );
-  return new Builtin({
-    name: kind,
-    length,
-    call: create,
-    construct: create,
-    isInstance: (value) =>
-      value instanceof SandboxError && (kind === 'Error' || value.kind === kind)
-  });
 }
