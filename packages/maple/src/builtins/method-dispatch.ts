@@ -20,7 +20,7 @@ import { NUMBER_METHODS } from './number-methods.ts';
 import { OBJECT_METHODS } from './object-methods.ts';
 import { REGEXP_METHODS } from './regexp/regexp-methods.ts';
 import { SET_METHODS } from './set-methods.ts';
-import { STRING_METHODS } from './string-methods.ts';
+import { STRING_METHODS } from './string/string-methods.ts';
 
 /** Reads a property as scripts see it: an own property, otherwise the receiver type's method. */
 export function getMember(target: unknown, key: string, fail: Fail): unknown {

@@ -13,7 +13,7 @@ import { NUMBER_STATICS } from './number-statics.ts';
 import { constructObject, OBJECT_STATICS } from './object-statics.ts';
 import { REGEXP_BUILTIN } from './regexp/regexp.ts';
 import { constructSet } from './set-statics.ts';
-import { STRING_STATICS } from './string-statics.ts';
+import { STRING_BUILTIN } from './string/string.ts';
 
 // The library is typechecked without host libs; these web APIs exist in Node, browsers and workers
 declare const atob: (data: string) => string;
@@ -36,12 +36,7 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   decodeURI: uriFunction('decodeURI', decodeURI),
   atob: base64Function('atob', atob),
   btoa: base64Function('btoa', btoa),
-  String: new Builtin({
-    name: 'String',
-    length: String.length,
-    call: (args) => (args.length === 0 ? '' : toString(args[0])),
-    members: STRING_STATICS
-  }),
+  String: STRING_BUILTIN,
   Number: new Builtin({
     name: 'Number',
     length: Number.length,
