@@ -1,28 +1,21 @@
 import { isPlainObject } from '../../../support/is-plain-object.ts';
+import { getExtraPropertiesOf } from '../../../values/members.ts';
 import { NativeFunction } from '../../../values/native.ts';
-import { SandboxError } from '../../../values/sandbox-error.ts';
-import { isWrapper, IteratorWrapper } from '../../../values/wrappers.ts';
 
 /**
- * Functions and namespaces cannot be written to, so they count as frozen; collections from the
- * input are read-only and count as frozen too.
+ * Built-in functions and namespaces cannot be written to, so they count as frozen. An error, a
+ * script function or a wrapper is frozen once its extra properties are; a wrapper from the input
+ * is read-only and counts as frozen from the start.
  */
 export const OBJECT_STATIC_IS_FROZEN: NativeFunction = new NativeFunction(
   'isFrozen',
   Object.isFrozen.length,
   (_, [target]) => {
-    if (Array.isArray(target) || isPlainObject(target) || target instanceof SandboxError) {
+    if (Array.isArray(target) || isPlainObject(target)) {
       return Object.isFrozen(target);
     }
 
-    if (target instanceof IteratorWrapper) {
-      return false;
-    }
-
-    if (isWrapper(target) && 'frozen' in target) {
-      return target.frozen;
-    }
-
-    return true;
+    const extra = getExtraPropertiesOf(target);
+    return !extra || extra.locked;
   }
 );

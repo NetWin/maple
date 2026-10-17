@@ -315,9 +315,11 @@ Inside the sandbox exactly these values exist:
 Wrappers are instances of Maple's own classes, which a script cannot construct, so a plain object
 can never pose as one. The native value inside a wrapper is never exposed; every method goes
 through a dispatch table. A wrapper has no own properties except the few listed with its type
-(`size`, the RegExp flags and `lastIndex`); writes to any other key throw a `TypeError`. Wrappers
-that came in with the input or the globals are read-only: `Map.set`, `Set.add`, the Date setters
-and a `lastIndex` assignment throw a `TypeError` on them, and a read-only regexp matches on a
+(`size`, the RegExp flags and `lastIndex`), which stay read-only apart from `lastIndex`, and the
+ones the script adds, which behave like the properties of a plain object (`m.label = 'x'`). They
+are kept apart from the wrapper's own fields, so no key reaches the native value. Wrappers that
+came in with the input or the globals are read-only: `Map.set`, `Set.add`, the Date setters, a
+`lastIndex` assignment and adding a property throw a `TypeError` on them, and a read-only regexp matches on a
 fresh copy every time, so its `lastIndex` stays `0` and no state carries from one run to the
 next. A copy (`new Map(input)`, `new Date(input)`, `new RegExp(input)`) is the script's to change.
 
@@ -326,9 +328,11 @@ holds only its limits and its frozen globals, and everything else is created ins
 functions and intrinsics are the one channel through which the host may share state between
 runs, and that is the host's decision.
 
-Closures and built-in functions have only their read-only `length` and `name`, and host
-functions and intrinsics have no properties at all: reading anything else yields `undefined` and
-writing throws a `TypeError`.
+Closures and built-in functions have their read-only `length` and `name`, and host functions and
+intrinsics have no properties at all. A closure takes the properties a script adds, as in
+`fn.cache = {}`. Built-in functions, host functions, intrinsics and namespaces are shared by every
+run, so writing to them throws a `TypeError`: a property on one would carry over into the next
+run.
 Their methods are listed under [Functions](#functions).
 
 ### Methods
@@ -425,9 +429,11 @@ Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, 
 
 `getOwnPropertyNames` lists exactly the own names, enumerable or not, so
 `getOwnPropertyNames([1])` is `['0', 'length']`. `freeze` makes an object, array or error the
-script owns read-only and returns it; for anything else it changes nothing. `isFrozen` is `true`
-for primitives, functions and namespaces, which cannot be written to, and for collections that came
-in with the input. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
+script owns read-only, freezes the properties a script added to a closure or a wrapper, and
+returns it; for anything else it changes nothing. A frozen Map can still `set`, as in the
+language. `isFrozen` is `true` for primitives, built-in and host functions and namespaces, which
+cannot be written to, for collections that came in with the input, and for whatever `freeze` was
+given. The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`,
 `create`, …) and `seal` / `preventExtensions` are not available.
 
 `Object(...)` and `new Object(...)` do the same: a fresh object for no argument, `null` or
@@ -547,8 +553,11 @@ never leaves the sandbox: at the output boundary it becomes `undefined`.
 ### Errors
 
 `new Error(message?)` and its six subtypes create sandbox error objects with own `name`,
-`message` and `stack` properties and nothing else; a second `options` argument is ignored. `name`
-and `message` can be assigned, `stack` is read-only, adding any other property is a `TypeError`.
+`message` and `stack` properties; a second `options` argument is ignored. `name` and `message`
+can be assigned and `stack` is read-only. Any other property the script adds behaves like one of a
+plain object: `e.code = 123` shows up in `Object.keys(e)`, `for...in`, spread and `JSON.stringify`,
+while `name`, `message` and `stack` do not, as in the language. An error that leaves the run
+carries them as `properties` (see [Output](#output)).
 `stack` lists the script's own frames and nothing of the host, innermost first, in the familiar
 shape, and is fixed when the error is created. `toString()` returns the same `Name: message` text
 as converting the error to a string:
@@ -705,7 +714,10 @@ host's responsibility.
   RegExps.
 - `Date`, `RegExp`, `Map` and `Set` wrappers as fresh native instances with converted contents.
 - Closures, host functions, intrinsics and iterators become `undefined`.
-- Sandbox error objects become plain objects with `name`, `message` and `stack`.
+- Sandbox error objects become plain objects with `name`, `message` and `stack`, and with
+  `properties` holding what the script added, converted like any other value. `properties` is
+  absent when the script added nothing. The properties a script added to a wrapper stay behind,
+  since a native `Date` or `Map` takes their place.
 
 A value nested deeper than 1000 levels is refused with an `INTERNAL_ERROR` naming the limit,
 instead of overflowing the host stack.
@@ -728,7 +740,12 @@ class MapleError extends Error {
   /** 0-based column, as Acorn reports it. */
   readonly column?: number;
   /** The sandbox error that was not caught, for RUNTIME_ERROR. */
-  readonly sandboxError?: { name: string; message: string; stack: string };
+  readonly sandboxError?: {
+    name: string;
+    message: string;
+    stack: string;
+    properties?: Record<string, unknown>;
+  };
   /** The host exception, for INTERNAL_ERROR. */
   readonly cause?: unknown;
   /** Operations and depth consumed up to the failure; absent for PARSE_ERROR. */

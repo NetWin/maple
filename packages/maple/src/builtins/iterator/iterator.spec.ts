@@ -33,7 +33,7 @@ describe('iterators', () => {
     expect(run('return [].values() + "";')).toBe('[object Iterator]');
     expect(run('return JSON.stringify([].values());')).toBe('{}');
     expect(run('return [].values() instanceof Object;')).toBe(true);
-    expect(runAndCatch(maple, '[].values().x = 1;').sandboxError?.name).toBe('TypeError');
+    expect(run('const i = [1].values(); i.x = 1; return [i.x, i.next().value];')).toEqual([1, 1]);
   });
 
   it('never leave the sandbox', () => {

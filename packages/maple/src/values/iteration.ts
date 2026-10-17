@@ -1,6 +1,7 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { toLength } from './coercion.ts';
+import { getExtraPropertiesOf } from './members.ts';
 import { IteratorWrapper, MapWrapper, SetWrapper } from './wrappers.ts';
 
 /**
@@ -38,7 +39,10 @@ export function asHostIterable(value: unknown): Iterable<unknown> | undefined {
   return iterator && { [Symbol.iterator]: (): Iterator<unknown> => iterator };
 }
 
-/** The keys `for...in` visits: own enumerable keys of plain objects, arrays and strings. */
+/**
+ * The keys `for...in` visits: own enumerable keys of plain objects, arrays and strings, and what a
+ * script added to any other value of its own.
+ */
 export function* enumerableKeys(value: unknown): Generator<string> {
   if (typeof value === 'string') {
     for (let index = 0; index < value.length; index++) {
@@ -46,13 +50,20 @@ export function* enumerableKeys(value: unknown): Generator<string> {
     }
     return;
   }
+  // The keys are taken when the loop starts, so one added later is not visited, but one deleted
+  // before its turn is skipped, as the language requires
   if (Array.isArray(value) || isPlainObject(value)) {
-    // The keys are taken when the loop starts, so one added later is not visited, but one deleted
-    // before its turn is skipped, as the language requires
     for (const key of Object.keys(value)) {
       if (Object.hasOwn(value, key)) {
         yield key;
       }
+    }
+    return;
+  }
+  const extra = getExtraPropertiesOf(value);
+  for (const key of extra?.keys() ?? []) {
+    if (extra?.has(key)) {
+      yield key;
     }
   }
 }

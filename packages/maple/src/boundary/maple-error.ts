@@ -1,6 +1,7 @@
 import type { MapleRunStats } from '../evaluator/budget.ts';
 import { toString } from '../values/coercion.ts';
 import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
+import { toHostError } from './to-host.ts';
 
 export const MapleErrorCode = {
   /** The source does not parse. */
@@ -23,6 +24,8 @@ export interface SandboxErrorInfo {
   message: string;
   /** Script positions only, from where the error was created or the non-error value thrown. */
   stack: string;
+  /** What the script added to the error, such as a `code`, copied out like a run's value. */
+  properties?: Record<string, unknown>;
 }
 
 export interface MapleErrorOptions {
@@ -66,10 +69,7 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
   }
   if (error instanceof SandboxThrow) {
     // A thrown value that is not an error object is reported like the host reports `throw 42`
-    const sandboxError =
-      error.value instanceof SandboxError
-        ? error.value.toInfo()
-        : new SandboxError('Error', describeThrown(error.value), 'Error', error.frames).toInfo();
+    const sandboxError = extractError(error);
     return new MapleError(MapleErrorCode.RUNTIME_ERROR, sandboxError.message, {
       line: error.node?.loc?.start.line,
       column: error.node?.loc?.start.column,
@@ -79,6 +79,22 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
   }
   const message = error instanceof Error ? error.message : String(error);
   return new MapleError(MapleErrorCode.INTERNAL_ERROR, message, { cause: error, stats });
+}
+
+/** Extracts the sandbox error information from a thrown value. */
+function extractError(error: SandboxThrow): SandboxErrorInfo {
+  const value = error.value;
+
+  if (value instanceof SandboxError) {
+    try {
+      return toHostError(value);
+    } catch {
+      return value.toInfo();
+    }
+  }
+
+  const message = describeThrown(value);
+  return new SandboxError('Error', message, 'Error', error.frames).toInfo();
 }
 
 /**

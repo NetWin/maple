@@ -1,4 +1,5 @@
 import type { Node } from 'acorn';
+import { ExtraProperties } from './extra-properties.ts';
 
 /** An error object as the script sees it: name, message and a stack of script positions. */
 export class SandboxError {
@@ -8,16 +9,18 @@ export class SandboxError {
   public readonly kind: string;
   /** Frozen at creation like the host does it, so a later rename does not rewrite history. */
   public readonly stack: string;
+  public readonly properties: ExtraProperties;
 
   constructor(name: string, message: string, kind: string = name, frames: string = '') {
     this.name = name;
     this.message = message;
     this.kind = kind;
+    this.properties = new ExtraProperties();
     const header = message === '' ? name : `${name}: ${message}`;
     this.stack = frames === '' ? header : `${header}\n${frames}`;
   }
 
-  /** The error as the host receives it, at the boundary and in `MapleError.sandboxError`. */
+  /** The fixed part of the error as the host receives it; the boundary adds `properties`. */
   public toInfo(): { name: string; message: string; stack: string } {
     return { name: this.name, message: this.message, stack: this.stack };
   }

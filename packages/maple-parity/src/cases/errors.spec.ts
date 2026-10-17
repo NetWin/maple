@@ -339,3 +339,19 @@ describe('decodeURIComponent', () => {
     ).toEqual(['URIError', true, 'string']);
   });
 });
+
+describe('assign:error property', () => {
+  it('adds a property to an error', () => {
+    expect(
+      parity('var e = new Error("m"); e.code = 123; return [e.code, Object.keys(e), "code" in e];')
+    ).toEqual([123, ['code'], true]);
+  });
+
+  it('serializes and deletes the added property', () => {
+    expect(
+      parity(
+        'var e = new Error("m"); e.code = 1; var json = JSON.stringify(e); delete e.code; return [json, Object.keys(e)];'
+      )
+    ).toEqual(['{"code":1}', []]);
+  });
+});

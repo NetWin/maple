@@ -117,7 +117,8 @@ describe('Object', () => {
   });
 });
 
-// Without `this` a receiver means nothing; spread arguments and closures cover the uses.
+// Scripts have no `this`, and letting them pick a built-in method's receiver needs per-method
+// receiver checks first; spread arguments and closures cover the uses.
 
 describe('Function.prototype.call', () => {
   it('has no call', () => {
@@ -262,6 +263,24 @@ describe('window', () => {
 describe('self', () => {
   it('blocks self', () => {
     expect(divergence('return self.Math.PI;')).toBe(MapleErrorCode.DISALLOWED_SYNTAX);
+  });
+});
+
+// Built-in functions and namespaces are shared by every run, so a property added to one would
+// carry over into the next. Values a run creates take properties as in the language.
+
+describe('assign:built-in function', () => {
+  it('refuses properties on a built-in method', () => {
+    expect(divergence('var p = [].push; p.cache = 1; return p.cache;')).toBe(
+      MapleErrorCode.RUNTIME_ERROR
+    );
+  });
+
+  it('refuses properties on a global function and a namespace', () => {
+    expect(divergence('parseInt.cache = 1; return parseInt.cache;')).toBe(
+      MapleErrorCode.RUNTIME_ERROR
+    );
+    expect(divergence('Math.answer = 42; return Math.answer;')).toBe(MapleErrorCode.RUNTIME_ERROR);
   });
 });
 

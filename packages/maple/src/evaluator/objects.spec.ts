@@ -181,12 +181,12 @@ describe('member writes', () => {
     expect(sandboxError('obj.a.b++;', data)?.name).toBe('TypeError');
   });
 
-  it('rejects writes to primitives, functions, nullish values and forbidden keys', () => {
+  it('rejects writes to primitives, built-in functions, nullish values and forbidden keys', () => {
     expect(sandboxError('"abc".x = 1;')).toMatchObject({
       name: 'TypeError',
       message: "Cannot create property 'x' on string"
     });
-    expect(sandboxError('const f = () => 1; f.x = 1;')?.message).toBe(
+    expect(sandboxError('const f = Math.max; f.x = 1;')?.message).toBe(
       "Cannot create property 'x' on function"
     );
     expect(sandboxError('undefined.a = 1;')).toMatchObject({

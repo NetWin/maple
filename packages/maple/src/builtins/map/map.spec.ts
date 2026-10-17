@@ -56,12 +56,20 @@ describe('Map', () => {
     expect(run(`${setup} const [[k]] = m; return k;`)).toBe('b');
   });
 
-  it('has no own properties besides size and refuses writes', () => {
+  it('has no own properties besides size but takes the ones a script adds', () => {
     expect(run('return ["size" in new Map(), "get" in new Map()];')).toEqual([true, true]);
     expect(run('return new Map().foo;')).toBeUndefined();
     expect(run('return Object.keys(new Map([[1, 2]]));')).toEqual([]);
-    expect(runAndCatch(maple, 'new Map().x = 1;').sandboxError?.message).toBe(
-      "Cannot add property 'x' to a Map"
+    expect(
+      run(
+        'const m = new Map(); m.meta = 1; return [m.meta, "meta" in m, Object.keys(m), JSON.stringify(m)];'
+      )
+    ).toEqual([1, true, ['meta'], '{"meta":1}']);
+    expect(
+      run('const s = new Set([1]); s.meta = 1; delete s.meta; return [s.meta, s.size];')
+    ).toEqual([undefined, 1]);
+    expect(runAndCatch(maple, 'new Map().size = 1;').sandboxError?.message).toBe(
+      "Cannot assign to read-only property 'size' of a Map"
     );
     expect(run('return new Map() + "";')).toBe('[object Map]');
     expect(run('return JSON.stringify(new Map([[1, 2]]));')).toBe('{}');

@@ -382,3 +382,21 @@ describe('method calls', () => {
     expect(bothThrow('var t = " a ".trim; t();')).toBe('TypeError');
   });
 });
+
+describe('assign:function property', () => {
+  it('adds a property to a script function', () => {
+    expect(
+      parity(
+        'function fn() {} fn.cache = {}; fn.cache.a = 1; return [fn.cache.a, Object.keys(fn)];'
+      )
+    ).toEqual([1, ['cache']]);
+  });
+
+  it('visits the added property in for...in', () => {
+    expect(
+      parity(
+        'function fn() {} fn.a = 1; var keys = []; for (var k in fn) { keys.push(k); } return keys;'
+      )
+    ).toEqual(['a']);
+  });
+});

@@ -1,3 +1,5 @@
+import { assertNever } from '../support/assert-never.ts';
+import { ExtraProperties } from './extra-properties.ts';
 import type { Fail } from './members.ts';
 
 /**
@@ -8,49 +10,59 @@ import type { Fail } from './members.ts';
 export class RegExpWrapper {
   public readonly regexp: RegExp;
   public readonly frozen: boolean;
+  public readonly properties: ExtraProperties;
 
   constructor(regexp: RegExp, frozen = false) {
     this.regexp = regexp;
     this.frozen = frozen;
+    this.properties = new ExtraProperties(frozen);
   }
 }
 
 export class DateWrapper {
   public readonly date: Date;
   public readonly frozen: boolean;
+  public readonly properties: ExtraProperties;
 
   constructor(date: Date, frozen = false) {
     this.date = date;
     this.frozen = frozen;
+    this.properties = new ExtraProperties(frozen);
   }
 }
 
 export class MapWrapper {
   public readonly map: Map<unknown, unknown>;
   public readonly frozen: boolean;
+  public readonly properties: ExtraProperties;
 
   constructor(map: Map<unknown, unknown>, frozen = false) {
     this.map = map;
     this.frozen = frozen;
+    this.properties = new ExtraProperties(frozen);
   }
 }
 
 export class SetWrapper {
   public readonly set: Set<unknown>;
   public readonly frozen: boolean;
+  public readonly properties: ExtraProperties;
 
   constructor(set: Set<unknown>, frozen = false) {
     this.set = set;
     this.frozen = frozen;
+    this.properties = new ExtraProperties(frozen);
   }
 }
 
 /** A host iterator over sandbox values; `next()` and iteration are the only ways to touch it. */
 export class IteratorWrapper {
   public readonly iterator: Iterator<unknown>;
+  public readonly properties: ExtraProperties;
 
   constructor(iterator: Iterator<unknown>) {
     this.iterator = iterator;
+    this.properties = new ExtraProperties();
   }
 }
 
@@ -80,7 +92,11 @@ export function wrapperKind(wrapper: Wrapper): string {
   if (wrapper instanceof SetWrapper) {
     return 'Set';
   }
-  return 'Iterator';
+  if (wrapper instanceof IteratorWrapper) {
+    return 'Iterator';
+  }
+
+  return assertNever(wrapper, 'Wrapper');
 }
 
 /** Wrappers from the input are read-only; a mutator on one fails before it touches anything. */

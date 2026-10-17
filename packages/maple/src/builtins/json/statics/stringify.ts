@@ -2,9 +2,10 @@ import { isPlainObject } from '../../../support/is-plain-object.ts';
 import { MAX_NESTING } from '../../../support/nesting-limit.ts';
 import { Builtin } from '../../../values/builtin.ts';
 import { Closure } from '../../../values/closure.ts';
+import type { IExtraProperties } from '../../../values/extra-properties.ts';
+import { getExtraPropertiesOf } from '../../../values/members.ts';
 import { type CallContext, isCallable, NativeFunction } from '../../../values/native.ts';
-import { SandboxError } from '../../../values/sandbox-error.ts';
-import { DateWrapper, isWrapper } from '../../../values/wrappers.ts';
+import { DateWrapper } from '../../../values/wrappers.ts';
 
 /** What one `stringify` call carries through the recursion. */
 interface Serialization {
@@ -120,10 +121,6 @@ function serialize(
     return current.callable ? undefined : '{}';
   }
 
-  if (current instanceof SandboxError || isWrapper(current)) {
-    return '{}';
-  }
-
   if (ancestors.includes(current)) {
     return context.fail('TypeError', 'Converting circular structure to JSON');
   }
@@ -147,21 +144,35 @@ function serialize(
       parts.push(serialize(String(index), current[index], inner, serialization) ?? 'null');
     }
     result = wrap('[', ']', parts, gap, indent, inner);
-  } else if (isPlainObject(current)) {
+  } else {
+    // An error or a wrapper serializes like an object holding what the script added to it, so a
+    // plain object is read through the same three methods
+    let properties: IExtraProperties | undefined;
+    if (isPlainObject(current)) {
+      properties = {
+        has: (propertyKey: string): boolean => Object.hasOwn(current, propertyKey),
+        get: (propertyKey: string): unknown => current[propertyKey],
+        keys: (): Array<string> => Object.keys(current)
+      };
+    } else {
+      properties = getExtraPropertiesOf(current);
+    }
+    if (!properties) {
+      throw new Error('A value of an unknown kind reached JSON.stringify');
+    }
+
     const parts: Array<string> = [];
     // An array replacer gives the order too, and selects own properties whether enumerable or not
     const keys = allowed
-      ? [...allowed].filter((propertyKey) => Object.hasOwn(current, propertyKey))
-      : Object.keys(current);
+      ? [...allowed].filter((propertyKey) => properties.has(propertyKey))
+      : properties.keys();
     for (const propertyKey of keys) {
-      const serialized = serialize(propertyKey, current[propertyKey], inner, serialization);
+      const serialized = serialize(propertyKey, properties.get(propertyKey), inner, serialization);
       if (serialized !== undefined) {
         parts.push(`${JSON.stringify(propertyKey)}:${gap ? ' ' : ''}${serialized}`);
       }
     }
     result = wrap('{', '}', parts, gap, indent, inner);
-  } else {
-    throw new Error('A value of an unknown kind reached JSON.stringify');
   }
 
   ancestors.pop();

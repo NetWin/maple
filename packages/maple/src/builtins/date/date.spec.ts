@@ -145,13 +145,18 @@ describe('Date', () => {
     expect(data.when.getTime()).toBe(0);
   });
 
-  it('has no own properties and rejects writes', () => {
+  it('has no own properties but takes the ones a script adds', () => {
     expect(run('return new Date(0).foo;')).toBeUndefined();
     expect(run('return "getTime" in new Date(0);')).toBe(true);
-    expect(runAndCatch(maple, 'new Date(0).x = 1;').sandboxError?.message).toBe(
-      "Cannot add property 'x' to a Date"
-    );
     expect(run('return Object.keys(new Date(0));')).toEqual([]);
+    expect(
+      run(
+        'const d = new Date(0); d.label = "epoch"; return [d.label, Object.keys(d), d.getTime()];'
+      )
+    ).toEqual(['epoch', ['label'], 0]);
+    expect(run('const d = new Date(0); d.label = 1; return JSON.stringify(d);')).toBe(
+      '"1970-01-01T00:00:00.000Z"'
+    );
   });
 });
 

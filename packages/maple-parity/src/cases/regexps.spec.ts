@@ -253,3 +253,11 @@ describe('instance:regexp.source', () => {
     ).toEqual(['a\\/b[c]+', 'x.y', '\\/']);
   });
 });
+
+describe('assign:RegExp property', () => {
+  it('adds a property to a RegExp', () => {
+    expect(
+      parity('var r = /a/; r.meta = 1; return [r.meta, Object.keys(r), r.test("a")];')
+    ).toEqual([1, ['meta'], true]);
+  });
+});

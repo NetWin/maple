@@ -303,3 +303,83 @@ describe('error additions', () => {
     expect(run('return new EvalError() instanceof URIError;')).toBe(false);
   });
 });
+
+describe('properties added to errors', () => {
+  it('behave like own properties of an object', () => {
+    const setup = 'const e = new Error("m"); e.code = 123;';
+
+    expect(run(`${setup} return [e.code, "code" in e, Object.keys(e), Object.values(e)];`)).toEqual(
+      [123, true, ['code'], [123]]
+    );
+    expect(run(`${setup} return Object.getOwnPropertyNames(e);`)).toEqual([
+      'name',
+      'message',
+      'stack',
+      'code'
+    ]);
+    expect(run(`${setup} const keys = []; for (const k in e) keys.push(k); return keys;`)).toEqual([
+      'code'
+    ]);
+    expect(run(`${setup} return { ...e };`)).toEqual({ code: 123 });
+    expect(run(`${setup} const { code, ...rest } = e; return [code, rest];`)).toEqual([123, {}]);
+    expect(run(`${setup} return JSON.stringify(e);`)).toBe('{"code":123}');
+    expect(run(`${setup} delete e.code; return [e.code, Object.keys(e)];`)).toEqual([
+      undefined,
+      []
+    ]);
+    expect(
+      run('const e = Object.assign(new Error("m"), { code: 1 }); return [e.code, e.message];')
+    ).toEqual([1, 'm']);
+  });
+
+  it('leave name, message and stack as they are', () => {
+    expect(
+      run(
+        'const e = new Error("m"); e.name = "Custom"; e.message = "n"; return [e.toString(), Object.keys(e)];'
+      )
+    ).toEqual(['Custom: n', []]);
+    expect(runAndCatch(maple, 'new Error("m").stack = "";').sandboxError?.message).toBe(
+      "Cannot assign to read-only property 'stack'"
+    );
+  });
+
+  it('are refused once the error is frozen', () => {
+    expect(
+      runAndCatch(maple, 'const e = Object.freeze(new Error("m")); e.code = 1;').sandboxError
+        ?.message
+    ).toBe("Cannot assign to read-only property 'code'");
+    expect(
+      run('const e = new Error("m"); e.code = 1; Object.freeze(e); return Object.isFrozen(e);')
+    ).toBe(true);
+  });
+
+  it('reach the host with an uncaught error and with a returned one', () => {
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); e.code = 123; e.detail = { at: [1] }; throw e;')
+        .sandboxError
+    ).toEqual({
+      name: 'Error',
+      message: 'm',
+      stack: 'Error: m\n    at <script> (1:10)',
+      properties: { code: 123, detail: { at: [1] } }
+    });
+    expect(runAndCatch(maple, 'throw new Error("m");').sandboxError).not.toHaveProperty(
+      'properties'
+    );
+    expect(run('const e = new TypeError("m"); e.code = 1; e.fn = () => 1; return e;')).toEqual({
+      name: 'TypeError',
+      message: 'm',
+      stack: 'TypeError: m\n    at <script> (1:10)',
+      properties: { code: 1, fn: undefined }
+    });
+  });
+
+  it('keep cycles through the error at the boundary', () => {
+    const value = run('const e = new Error("m"); e.self = e; return [e, e];');
+    expect(Array.isArray(value) && value[0] === value[1]).toBe(true);
+    const [first] = Array.isArray(value) ? value : [];
+    expect(
+      typeof first === 'object' && first !== null && 'properties' in first && first.properties
+    ).toEqual({ self: first });
+  });
+});

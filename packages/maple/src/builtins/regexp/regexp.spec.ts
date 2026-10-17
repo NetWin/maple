@@ -47,7 +47,12 @@ describe('RegExp', () => {
     expect(run('return /a/.hasIndices;')).toBe(false);
     expect(run('return "source" in /a/ && !("foo" in /a/);')).toBe(true);
     expect(run('return /a/.foo;')).toBeUndefined();
-    expect(runAndCatch(maple, '/a/.source = "b";').sandboxError?.name).toBe('TypeError');
+    expect(runAndCatch(maple, '/a/.source = "b";').sandboxError?.message).toBe(
+      "Cannot assign to read-only property 'source' of a RegExp"
+    );
+    expect(
+      run('const r = /a/g; r.label = "x"; return [r.label, Object.keys(r), r.test("a")];')
+    ).toEqual(['x', ['label'], true]);
     expect(runAndCatch(maple, '/a/.constructor;').sandboxError?.name).toBe('TypeError');
     expect(run('return /a\\/b/gi.toString();')).toBe('/a\\/b/gi');
     expect(run('return /a/g + "";')).toBe('/a/g');
@@ -60,6 +65,9 @@ describe('RegExp', () => {
     expect(run('return pattern instanceof RegExp;', data)).toBe(true);
     expect(runAndCatch(maple, 'pattern.lastIndex = 0;', data).sandboxError?.message).toBe(
       "Cannot assign to read-only property 'lastIndex'"
+    );
+    expect(runAndCatch(maple, 'pattern.label = 1;', data).sandboxError?.message).toBe(
+      "Cannot assign to read-only property 'label'"
     );
   });
 

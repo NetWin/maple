@@ -444,6 +444,32 @@ describe('functions', () => {
     });
   });
 
+  describe('added properties', () => {
+    it('can be given to a script function', () => {
+      expect(
+        run(
+          'function f(n) { f.calls = (f.calls ?? 0) + 1; return n; } f(1); f(2); return [f.calls, Object.keys(f), "calls" in f];'
+        )
+      ).toEqual([2, ['calls'], true]);
+      expect(
+        run('const memo = () => 1; memo.cache = {}; memo.cache.a = 1; return memo.cache;')
+      ).toEqual({
+        a: 1
+      });
+      expect(run('const f = () => 1; f.toString = () => "own"; return f.toString();')).toBe('own');
+      expect(run('const f = () => 1; f.x = 1; return JSON.stringify({ f });')).toBe('{}');
+    });
+
+    it('leave name and length read-only', () => {
+      expect(errorMessage('function f() {} f.name = "g";')).toBe(
+        "Cannot assign to read-only property 'name' of function"
+      );
+      expect(errorMessage('const f = (a) => a; f.length = 2;')).toBe(
+        "Cannot assign to read-only property 'length' of function"
+      );
+    });
+  });
+
   describe('as values', () => {
     it('never leave the sandbox', () => {
       expect(maple.run('return () => 1;').value).toBeUndefined();

@@ -458,3 +458,11 @@ describe('Date.prototype.toLocaleString', () => {
     ).toEqual('3/5/2024, 7:07:08 AM');
   });
 });
+
+describe('assign:Date property', () => {
+  it('adds a property to a Date', () => {
+    expect(
+      parity('var d = new Date(0); d.meta = 1; return [d.meta, Object.keys(d), d.getTime()];')
+    ).toEqual([1, ['meta'], 0]);
+  });
+});

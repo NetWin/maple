@@ -4,9 +4,17 @@ import { isArgumentsObject } from './arguments-object.ts';
 import { Builtin } from './builtin.ts';
 import { Closure } from './closure.ts';
 import { toNumber, toString, typeOf } from './coercion.ts';
+import type { ExtraProperties } from './extra-properties.ts';
 import { NativeFunction } from './native.ts';
 import { SandboxError } from './sandbox-error.ts';
-import { isWrapper, MapWrapper, RegExpWrapper, SetWrapper, wrapperKind } from './wrappers.ts';
+import {
+  isWrapper,
+  MapWrapper,
+  RegExpWrapper,
+  SetWrapper,
+  type Wrapper,
+  wrapperKind
+} from './wrappers.ts';
 
 /** Raises a catchable sandbox error at the node the caller is evaluating. */
 export type Fail = (name: string, message: string) => never;
@@ -69,7 +77,12 @@ export function readMember(
     return methodLookup(target, key);
   }
   if (target instanceof Closure || target instanceof NativeFunction) {
-    return isFunctionProperty(target, key) ? target[key] : methodLookup(target, key);
+    if (isFunctionProperty(target, key)) {
+      return target[key];
+    }
+    return target instanceof Closure
+      ? readExtraPropertyOrMethod(target, key, methodLookup)
+      : methodLookup(target, key);
   }
   if (target instanceof SandboxError) {
     switch (key) {
@@ -80,7 +93,7 @@ export function readMember(
       case 'stack':
         return target.stack;
       default:
-        return methodLookup(target, key);
+        return readExtraPropertyOrMethod(target, key, methodLookup);
     }
   }
   if (target instanceof Builtin) {
@@ -97,16 +110,16 @@ export function readMember(
   }
   if (target instanceof RegExpWrapper) {
     const property = REGEXP_PROPERTIES.get(key);
-    return property ? property(target) : methodLookup(target, key);
+    return property ? property(target) : readExtraPropertyOrMethod(target, key, methodLookup);
   }
   if (target instanceof MapWrapper) {
-    return key === 'size' ? target.map.size : methodLookup(target, key);
+    return key === 'size' ? target.map.size : readExtraPropertyOrMethod(target, key, methodLookup);
   }
   if (target instanceof SetWrapper) {
-    return key === 'size' ? target.set.size : methodLookup(target, key);
+    return key === 'size' ? target.set.size : readExtraPropertyOrMethod(target, key, methodLookup);
   }
   if (isWrapper(target)) {
-    return methodLookup(target, key);
+    return readExtraPropertyOrMethod(target, key, methodLookup);
   }
   throw new Error('A value of an unknown kind was read');
 }
@@ -122,10 +135,22 @@ export function setMember(
   if (target === undefined || target === null) {
     return fail('TypeError', `Cannot set properties of ${String(target)} (setting '${key}')`);
   }
+
+  // Prevent scripts from assigning to properties that are not allowed (like "__proto__" etc.)
   assertAllowedKey(key, fail);
-  if (typeof target !== 'object' || target instanceof Closure || target instanceof NativeFunction) {
+
+  // Built-in and host functions are shared between runs, so a property on one would carry over
+  if (typeof target !== 'object' || target instanceof NativeFunction) {
     return fail('TypeError', `Cannot create property '${key}' on ${typeOf(target)}`);
   }
+
+  if (target instanceof Closure) {
+    if (isFunctionProperty(target, key)) {
+      return fail('TypeError', `Cannot assign to read-only property '${key}' of function`);
+    }
+    return writeExtraProperty(target, key, value, fail);
+  }
+
   if (target instanceof SandboxError) {
     if (Object.isFrozen(target)) {
       return fail('TypeError', `Cannot assign to read-only property '${key}'`);
@@ -141,24 +166,38 @@ export function setMember(
     if (key === 'stack') {
       return fail('TypeError', `Cannot assign to read-only property '${key}'`);
     }
-    return fail('TypeError', `Cannot add property '${key}' to an error`);
+    return writeExtraProperty(target, key, value, fail);
   }
+
   if (target instanceof RegExpWrapper) {
-    if (key !== 'lastIndex') {
-      return fail('TypeError', `Cannot add property '${key}' to a RegExp`);
+    if (key === 'lastIndex') {
+      if (target.frozen) {
+        return fail('TypeError', `Cannot assign to read-only property '${key}'`);
+      }
+      target.regexp.lastIndex = toNumber(value);
+      return;
     }
-    if (target.frozen) {
-      return fail('TypeError', `Cannot assign to read-only property '${key}'`);
+    if (REGEXP_PROPERTIES.has(key)) {
+      return fail('TypeError', `Cannot assign to read-only property '${key}' of a RegExp`);
     }
-    target.regexp.lastIndex = toNumber(value);
-    return;
+    return writeExtraProperty(target, key, value, fail);
   }
+
+  if ((target instanceof MapWrapper || target instanceof SetWrapper) && key === 'size') {
+    return fail(
+      'TypeError',
+      `Cannot assign to read-only property 'size' of a ${wrapperKind(target)}`
+    );
+  }
+
   if (isWrapper(target)) {
-    return fail('TypeError', `Cannot add property '${key}' to a ${wrapperKind(target)}`);
+    return writeExtraProperty(target, key, value, fail);
   }
+
   if (target instanceof Builtin || Object.isFrozen(target)) {
     return fail('TypeError', `Cannot assign to read-only property '${key}'`);
   }
+
   if (Array.isArray(target)) {
     if (key === 'length') {
       const length = toNumber(value);
@@ -176,11 +215,13 @@ export function setMember(
     Reflect.set(target, key, value);
     return;
   }
+
   if (key === 'length' && isArgumentsObject(target)) {
     // An assignment keeps `length` non-enumerable, as it is on a real arguments object
     Reflect.set(target, key, value);
     return;
   }
+
   if (isPlainObject(target)) {
     Object.defineProperty(target, key, {
       value,
@@ -190,6 +231,7 @@ export function setMember(
     });
     return;
   }
+
   throw new Error('A value of an unknown kind was written');
 }
 
@@ -197,19 +239,26 @@ export function deleteMember(target: unknown, key: string, fail: Fail): boolean 
   if (target === undefined || target === null) {
     return fail('TypeError', `Cannot convert ${String(target)} to object`);
   }
+
+  // Ensure the key is allowed before attempting to delete it
   assertAllowedKey(key, fail);
-  if (
-    typeof target !== 'object' ||
-    target instanceof Closure ||
-    target instanceof NativeFunction ||
-    target instanceof SandboxError ||
-    isWrapper(target)
-  ) {
+
+  const extra = getExtraPropertiesOf(target);
+  if (extra) {
+    if (!extra.delete(key)) {
+      return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
+    }
     return true;
   }
+
+  if (typeof target !== 'object' || target instanceof NativeFunction) {
+    return true;
+  }
+
   if (target instanceof Builtin || Object.isFrozen(target)) {
     return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
   }
+
   return Reflect.deleteProperty(target, key);
 }
 
@@ -220,6 +269,9 @@ export function hasMember(target: unknown, key: string, fail: Fail): boolean {
       'TypeError',
       `Cannot use 'in' operator to search for '${key}' in ${toString(target)}`
     );
+  }
+  if (getExtraPropertiesOf(target)?.has(key)) {
+    return true;
   }
   if (target instanceof Closure || target instanceof NativeFunction) {
     return isFunctionProperty(target, key);
@@ -250,6 +302,13 @@ export function ownPropertyNames(target: unknown): Array<string> {
   if (typeof target !== 'object' || target === null) {
     return [];
   }
+  const fixedNames = fixedPropertyNames(target);
+  const extraNames = getExtraPropertiesOf(target)?.keys() ?? [];
+  return [...fixedNames, ...extraNames];
+}
+
+/** The properties a value has by its kind, before anything the script adds. */
+function fixedPropertyNames(target: object): Array<string> {
   if (target instanceof Closure || target instanceof NativeFunction) {
     return functionProperties(target);
   }
@@ -286,6 +345,43 @@ export function* ownEntries(value: unknown): Generator<[string, unknown]> {
     for (const key of Object.keys(value)) {
       yield [key, Reflect.get(value, key)];
     }
+    return;
+  }
+  const extra = getExtraPropertiesOf(value);
+  for (const key of extra?.keys() ?? []) {
+    yield [key, extra?.get(key)];
+  }
+}
+
+/**
+ * The properties a script added to a value of its own that is not a plain object: an error, a
+ * script function, a wrapper. Built-in and host functions have none, since they are shared between
+ * runs.
+ */
+export function getExtraPropertiesOf(value: unknown): ExtraProperties | undefined {
+  return value instanceof SandboxError || value instanceof Closure || isWrapper(value)
+    ? value.properties
+    : undefined;
+}
+
+/** A property the script added wins over a method of the same name, as an own property does. */
+function readExtraPropertyOrMethod(
+  target: SandboxError | Closure | Wrapper,
+  key: string,
+  methodLookup: MethodLookup
+): unknown {
+  return target.properties.has(key) ? target.properties.get(key) : methodLookup(target, key);
+}
+
+/** Every key not taken by the value's own fields lands with the extra properties. */
+function writeExtraProperty(
+  target: SandboxError | Closure | Wrapper,
+  key: string,
+  value: unknown,
+  fail: Fail
+): void {
+  if (!target.properties.set(key, value)) {
+    return fail('TypeError', `Cannot assign to read-only property '${key}'`);
   }
 }
 

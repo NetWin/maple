@@ -247,8 +247,50 @@ describe('escape attempts', () => {
       expect(run('return Object.keys(() => 1);')).toEqual([]);
       expect(run('return Object.keys(host);')).toEqual([]);
       expect(run('return Object.keys(Math);')).toEqual([]);
-      expect(errorName('(() => 1).x = 1;')).toBe('TypeError');
       expect(errorName('host.x = 1;')).toBe('TypeError');
+      expect(errorName('Math.max.x = 1;')).toBe('TypeError');
+      expect(errorName('[].push.x = 1;')).toBe('TypeError');
+    });
+
+    it('keep shared functions free of state a run could leave for the next', () => {
+      expect(errorName('const p = [].push; p.cache = 1;')).toBe('TypeError');
+      expect(run('return [].push.cache;')).toBeUndefined();
+      expect(errorName('Math.x = 1;')).toBe('TypeError');
+    });
+  });
+
+  describe('added properties', () => {
+    it('never reach the fields of the value they are added to', () => {
+      expect(
+        run('const e = new TypeError("m"); e.kind = "RangeError"; return e instanceof TypeError;')
+      ).toBe(true);
+      expect(run('const e = new Error("m"); e.toInfo = 1; return [e.toInfo, e.stack];')).toEqual([
+        1,
+        'Error: m\n    at <script> (1:10)'
+      ]);
+      expect(run('const m = new Map([[1, 2]]); return [m.map, m.frozen, m.size];')).toEqual([
+        undefined,
+        undefined,
+        1
+      ]);
+      expect(run('const d = new Date(0); d.date = 1; return d.getTime();')).toBe(0);
+      expect(run('const f = () => 1; return [f.node, f.scope];')).toEqual([undefined, undefined]);
+    });
+
+    it('inherit nothing from the host', () => {
+      expect(
+        run('const e = new Error(); return [e.hasOwnProperty, e.valueOf, e.isPrototypeOf];')
+      ).toEqual([undefined, undefined, undefined]);
+      expect(
+        run('const f = () => 1; return ["hasOwnProperty" in f, "isPrototypeOf" in f];')
+      ).toEqual([false, false]);
+      expect(errorName('const e = new Error(); e.__proto__ = {};')).toBe('TypeError');
+      expect(errorName('const f = () => 1; f.constructor = 1;')).toBe('TypeError');
+    });
+
+    it('cannot be added to input wrappers', () => {
+      expect(errorName('when.x = 1;', { when: new Date(0) })).toBe('TypeError');
+      expect(errorName('lookup.x = 1;', { lookup: new Map() })).toBe('TypeError');
     });
   });
 

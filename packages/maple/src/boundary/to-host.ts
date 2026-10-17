@@ -12,6 +12,7 @@ import {
   RegExpWrapper,
   SetWrapper
 } from '../values/wrappers.ts';
+import type { SandboxErrorInfo } from './maple-error.ts';
 
 type UnconvertibleKind = 'function' | 'iterator' | 'cyclic value';
 
@@ -33,6 +34,11 @@ export class UnconvertibleValueError extends Error {
  */
 export function toHost(value: unknown, strict: boolean = false): unknown {
   return convert(value, { copies: new Map(), open: new Set(), strict }, 0);
+}
+
+/** An error as the host receives it: `name`, `message`, `stack` and what the script added. */
+export function toHostError(error: SandboxError): SandboxErrorInfo {
+  return copyError(error, { copies: new Map(), open: new Set(), strict: false }, 0);
 }
 
 interface Walk {
@@ -71,8 +77,8 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
   if (walk.copies.has(value)) {
     return walk.copies.get(value);
   }
-  // Errors, Dates and RegExps hold no sandbox values but are cached all the same, so a value
-  // reached twice is still one value outside
+  // Dates and RegExps hold no sandbox values but are cached all the same,
+  // so a value reached twice is still one value outside
   const leaf = copyLeaf(value);
   if (leaf !== undefined) {
     walk.copies.set(value, leaf);
@@ -85,9 +91,6 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
 }
 
 function copyLeaf(value: object): object | undefined {
-  if (value instanceof SandboxError) {
-    return value.toInfo();
-  }
   if (value instanceof DateWrapper) {
     return new Date(value.date.getTime());
   }
@@ -100,6 +103,10 @@ function copyLeaf(value: object): object | undefined {
 }
 
 function copyContainer(value: object, walk: Walk, depth: number): unknown {
+  if (value instanceof SandboxError) {
+    return copyError(value, walk, depth);
+  }
+
   if (value instanceof MapWrapper) {
     const copy = new Map<unknown, unknown>();
     walk.copies.set(value, copy);
@@ -108,6 +115,7 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
     }
     return copy;
   }
+
   if (value instanceof SetWrapper) {
     const copy = new Set<unknown>();
     walk.copies.set(value, copy);
@@ -144,4 +152,32 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
   }
 
   throw new Error('A value of an unknown kind reached the output boundary');
+}
+
+/**
+ * `properties` is there only when the script added any, so an error without them keeps the shape it
+ * always had. A wrapper's added properties stay behind: a Date or a Map leaves as the host's own.
+ */
+function copyError(error: SandboxError, walk: Walk, depth: number): SandboxErrorInfo {
+  const copy: SandboxErrorInfo = error.toInfo();
+  walk.copies.set(error, copy);
+
+  const keys = error.properties.keys();
+  if (keys.length === 0) {
+    return copy;
+  }
+
+  const properties: Record<string, unknown> = {};
+  copy.properties = properties;
+  walk.open.add(error);
+
+  for (const key of keys) {
+    // Host code that copies by assignment would turn an own __proto__ key into a prototype
+    if (key !== '__proto__') {
+      defineOwn(properties, key, convert(error.properties.get(key), walk, depth + 1));
+    }
+  }
+
+  walk.open.delete(error);
+  return copy;
 }
