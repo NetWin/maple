@@ -61,6 +61,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `push` on an array after `Object.preventExtensions`                                                   | It throws a `TypeError`, as in JavaScript; js-interpreter changes nothing and throws nothing.                             |
 | `[1].toLocaleString('en', { style: 'currency' })` without a `currency`                                | Inconsistent options are a `TypeError` from `Intl`, as in JavaScript; js-interpreter ignores them and gives `"1"`.        |
 | `[3, , undefined, 1].sort()`: Maple leaves the hole last, js-interpreter before `undefined`           | Holes sort after `undefined`, as in JavaScript.                                                                           |
+| `new Error('m', { cause: 1 }).cause`: Maple gives `1`, js-interpreter `undefined`                     | The `cause` option is ES2022; js-interpreter follows ES5 and ignores the second argument.                                 |
 
 ### Maple departs from JavaScript
 

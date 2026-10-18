@@ -584,12 +584,15 @@ never leaves the sandbox: at the output boundary it becomes `undefined`.
 
 ### Errors
 
-`new Error(message?)` and its six subtypes create sandbox error objects with own `name`,
-`message` and `stack` properties; a second `options` argument is ignored. `name` and `message`
+`new Error(message?, options?)` and its six subtypes create sandbox error objects with own `name`,
+`message` and `stack` properties. When `options` is an object with a `cause` property, own or
+inherited, the error gets an own `cause` with its value, writable and configurable but not
+enumerable, as in JavaScript. `name` and `message`
 can be assigned and `stack` is read-only. Any other property the script adds behaves like one of a
 plain object: `e.code = 123` shows up in `Object.keys(e)`, `for...in`, spread and `JSON.stringify`,
-while `name`, `message` and `stack` do not, as in JavaScript. An error that leaves the run
-carries them as `properties` (see [Output](#output)).
+while `name`, `message`, `stack` and a `cause` from `options` do not, as in JavaScript. An error
+that leaves the run carries them as `properties`, and its `cause` on its own (see
+[Output](#output)).
 `stack` lists the script's own frames and nothing of the host, innermost first, in the familiar
 shape, and is fixed when the error is created. `toString()` returns the same `Name: message` text
 as converting the error to a string:
@@ -761,7 +764,9 @@ host's responsibility.
 - Closures, host functions, intrinsics and iterators become `undefined`.
 - Sandbox error objects become plain objects with `name`, `message` and `stack`, and with
   `properties` holding what the script added, converted like any other value. `properties` is
-  absent when the script added nothing. The properties a script added to a wrapper stay behind,
+  absent when the script added nothing. An error with an own `cause`, from `options` or
+  assigned, carries it as `cause`, converted the same way, also when it is `undefined`, and never
+  in `properties` too. The properties a script added to a wrapper stay behind,
   since a native `Date` or `Map` takes their place.
 
 A value nested deeper than 1000 levels is refused instead of overflowing the host stack. The script
@@ -793,6 +798,7 @@ class MapleError extends Error {
     message: string;
     stack: string;
     properties?: Record<string, unknown>;
+    cause?: unknown;
   };
   /**
    * The host exception, for INTERNAL_ERROR; for RUNTIME_ERROR, a capped copy of the host function's
@@ -831,16 +837,19 @@ message is `A value that cannot be converted to a string was thrown`.
 
 Host error handling tends to serialize and log what it gets, so an uncaught error is copied more
 strictly than a returned one. `name`, `message` and `stack` (and with them `MapleError.message`)
-are cut to 10,000 characters, the last of which is `…`. `properties` is a tree: a value reached
-twice is copied once per reference. It is left out when it holds a cycle, or when the copy costs
-more than 65,536, counting one per value plus the length of every string, key and RegExp source,
-and of the `name`, `message` and `stack` of every error in it. A returned error keeps its full text and properties, cycles included, like any other returned value.
+are cut to 10,000 characters, the last of which is `…`. `properties` and `cause` are copied
+together as a tree: a value reached twice is copied once per reference. Both are left out when
+they hold a cycle, or when the copy costs more than 65,536, counting one per value plus the length
+of every string, key and RegExp source, and of the `name`, `message` and `stack` of every error in
+it. A returned error keeps its full text, properties and cause, cycles included, like any other
+returned value.
 
 A host exception's text can carry script data too, so the `cause` of a `RUNTIME_ERROR` that stands
 for one is a new `Error` with only the exception's `name`, `message` and `stack`, each cut the same
 way. Its own `stack` is left out when the exception had none. A thrown string becomes the copy's
 message, and any other thrown non-error leaves `cause` undefined, since converting it would run
-host code.
+host code. This `MapleError.cause` says why the run failed; `sandboxError.cause` is the cause the
+script gave its own error.
 
 `line` and `column` point into the source of the program that was executing, which for a nested
 run is the nested source. Messages are written for the person debugging the script, for example

@@ -205,8 +205,10 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
 }
 
 /**
- * `properties` is there only when the script added any, so an error without them keeps the shape it
- * always had. A wrapper's added properties stay behind: a Date or a Map leaves as the host's own.
+ * `properties` is there only when the script added any, and `cause` only when the error has one,
+ * so an error without them keeps the shape it always had. `cause` has its own field whether it is
+ * enumerable or not, and never repeats in `properties`. A wrapper's added properties stay behind:
+ * a Date or a Map leaves as the host's own.
  */
 function copyError(error: SandboxError, walk: Walk, depth: number): SandboxErrorInfo {
   // The root's text is cut on its own; a nested error's text is part of the properties
@@ -217,21 +219,29 @@ function copyError(error: SandboxError, walk: Walk, depth: number): SandboxError
   const copy: SandboxErrorInfo = error.toInfo();
   walk.copies.set(error, copy);
 
-  const keys = error.properties.enumerableKeys();
-  if (keys.length === 0) {
+  const keys = error.properties.enumerableKeys().filter((key) => key !== 'cause');
+  const cause = error.properties.getAdded('cause');
+  if (keys.length === 0 && cause === undefined) {
     return copy;
   }
 
-  const properties: Record<string, unknown> = {};
-  copy.properties = properties;
   walk.open.add(error);
 
-  for (const key of keys) {
-    charge(walk, key.length);
-    // Host code that copies by assignment would turn an own __proto__ key into a prototype
-    if (key !== '__proto__') {
-      defineOwn(properties, key, convert(error.properties.getAdded(key)?.value, walk, depth + 1));
+  if (keys.length > 0) {
+    const properties: Record<string, unknown> = {};
+    copy.properties = properties;
+    for (const key of keys) {
+      charge(walk, key.length);
+      // Host code that copies by assignment would turn an own __proto__ key into a prototype
+      if (key !== '__proto__') {
+        defineOwn(properties, key, convert(error.properties.getAdded(key)?.value, walk, depth + 1));
+      }
     }
+  }
+
+  if (cause !== undefined) {
+    charge(walk, 'cause'.length);
+    copy.cause = convert(cause.value, walk, depth + 1);
   }
 
   walk.open.delete(error);

@@ -125,7 +125,8 @@ export abstract class SandboxObject {
     if (added) {
       added.value = value;
     } else {
-      properties.add(key, value);
+      // What an assignment creates
+      properties.add(key, value, { writable: true, enumerable: true, configurable: true });
     }
   }
 

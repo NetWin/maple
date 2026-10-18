@@ -489,3 +489,111 @@ describe('uncaught errors at the boundary', () => {
     expect(value).toHaveProperty('properties.big', 'y'.repeat(70_000));
   });
 });
+
+describe('the cause option', () => {
+  it('gives the error a non-enumerable own cause, as JavaScript does', () => {
+    expect(
+      run(
+        'const e = new Error("m", { cause: 1 }); return [e.cause, "cause" in e, Object.keys(e), JSON.stringify(e), Object.getOwnPropertyNames(e).includes("cause")];'
+      )
+    ).toEqual([1, true, [], '{}', true]);
+    expect(run('return "cause" in new Error("m", { cause: undefined });')).toBe(true);
+    expect(
+      run(
+        'return ["cause" in new Error("m", {}), "cause" in new Error("m", 5), "cause" in new Error("m")];'
+      )
+    ).toEqual([false, false, false]);
+    expect(run('const o = [1]; o.cause = 4; return new Error("m", o).cause;')).toBe(4);
+  });
+
+  it('works for every error constructor, with and without new', () => {
+    expect(
+      run(
+        'return [TypeError, RangeError, ReferenceError, SyntaxError, URIError, EvalError].map((E) => new E("m", { cause: E.name }).cause);'
+      )
+    ).toEqual([
+      'TypeError',
+      'RangeError',
+      'ReferenceError',
+      'SyntaxError',
+      'URIError',
+      'EvalError'
+    ]);
+    expect(run('return Error("m", { cause: 3 }).cause;')).toBe(3);
+  });
+
+  it('can be reassigned and deleted', () => {
+    expect(
+      run(
+        'const e = new Error("m", { cause: 1 }); e.cause = 2; const kept = [e.cause, Object.keys(e)]; delete e.cause; return [kept, "cause" in e];'
+      )
+    ).toEqual([[2, []], false]);
+  });
+
+  it('reaches the host in its own field, also along a chain', () => {
+    const error = runAndCatch(
+      maple,
+      'throw new Error("outer", { cause: new TypeError("middle", { cause: new RangeError("inner") }) });'
+    );
+
+    expect(error.sandboxError).toMatchObject({
+      message: 'outer',
+      cause: {
+        name: 'TypeError',
+        message: 'middle',
+        cause: {
+          name: 'RangeError',
+          message: 'inner',
+          stack: expect.stringMatching(/^RangeError: inner\n/)
+        }
+      }
+    });
+    expect(error.sandboxError).not.toHaveProperty('properties');
+    expect(runAndCatch(maple, 'throw new Error("m", { cause: 5 });').sandboxError?.cause).toBe(5);
+    expect(
+      runAndCatch(maple, 'throw new Error("m", { cause: undefined });').sandboxError
+    ).toHaveProperty('cause', undefined);
+    expect(runAndCatch(maple, 'throw new Error("m");').sandboxError).not.toHaveProperty('cause');
+  });
+
+  it('never repeats in properties, also when the script assigned it', () => {
+    const error = runAndCatch(maple, 'const e = new Error("m"); e.cause = 2; e.code = 1; throw e;');
+
+    expect(error.sandboxError).toMatchObject({ cause: 2, properties: { code: 1 } });
+    expect(error.sandboxError?.properties).not.toHaveProperty('cause');
+  });
+
+  it('is left out with the properties when it holds a cycle or exceeds the budget', () => {
+    for (const code of [
+      'const e = new Error("m", { cause: 1 }); e.code = 1; e.cause = e; throw e;',
+      'const a = new Error("a"); const b = new Error("b", { cause: a }); a.cause = b; b.code = 1; throw b;',
+      'const e = new Error("m", { cause: "x".repeat(70000) }); e.code = 1; throw e;'
+    ]) {
+      const error = runAndCatch(maple, code);
+      expect(error.code).toBe('RUNTIME_ERROR');
+      expect(error.sandboxError).not.toHaveProperty('cause');
+      expect(error.sandboxError).not.toHaveProperty('properties');
+    }
+  });
+
+  it('comes with a returned error, cycles included', () => {
+    expect(run('return new Error("m", { cause: { n: 1 } });')).toMatchObject({ cause: { n: 1 } });
+
+    const value = run('const e = new Error("m"); e.cause = e; return e;');
+    expect(value).toHaveProperty('cause', value);
+  });
+
+  it('comes with an error passed to a host function', () => {
+    const seen: Array<unknown> = [];
+    const withHost = new Maple({
+      globals: {
+        take: (value: unknown): void => {
+          seen.push(value);
+        }
+      }
+    });
+
+    withHost.run('take(new Error("m", { cause: [1, 2] }));');
+    expect(seen).toEqual([expect.objectContaining({ message: 'm', cause: [1, 2] })]);
+  });
+});

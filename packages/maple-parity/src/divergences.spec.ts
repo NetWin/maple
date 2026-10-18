@@ -162,6 +162,15 @@ describe('Array.prototype.toLocaleString', () => {
   });
 });
 
+describe('Error:cause', () => {
+  // ES2022 installs options.cause on the error; js-interpreter follows ES5 and ignores options
+  it('takes the cause option', () => {
+    expect(
+      followsJavaScript('var e = new Error("m", { cause: 1 }); return [e.cause, "cause" in e];')
+    ).toEqual({ maple: [1, true], jsInterpreter: [undefined, false] });
+  });
+});
+
 describe('Array.prototype.sort', () => {
   // Holes go after undefined; js-interpreter puts them before
   it('moves holes past undefined', () => {

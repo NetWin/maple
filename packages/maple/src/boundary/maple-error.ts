@@ -29,6 +29,8 @@ export interface SandboxErrorInfo {
   stack: string;
   /** What the script added to the error, such as a `code`, copied out like a run's value. */
   properties?: Record<string, unknown>;
+  /** The error's own `cause`, copied out like `properties`. */
+  cause?: unknown;
 }
 
 export interface MapleErrorOptions {

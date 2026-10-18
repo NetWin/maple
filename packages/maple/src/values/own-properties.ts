@@ -46,10 +46,10 @@ export class OwnProperties {
     return this.#added?.get(key);
   }
 
-  /** A new property as an assignment creates it: writable, enumerable and configurable. */
-  public add(key: string, value: unknown): void {
+  /** A new property with the attributes it is created with. */
+  public add(key: string, value: unknown, attributes: Attributes): void {
     this.#added ??= new Map();
-    this.#added.set(key, { value, writable: true, enumerable: true, configurable: true });
+    this.#added.set(key, { value, ...attributes });
   }
 
   public deleteAdded(key: string): void {
