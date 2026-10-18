@@ -60,6 +60,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `Object.isExtensible(5)`: Maple gives `false`, js-interpreter `true`                                  | A primitive is never extensible since ES2015; js-interpreter follows ES5.                                                 |
 | `push` on an array after `Object.preventExtensions`                                                   | It throws a `TypeError`, as in JavaScript; js-interpreter changes nothing and throws nothing.                             |
 | `[1].toLocaleString('en', { style: 'currency' })` without a `currency`                                | Inconsistent options are a `TypeError` from `Intl`, as in JavaScript; js-interpreter ignores them and gives `"1"`.        |
+| `[3, , undefined, 1].sort()`: Maple leaves the hole last, js-interpreter before `undefined`           | Holes sort after `undefined`, as in JavaScript.                                                                           |
 
 ### Maple departs from JavaScript
 

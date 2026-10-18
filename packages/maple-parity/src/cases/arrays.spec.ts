@@ -53,6 +53,12 @@ describe('Array.prototype.reverse', () => {
       true
     ]);
   });
+
+  it('keeps holes as holes', () => {
+    expect(
+      parity('var a = [1, , 3]; a.reverse(); return [a.length, 0 in a, 1 in a, 2 in a];')
+    ).toEqual([3, true, false, true]);
+  });
 });
 
 describe('Array.prototype.indexOf', () => {
@@ -289,6 +295,12 @@ describe('Array.prototype.reduceRight', () => {
 describe('Array.prototype.sort', () => {
   it('compares as strings by default', () => {
     expect(parity('return [10, 9, 1, 100, 2].sort();')).toEqual([1, 10, 100, 2, 9]);
+  });
+
+  it('moves holes to the end', () => {
+    expect(
+      parity('var a = [2, , 1]; a.sort(); return [a.length, 0 in a, 1 in a, 2 in a];')
+    ).toEqual([3, true, true, false]);
   });
 
   it('with a comparator', () => {

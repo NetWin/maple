@@ -162,6 +162,15 @@ describe('Array.prototype.toLocaleString', () => {
   });
 });
 
+describe('Array.prototype.sort', () => {
+  // Holes go after undefined; js-interpreter puts them before
+  it('moves holes past undefined', () => {
+    expect(
+      followsJavaScript('var a = [3, , undefined, 1]; a.sort(); return [a.length, 2 in a, 3 in a];')
+    ).toEqual({ maple: [4, true, false], jsInterpreter: [4, false, true] });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes or receivers. An object's behaviour

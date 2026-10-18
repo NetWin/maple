@@ -63,6 +63,52 @@ describe('array methods', () => {
       );
     });
 
+    it('sort and reverse sparse arrays as JavaScript does, keeping holes as holes', () => {
+      expect(run('const a = [2, , 1]; a.sort(); return [a.length, Object.keys(a)];')).toEqual([
+        3,
+        ['0', '1']
+      ]);
+      expect(
+        run('const a = [3, , undefined, 1]; a.sort(); return [a.length, Object.keys(a), a[2]];')
+      ).toEqual([4, ['0', '1', '2'], undefined]);
+      expect(run('const a = [1, , 3]; a.reverse(); return [Object.keys(a), a[0], a[2]];')).toEqual([
+        ['0', '2'],
+        3,
+        1
+      ]);
+      expect(
+        run(
+          'const seen = []; [3, , 1, , 2].sort((x, y) => { seen.push(x, y); return x - y; }); return seen.includes(undefined);'
+        )
+      ).toBe(false);
+    });
+
+    it('sort and reverse arrays that are no longer extensible as JavaScript does', () => {
+      expect(
+        run('const a = Object.preventExtensions([1, , 3]); a.reverse(); return Object.keys(a);')
+      ).toEqual(['0', '2']);
+      expect(
+        run(
+          'try { Object.preventExtensions([3, , 1]).sort(); } catch (e) { return [e.name, e.message]; }'
+        )
+      ).toEqual(['TypeError', 'Cannot add property 1, object is not extensible']);
+      expect(
+        run(
+          'const a = Object.preventExtensions([1, , ,]); try { a.reverse(); } catch (e) { return [e.message, Object.keys(a)]; }'
+        )
+      ).toEqual(['Cannot add property 2, object is not extensible', []]);
+      expect(
+        run('try { Object.freeze([1, , ,]).reverse(); } catch (e) { return [e.name, e.message]; }')
+      ).toEqual(['TypeError', "Cannot delete property '0' of [object Array]"]);
+      expect(run('return Object.freeze([1]).reverse();')).toEqual([1]);
+      expect(
+        run('try { Object.freeze([1]).sort(); } catch (e) { return [e.name, e.message]; }')
+      ).toEqual([
+        'TypeError',
+        "Cannot assign to read only property '0' of object '[object Array]'"
+      ]);
+    });
+
     it('reject non-callable callbacks and run callbacks under the budget', () => {
       expect(run('try { [1].map(5); } catch (e) { return e.message; }')).toBe(
         '5 is not a function'
