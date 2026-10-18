@@ -108,14 +108,17 @@ describe('toHost', () => {
     expect(at(copy, 'a')).toBe(at(copy, 'b'));
   });
 
-  it('drops a __proto__ key, so host code cannot turn it into a prototype', () => {
-    const source: unknown = JSON.parse('{"__proto__": {"polluted": true}, "kept": 1}');
+  it('drops __proto__ and constructor keys, so host code cannot reach a prototype through them', () => {
+    const source: unknown = JSON.parse(
+      '{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "kept": 1}'
+    );
     const copy = toHost(fromHost(source));
 
     expect(isRecord(copy) && Object.getOwnPropertyNames(copy)).toEqual(['kept']);
     expect(Object.getPrototypeOf(copy)).toBe(Object.prototype);
     expect(Object.assign({}, copy)).toEqual({ kept: 1 });
     expect(toHost(fromHost(source), true)).toEqual({ kept: 1 });
+    expect(toHost(fromHost([source]))).toEqual([{ kept: 1 }]);
     expect('polluted' in {}).toBe(false);
   });
 

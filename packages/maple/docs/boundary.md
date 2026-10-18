@@ -15,7 +15,7 @@ globals), the arguments of a host function, its return value, and the result of 
 | Value reached twice            | shared             | shared             | shared               | shared          |
 | Cycle                          | kept               | `TypeError`        | kept                 | kept            |
 | Nested deeper than 1000 levels | `TypeError` before | `RangeError`       | `INTERNAL_ERROR`     | `RUNTIME_ERROR` |
-| Key named `__proto__`          | plain key          | dropped            | plain key            | dropped         |
+| Key `__proto__`, `constructor` | plain key          | dropped            | plain key            | dropped         |
 
 - "Anything else" is a class instance, a typed array, a boxed primitive, a symbol, a promise or a
   host `Error`. Nothing is flattened silently.

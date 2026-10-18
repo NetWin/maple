@@ -20,6 +20,13 @@ export const MAX_ERROR_PROPERTIES_SIZE = 65_536;
 
 type UnconvertibleKind = 'function' | 'iterator' | 'cyclic value';
 
+/**
+ * Keys a copy leaves out. Host code that copies by assignment would turn an own `__proto__` into
+ * a prototype, and code that merges recursively would reach `Object.prototype` through
+ * `constructor.prototype`. The sandbox cannot read either key, so nothing is lost.
+ */
+const DROPPED_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor']);
+
 /** Thrown by a strict `toHost` for a value that must not leave the sandbox. */
 export class UnconvertibleValueError extends Error {
   public readonly kind: UnconvertibleKind;
@@ -181,7 +188,7 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
     walk.copies.set(value, copy);
     for (const key of Object.keys(value)) {
       charge(walk, key.length);
-      if (key !== '__proto__') {
+      if (!DROPPED_KEYS.has(key)) {
         defineOwn(copy, key, convert(Reflect.get(value, key), walk, depth + 1));
       }
     }
@@ -193,8 +200,7 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
     walk.copies.set(value, copy);
     for (const key of Object.keys(value)) {
       charge(walk, key.length);
-      // Host code that copies by assignment would turn an own __proto__ key into a prototype
-      if (key !== '__proto__') {
+      if (!DROPPED_KEYS.has(key)) {
         defineOwn(copy, key, convert(value[key], walk, depth + 1));
       }
     }
@@ -232,8 +238,7 @@ function copyError(error: SandboxError, walk: Walk, depth: number): SandboxError
     copy.properties = properties;
     for (const key of keys) {
       charge(walk, key.length);
-      // Host code that copies by assignment would turn an own __proto__ key into a prototype
-      if (key !== '__proto__') {
+      if (!DROPPED_KEYS.has(key)) {
         defineOwn(properties, key, convert(error.properties.getAdded(key)?.value, walk, depth + 1));
       }
     }

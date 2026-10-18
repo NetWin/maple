@@ -173,6 +173,19 @@ describe('escape attempts', () => {
       expect(out).toEqual([{}]);
       expect(Object.assign({}, ...(Array.isArray(out) ? out : []))).not.toHaveProperty('polluted');
     });
+
+    it('through a constructor key that a recursive host merge would follow', () => {
+      const merged = run(
+        'return JSON.parse(\'{"constructor": {"prototype": {"polluted": true}}, "kept": 1}\');'
+      );
+      const thrown = runAndCatch(
+        maple,
+        'const e = new Error("x"); e.extra = JSON.parse(\'{"constructor": {"prototype": {}}}\'); throw e;'
+      );
+
+      expect(merged).toEqual({ kept: 1 });
+      expect(thrown.sandboxError?.properties).toEqual({ extra: {} });
+    });
   });
 
   describe('coercion hooks', () => {

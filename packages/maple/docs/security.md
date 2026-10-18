@@ -32,9 +32,11 @@ it can terminate.
 - **Own properties only.** Property access reads own properties and nothing else, so the prototype
   of a data object is irrelevant. `__proto__`, `constructor` and `prototype` can never be read,
   written, deleted or used as a literal key, static or computed; every attempt is a `TypeError`.
-  A data key named `__proto__` is a plain key: operations that copy or list whole objects (spread,
-  `Object.keys`, `for...in`, `JSON.stringify`, …) carry it along, and it is dropped whenever a value
-  leaves the sandbox, so host code that copies by assignment cannot turn it into a prototype.
+  A data key named `__proto__` or `constructor` is a plain key: operations that copy or list whole
+  objects (spread, `Object.keys`, `for...in`, `JSON.stringify`, …) carry it along, and both are
+  dropped whenever a value leaves the sandbox, so host code that copies by assignment cannot turn
+  `__proto__` into a prototype, and code that merges recursively cannot reach one through
+  `constructor.prototype`.
 - **No hooks.** Conversions never call script code: an object's own `toString` or `valueOf` is
   ignored by `+`, templates, comparison and the built-ins (see [Coercion](language.md#coercion)).
   The host never holds a script function: callbacks of built-ins run through the interpreter, and
