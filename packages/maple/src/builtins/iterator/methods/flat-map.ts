@@ -1,4 +1,4 @@
-import { toString } from '../../../values/coercion.ts';
+import { describeValue } from '../../../values/coercion.ts';
 import { asHostIterable } from '../../../values/iteration.ts';
 import { method, type Method } from '../../../values/native.ts';
 import { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
@@ -15,7 +15,7 @@ export const ITERATOR_METHOD_FLAT_MAP: Method<IteratorWrapper> = method(
         // `flatMap` flattens iterables but, as the spec requires, not strings
         const iterable = typeof inner === 'string' ? undefined : asHostIterable(inner);
         if (!iterable) {
-          return context.fail('TypeError', `${toString(inner)} is not an iterable object`);
+          return context.fail('TypeError', `${describeValue(inner)} is not an iterable object`);
         }
         return iterable;
       })

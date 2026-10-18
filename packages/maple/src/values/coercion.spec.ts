@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { Scope } from '../evaluator/scope.ts';
 import { parse } from '../parse.ts';
 import { Closure } from './closure.ts';
-import { add, lessThan, looseEquals, toNumber, toString, typeOf } from './coercion.ts';
+import {
+  add,
+  describeValue,
+  lessThan,
+  looseEquals,
+  toNumber,
+  toString,
+  typeOf
+} from './coercion.ts';
 import { SandboxError, UnplacedError } from './sandbox-error.ts';
 
 function someClosure(): Closure {
@@ -52,6 +60,27 @@ describe('coercion', () => {
       expect(toString(nested)).toBe('');
 
       expect(() => toString([nested])).toThrow(UnplacedError);
+    });
+  });
+
+  describe('describeValue', () => {
+    it('names a value by its hook-free string', () => {
+      expect(describeValue(5)).toBe('5');
+      expect(describeValue([1, 2])).toBe('1,2');
+      expect(describeValue({ toString: () => 'x' })).toBe('[object Object]');
+    });
+
+    it('names what does not convert by its tag instead of throwing', () => {
+      let nested: Array<unknown> = [];
+      for (let depth = 0; depth < 1000; depth++) {
+        nested = [nested];
+      }
+      const error = new SandboxError('Error', 'm');
+      error.name = Object.create(null);
+
+      expect(describeValue(Object.create(null))).toBe('[object Object]');
+      expect(describeValue(nested)).toBe('[object Array]');
+      expect(describeValue(error)).toBe('[object Error]');
     });
   });
 

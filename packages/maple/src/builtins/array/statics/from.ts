@@ -1,4 +1,4 @@
-import { toLength, toString } from '../../../values/coercion.ts';
+import { describeValue, toLength } from '../../../values/coercion.ts';
 import { iterate } from '../../../values/iteration.ts';
 import { isCallable, NativeFunction } from '../../../values/native.ts';
 import { getMember } from '../../method-dispatch.ts';
@@ -9,7 +9,7 @@ export const ARRAY_STATIC_FROM: NativeFunction = new NativeFunction(
   (_, [source, mapper], context) => {
     const { fail } = context;
     if (mapper !== undefined && !isCallable(mapper)) {
-      return fail('TypeError', `${toString(mapper)} is not a function`);
+      return fail('TypeError', `${describeValue(mapper)} is not a function`);
     }
     const items: Array<unknown> = [];
     const add = (item: unknown): void => {
@@ -24,7 +24,7 @@ export const ARRAY_STATIC_FROM: NativeFunction = new NativeFunction(
       return items;
     }
     if (typeof source !== 'object' || source === null) {
-      return fail('TypeError', `${toString(source)} is not iterable`);
+      return fail('TypeError', `${describeValue(source)} is not iterable`);
     }
     const length = toLength(getMember(source, 'length', context));
     for (let index = 0; index < length; index++) {

@@ -193,6 +193,9 @@ describe('array methods', () => {
         '5 is not a function'
       );
       expect(run('try { [1].map(); } catch (e) { return e.name; }')).toBe('TypeError');
+      expect(
+        run('try { [1].map(Object.groupBy([], (x) => x)); } catch (e) { return e.message; }')
+      ).toBe('[object Object] is not a function');
       const error = runAndCatch(new Maple({ maxOps: 300 }), '[1].map(() => { while (true) {} });');
       expect(error.code).toBe('LIMIT_EXCEEDED');
       const deep = runAndCatch(

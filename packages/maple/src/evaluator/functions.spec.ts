@@ -189,6 +189,14 @@ describe('functions', () => {
       expect(errorMessage('const m = { get: new Map().get }; m.get(1);')).toBe(
         'Map.prototype.get called on incompatible receiver [object Object]'
       );
+      expect(
+        errorMessage('const m = Object.groupBy([], (x) => x); m.get = new Map().get; m.get(1);')
+      ).toBe('Map.prototype.get called on incompatible receiver [object Object]');
+      expect(
+        errorMessage(
+          'let a = []; for (let i = 0; i < 1000; i++) a = [a]; a.trim = "".trim; a.trim();'
+        )
+      ).toBe('String.prototype.trim called on incompatible receiver [object Array]');
     });
   });
 

@@ -26,6 +26,9 @@ describe('Set', () => {
     expect(run('return [...new Set([1, 2])].map((x) => x * 2);')).toEqual([2, 4]);
     expect(run('return new Set([new Set()]).size;')).toBe(1);
     expect(runAndCatch(maple, 'Set();').sandboxError?.name).toBe('TypeError');
+    expect(
+      run('try { new Set(Object.groupBy([], (x) => x)); } catch (e) { return e.message; }')
+    ).toBe('[object Object] is not iterable');
   });
 
   it('is read-only from the input and crosses the boundary as a native Set', () => {

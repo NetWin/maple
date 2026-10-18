@@ -1,4 +1,4 @@
-import { toNumber, toString } from '../../../values/coercion.ts';
+import { describeValue, toNumber } from '../../../values/coercion.ts';
 import type { CallContext } from '../../../values/native.ts';
 import type { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
 import { closeIterator } from './close-iterator.ts';
@@ -24,7 +24,7 @@ export function iteratorCount(
 
   if (Number.isNaN(number) || Math.trunc(number) < 0) {
     closeIterator(wrapper);
-    return context.fail('RangeError', `${toString(count)} must be positive`);
+    return context.fail('RangeError', `${describeValue(count)} must be positive`);
   }
 
   return number;

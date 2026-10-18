@@ -1,4 +1,4 @@
-import { toString } from '../../../values/coercion.ts';
+import { describeValue } from '../../../values/coercion.ts';
 import { type CallContext, isCallable } from '../../../values/native.ts';
 import type { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
 import { closeIterator } from './close-iterator.ts';
@@ -16,7 +16,7 @@ export function iteratorCallback(
 ): IteratorCallback {
   if (!isCallable(fn)) {
     closeIterator(wrapper);
-    return context.fail('TypeError', `${toString(fn)} is not a function`);
+    return context.fail('TypeError', `${describeValue(fn)} is not a function`);
   }
   return (...args) => context.call(fn, args);
 }

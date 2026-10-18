@@ -12,6 +12,9 @@ export const FUNCTION_PLACEHOLDER = '[function]';
 /** What an object converts to when no hooks are involved. */
 export const OBJECT_PLACEHOLDER = '[object Object]';
 
+/** What an array is named by where its elements cannot be joined, its tag in JavaScript. */
+export const ARRAY_PLACEHOLDER = '[object Array]';
+
 /** What the `arguments` object converts to, its tag in JavaScript. */
 export const ARGUMENTS_PLACEHOLDER = '[object Arguments]';
 
@@ -56,6 +59,31 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
 export function toString(value: unknown): string {
   const primitive = toPrimitive(value, 'string');
   return typeof primitive === 'string' ? primitive : String(primitive);
+}
+
+/**
+ * The value as an error message names it: its hook-free string, or its `[object Array]`-style tag
+ * where converting it would throw, so that a message cannot fail while naming the value it is
+ * about.
+ */
+export function describeValue(value: unknown): string {
+  try {
+    return toString(value);
+  } catch (error) {
+    if (!(error instanceof UnplacedError)) {
+      throw error;
+    }
+
+    if (value instanceof SandboxObject) {
+      return `[object ${value.tag}]`;
+    }
+
+    if (Array.isArray(value)) {
+      return ARRAY_PLACEHOLDER;
+    }
+
+    return OBJECT_PLACEHOLDER;
+  }
 }
 
 export function toNumber(value: unknown): number {

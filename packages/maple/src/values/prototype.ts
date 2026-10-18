@@ -1,4 +1,4 @@
-import { toString } from './coercion.ts';
+import { describeValue } from './coercion.ts';
 import { type Method, NativeFunction } from './native.ts';
 
 /**
@@ -29,7 +29,7 @@ export class Prototype<Receiver = unknown> {
           if (!receives(receiver)) {
             return context.fail(
               'TypeError',
-              `${name}.prototype.${key} called on incompatible receiver ${toString(receiver)}`
+              `${name}.prototype.${key} called on incompatible receiver ${describeValue(receiver)}`
             );
           }
           return method.call(receiver, args, context);

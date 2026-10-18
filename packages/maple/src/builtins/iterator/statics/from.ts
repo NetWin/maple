@@ -1,4 +1,4 @@
-import { toString } from '../../../values/coercion.ts';
+import { describeValue } from '../../../values/coercion.ts';
 import { iterate } from '../../../values/iteration.ts';
 import { NativeFunction } from '../../../values/native.ts';
 import { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.ts';
@@ -17,7 +17,7 @@ export const ITERATOR_STATIC_FROM: NativeFunction = new NativeFunction(
 
     const iterator = iterate(source);
     if (!iterator) {
-      return fail('TypeError', `${toString(source)} is not iterable`);
+      return fail('TypeError', `${describeValue(source)} is not iterable`);
     }
 
     return new IteratorWrapper(iterator);

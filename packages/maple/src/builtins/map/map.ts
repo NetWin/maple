@@ -1,5 +1,5 @@
 import { Builtin } from '../../values/builtin.ts';
-import { toString } from '../../values/coercion.ts';
+import { describeValue } from '../../values/coercion.ts';
 import { iterate } from '../../values/iteration.ts';
 import { MapWrapper } from '../../values/wrappers/map-wrapper.ts';
 import { MAP_PROTOTYPE } from './map-prototype.ts';
@@ -18,7 +18,7 @@ export const MAP_BUILTIN: Builtin = new Builtin({
 
     const iterator = iterate(iterable);
     if (!iterator) {
-      return context.fail('TypeError', `${toString(iterable)} is not iterable`);
+      return context.fail('TypeError', `${describeValue(iterable)} is not iterable`);
     }
 
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
@@ -26,7 +26,7 @@ export const MAP_BUILTIN: Builtin = new Builtin({
       if (!Array.isArray(entry)) {
         return context.fail(
           'TypeError',
-          `Iterator value ${toString(entry)} is not an entry object`
+          `Iterator value ${describeValue(entry)} is not an entry object`
         );
       }
       map.set(entry[0], entry[1]);
