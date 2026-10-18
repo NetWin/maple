@@ -634,7 +634,8 @@ arrays are rebuilt (a `__proto__` key is dropped, as in the [output](#output)), 
 native `RegExp`, a Date wrapper to a fresh native `Date`, Map and Set wrappers to fresh native
 collections with converted contents. A closure, host function, intrinsic or iterator as an
 argument, at any depth, throws a `TypeError` in the script (`A function cannot be passed to the
-host`).
+host`). An argument nested deeper than 1000 levels throws a `RangeError` in the script (`A value
+nested deeper than 1000 levels cannot be passed to the host`).
 
 The host function therefore cannot mutate anything the script sees, and the script cannot hand it
 anything executable.
@@ -757,8 +758,11 @@ host's responsibility.
   absent when the script added nothing. The properties a script added to a wrapper stay behind,
   since a native `Date` or `Map` takes their place.
 
-A value nested deeper than 1000 levels is refused with an `INTERNAL_ERROR` naming the limit,
-instead of overflowing the host stack.
+A value nested deeper than 1000 levels is refused instead of overflowing the host stack. The script
+built it, so the run ends with `RUNTIME_ERROR` and a `RangeError` sandbox error naming the limit
+(`A value nested deeper than 1000 levels cannot leave the sandbox`), without a position, since the
+program has already finished. In a nested run, the intrinsic receives it like any other script
+error.
 
 The result is safe to serialize with `JSON.stringify`, which then applies the usual JSON rules (a
 Date becomes its ISO string, a RegExp or Map becomes `{}`, nested `undefined` is dropped from

@@ -154,6 +154,45 @@ describe('intrinsics', () => {
     expect(maple.run('try { out(() => 1); } catch (e) { return e.message; }').value).toBe(
       'A function cannot be passed to the host'
     );
+    expect(
+      maple.run(
+        'let v = []; for (let i = 0; i < 1001; i++) { v = [v]; } try { out(v); } catch (e) { return [e.name, e.message]; }'
+      ).value
+    ).toEqual([
+      'RangeError',
+      'A value nested deeper than 1000 levels cannot be passed to the host'
+    ]);
+  });
+
+  it('see a nested run whose value is too deep to leave as a script error', () => {
+    const deep = 'let v = []; for (let i = 0; i < 1001; i++) { v = [v]; } return v;';
+    let caught: unknown;
+    const maple = new Maple({
+      globals: {
+        attempt: intrinsic((_args, sandbox) => {
+          try {
+            return sandbox.run(deep).value;
+          } catch (error) {
+            caught = error;
+            return 'recovered';
+          }
+        }),
+        relay: intrinsic((_args, sandbox) => sandbox.run(deep).value)
+      }
+    });
+
+    expect(maple.run('return attempt();').value).toBe('recovered');
+    expect(caught).toBeInstanceOf(MapleError);
+    expect(caught).toMatchObject({
+      code: 'RUNTIME_ERROR',
+      sandboxError: {
+        name: 'RangeError',
+        message: 'A value nested deeper than 1000 levels cannot leave the sandbox'
+      }
+    });
+    expect(
+      maple.run('try { relay(); } catch (e) { return [e instanceof RangeError, e.message]; }').value
+    ).toEqual([true, 'A value nested deeper than 1000 levels cannot leave the sandbox']);
   });
 
   it('report their own exceptions like host functions do', () => {

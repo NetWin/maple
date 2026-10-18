@@ -445,10 +445,30 @@ describe('escape attempts', () => {
       expect(run(`${build} try { JSON.stringify(v); } catch (e) { return e.name; }`)).toBe(
         'RangeError'
       );
-      expect(runAndCatch(maple, `${build} return v;`)).toMatchObject({
-        code: 'INTERNAL_ERROR',
-        message: 'A value nested deeper than 1000 levels cannot leave the sandbox'
+      const error = runAndCatch(maple, `${build} return v;`);
+      expect(error).toMatchObject({
+        code: 'RUNTIME_ERROR',
+        message: 'A value nested deeper than 1000 levels cannot leave the sandbox',
+        sandboxError: {
+          name: 'RangeError',
+          message: 'A value nested deeper than 1000 levels cannot leave the sandbox',
+          stack: 'RangeError: A value nested deeper than 1000 levels cannot leave the sandbox'
+        }
       });
+      expect(error.line).toBeUndefined();
+    });
+
+    it('lets a value nested exactly to the limit leave', () => {
+      const build = 'let v = []; for (let i = 0; i < levels; i++) { v = [v]; } return v;';
+
+      let value = run(build, { levels: 1000 });
+      let levels = 0;
+      while (Array.isArray(value) && value.length > 0) {
+        value = value[0];
+        levels++;
+      }
+      expect(levels).toBe(1000);
+      expect(errorCode(build, { levels: 1001 })).toBe('RUNTIME_ERROR');
     });
   });
 });

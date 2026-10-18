@@ -31,6 +31,16 @@ export class UnconvertibleValueError extends Error {
 }
 
 /**
+ * Thrown by `toHost` for a value nested deeper than `MAX_NESTING`, which the caller reports to the
+ * script, since the script built it.
+ */
+export class NestingLimitError extends RangeError {
+  constructor() {
+    super(`A value nested deeper than ${MAX_NESTING} levels cannot leave the sandbox`);
+  }
+}
+
+/**
  * Copies a sandbox value out for the host: a fresh, mutable structure that shares nothing with
  * the run and contains nothing executable. Functions and iterators become `undefined` and cycles
  * are preserved, or, when `strict` as for host function arguments, both throw an
@@ -84,9 +94,7 @@ function charge(walk: Walk, amount: number): void {
 
 function convert(value: unknown, walk: Walk, depth: number): unknown {
   if (depth > MAX_NESTING) {
-    throw new RangeError(
-      `A value nested deeper than ${MAX_NESTING} levels cannot leave the sandbox`
-    );
+    throw new NestingLimitError();
   }
   charge(walk, typeof value === 'string' ? 1 + value.length : 1);
   if (value === null || typeof value !== 'object') {

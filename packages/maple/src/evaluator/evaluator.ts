@@ -32,10 +32,11 @@ import type {
 import { fromHost } from '../boundary/from-host.ts';
 import { type HostFunction, type Intrinsic, isExposed, type Sandbox } from '../boundary/host.ts';
 import { asMapleError, capHostError, MapleError, MapleErrorCode } from '../boundary/maple-error.ts';
-import { toHost, UnconvertibleValueError } from '../boundary/to-host.ts';
+import { NestingLimitError, toHost, UnconvertibleValueError } from '../boundary/to-host.ts';
 import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
 import type { MapleRunResult, RunOptions } from '../maple.ts';
 import { assertNever } from '../support/assert-never.ts';
+import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { createArgumentsObject } from '../values/arguments-object.ts';
 import { Builtin } from '../values/builtin.ts';
@@ -1156,6 +1157,13 @@ export class Evaluator {
         return this.throwError(
           'TypeError',
           `${error.kind === 'iterator' ? 'An' : 'A'} ${error.kind} cannot be passed to the host`,
+          node
+        );
+      }
+      if (error instanceof NestingLimitError) {
+        return this.throwError(
+          'RangeError',
+          `A value nested deeper than ${MAX_NESTING} levels cannot be passed to the host`,
           node
         );
       }

@@ -113,6 +113,29 @@ describe('host functions', () => {
     expect(Array.isArray(shared) && shared[0] === shared[1]).toBe(true);
   });
 
+  it('refuse arguments nested deeper than 1000 levels with a catchable RangeError', () => {
+    const seen: Array<unknown> = [];
+    const take = (value: unknown): void => {
+      seen.push(value);
+    };
+    const maple = new Maple({ globals: { take } });
+    const build = 'let v = []; for (let i = 0; i < 1001; i++) { v = [v]; }';
+    const message = 'A value nested deeper than 1000 levels cannot be passed to the host';
+
+    expect(
+      maple.run(
+        `${build} try { take(v); } catch (e) { return [e instanceof RangeError, e.message]; }`
+      ).value
+    ).toEqual([true, message]);
+    expect(runAndCatch(maple, `${build}\ntake(v);`)).toMatchObject({
+      code: 'RUNTIME_ERROR',
+      line: 2,
+      column: 0,
+      sandboxError: { name: 'RangeError', message }
+    });
+    expect(seen).toEqual([]);
+  });
+
   it('hand their results to the script as mutable sandbox values', () => {
     const shared = { n: 1 };
     const maple = new Maple({

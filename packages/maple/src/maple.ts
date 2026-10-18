@@ -1,13 +1,14 @@
 import type { Program } from 'acorn';
 import { fromHost } from './boundary/from-host.ts';
 import { asMapleError } from './boundary/maple-error.ts';
-import { toHost } from './boundary/to-host.ts';
+import { NestingLimitError, toHost } from './boundary/to-host.ts';
 import { STANDARD_GLOBALS } from './builtins/standard-globals.ts';
 import { Budget, type MapleRunStats } from './evaluator/budget.ts';
 import { Evaluator } from './evaluator/evaluator.ts';
 import { Scope } from './evaluator/scope.ts';
 import { parse } from './parse.ts';
 import { isPlainObject } from './support/is-plain-object.ts';
+import { SandboxError, SandboxThrow } from './values/sandbox-error.ts';
 
 export interface MapleOptions {
   /** Bindings visible to every run of this instance. */
@@ -75,7 +76,7 @@ export class Maple {
 
   /** One program on the evaluator's budget; `before` marks where this program's own stats start. */
   private execute(prepared: Prepared, evaluator: Evaluator, before: MapleRunStats): MapleRunResult {
-    const value = toHost(evaluator.run(prepared.program, prepared.globals));
+    const value = toHostResult(evaluator.run(prepared.program, prepared.globals));
     const after = evaluator.stats();
     return {
       value,
@@ -85,6 +86,21 @@ export class Maple {
         durationMs: after.durationMs - before.durationMs
       }
     };
+  }
+}
+
+/**
+ * The script built a value too deep to copy, so it ends the run as an uncaught `RangeError`,
+ * without a position since the program has already finished.
+ */
+function toHostResult(result: unknown): unknown {
+  try {
+    return toHost(result);
+  } catch (error) {
+    if (error instanceof NestingLimitError) {
+      throw new SandboxThrow(new SandboxError('RangeError', error.message));
+    }
+    throw error;
   }
 }
 
