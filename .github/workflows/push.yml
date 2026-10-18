@@ -69,11 +69,10 @@ jobs:
       - uses: cycjimmy/semantic-release-action@v8
         with:
           semantic_version: 25
-          # TODO: remove to enable real releases (see README → "Enabling releases")
-          dry_run: true
           extra_plugins: |
             @semantic-release/changelog@7
             @semantic-release/git@11
             conventional-changelog-conventionalcommits@9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

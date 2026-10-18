@@ -1,7 +1,7 @@
 {
   "name": "@netwin/maple",
   "version": "0.0.1",
-  "description": "Maple",
+  "description": "A secure JavaScript interpreter written in TypeScript",
   "homepage": "https://github.com/NetWin/maple#readme",
   "bugs": {
     "url": "https://github.com/NetWin/maple/issues"
@@ -26,7 +26,8 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsdown",

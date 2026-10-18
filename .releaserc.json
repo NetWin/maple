@@ -37,7 +37,7 @@
       }
     ],
     ["@semantic-release/changelog", { "changelogFile": "packages/maple/CHANGELOG.md" }],
-    ["@semantic-release/npm", { "pkgRoot": "packages/maple", "npmPublish": false }],
+    ["@semantic-release/npm", { "pkgRoot": "packages/maple", "npmPublish": true }],
     [
       "@semantic-release/git",
       {

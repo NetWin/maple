@@ -75,9 +75,6 @@ changes bump the minor version:
 On every pull request, `.github/workflows/changelog-preview.yml` runs semantic-release in dry-run mode against the PR
 branch and posts the changelog it would produce as a sticky comment.
 
-Releases currently run in **dry-run** mode. [docs/releasing.md](docs/releasing.md) covers how to go live, how to
-graduate to 1.0.0 and what branch protection requires.
-
 ## License
 
 [MIT](LICENSE) © NetWin
