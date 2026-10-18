@@ -315,6 +315,55 @@ describe('host functions', () => {
     expect(runAndCatch(maple, 'stackless();').cause).not.toHaveProperty('stack');
   });
 
+  it('read a name or message that is not a string, or throws, as the defaults of an error', () => {
+    const maple = new Maple({
+      globals: {
+        renamed: (): never => {
+          throw exposed(Object.assign(new RangeError('too far'), { name: 42 }));
+        },
+        bomb: (): never => {
+          const error = new RangeError('hidden');
+          Object.defineProperty(error, 'message', {
+            get: (): never => {
+              throw new Error('getter');
+            }
+          });
+          Object.defineProperty(error, 'stack', {
+            get: (): never => {
+              throw new Error('getter');
+            }
+          });
+          throw error;
+        },
+        shown: (): never => {
+          const error = new RangeError('hidden');
+          Object.defineProperty(error, 'message', {
+            get: (): never => {
+              throw new Error('getter');
+            }
+          });
+          throw exposed(error);
+        }
+      }
+    });
+    const caught = 'try { CALL(); } catch (e) { return [e.name, e.message, e instanceof Error]; }';
+
+    expect(maple.run(caught.replace('CALL', 'renamed')).value).toEqual(['Error', 'too far', true]);
+    expect(maple.run(caught.replace('CALL', 'bomb')).value).toEqual([
+      'Error',
+      'A host function failed',
+      true
+    ]);
+    expect(maple.run(caught.replace('CALL', 'shown')).value).toEqual(['RangeError', '', true]);
+    expect(runAndCatch(maple, 'renamed();').cause).toMatchObject({
+      name: 'Error',
+      message: 'too far'
+    });
+    const cause = runAndCatch(maple, 'bomb();').cause;
+    expect(cause).toMatchObject({ name: 'RangeError', message: '' });
+    expect(cause).not.toHaveProperty('stack');
+  });
+
   it('cost one operation per call', () => {
     const maple = new Maple({ globals: { f: one } });
 

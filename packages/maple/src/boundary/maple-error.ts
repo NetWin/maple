@@ -128,16 +128,39 @@ export function capHostError(error: unknown): Error | undefined {
   }
 
   // Assigning the full strings copies references only; capText cuts them
-  const copy = new Error(error.message);
-  copy.name = error.name;
+  const copy = new Error(hostErrorText(error, 'message'));
+  copy.name = hostErrorText(error, 'name');
 
-  if (typeof error.stack === 'string') {
-    copy.stack = error.stack;
+  const stack = readHostField(error, 'stack');
+  if (typeof stack === 'string') {
+    copy.stack = stack;
   } else {
     delete copy.stack;
   }
 
   return extractCappedText(copy);
+}
+
+/**
+ * `name` or `message` of a host exception as text. A host may have put something other than a
+ * string there, or a getter that throws; neither is converted, since that would run host code, so
+ * it reads as an error's defaults: the name `Error` and an empty message.
+ */
+export function hostErrorText(error: Error, field: 'name' | 'message'): string {
+  const value = readHostField(error, field);
+  if (typeof value === 'string') {
+    return value;
+  }
+  return field === 'name' ? 'Error' : '';
+}
+
+/** A field of a host exception, or `undefined` when reading it throws. */
+function readHostField(error: Error, field: 'name' | 'message' | 'stack'): unknown {
+  try {
+    return error[field];
+  } catch {
+    return undefined;
+  }
 }
 
 /** Cuts `name`, `message` and `stack` in place, for an uncaught error and a host error's copy alike. */

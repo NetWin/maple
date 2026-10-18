@@ -31,7 +31,13 @@ import type {
 } from 'acorn';
 import { fromHost } from '../boundary/from-host.ts';
 import { type HostFunction, type Intrinsic, isExposed, type Sandbox } from '../boundary/host.ts';
-import { asMapleError, capHostError, MapleError, MapleErrorCode } from '../boundary/maple-error.ts';
+import {
+  asMapleError,
+  capHostError,
+  hostErrorText,
+  MapleError,
+  MapleErrorCode
+} from '../boundary/maple-error.ts';
 import { NestingLimitError, toHost, UnconvertibleValueError } from '../boundary/to-host.ts';
 import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
 import type { MapleRunResult, RunOptions } from '../maple.ts';
@@ -1220,7 +1226,7 @@ export class Evaluator {
       throw error;
     }
     const sandboxError = isExposed(error)
-      ? this.createError(error.name, error.message, node)
+      ? this.createError(hostErrorText(error, 'name'), hostErrorText(error, 'message'), node)
       : this.createError('Error', HOST_FAILURE_MESSAGE, node);
     sandboxError.hostError = capHostError(error);
     throw new SandboxThrow(sandboxError, node);
