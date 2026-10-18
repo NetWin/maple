@@ -79,6 +79,11 @@ describe('string methods', () => {
     expect(run('return "a,b,c".split(",", 2);')).toEqual(['a', 'b']);
     expect(run('return "abc".split("");')).toEqual(['a', 'b', 'c']);
     expect(run('return "abc".split();')).toEqual(['abc']);
+    expect(
+      run(
+        'return [-1, Infinity, 2 ** 32, 2 ** 32 + 1, -0.5, NaN, 0, 1, "2"].map((limit) => "abc".split(undefined, limit));'
+      )
+    ).toEqual([['abc'], [], [], ['abc'], [], [], [], ['abc'], ['abc']]);
   });
 
   it('replace with strings and with callbacks', () => {

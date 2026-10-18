@@ -132,6 +132,14 @@ describe('String.prototype.split', () => {
     expect(parity("return 'a-b-c-d'.split('-', 2);")).toEqual(['a', 'b']);
   });
 
+  it('converts the limit with ToUint32 when there is no separator', () => {
+    expect(
+      parity(
+        "return ['abc'.split(undefined, -1), 'abc'.split(undefined, Infinity), 'abc'.split(undefined, 4294967297)];"
+      )
+    ).toEqual([['abc'], [], ['abc']]);
+  });
+
   it('by a regex', () => {
     expect(parity("return ['a1b22c'.split(/\\d+/), 'a, b ,c'.split(/\\s*,\\s*/)];")).toEqual([
       ['a', 'b', 'c'],

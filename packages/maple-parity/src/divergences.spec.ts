@@ -171,6 +171,16 @@ describe('Error:cause', () => {
   });
 });
 
+describe('String.prototype.split', () => {
+  // A limit of 0 gives no parts, separator or not; js-interpreter checks the separator first
+  it('gives no parts for a limit of 0 without a separator', () => {
+    expect(followsJavaScript("return 'abc'.split(undefined, 0);")).toEqual({
+      maple: [],
+      jsInterpreter: ['abc']
+    });
+  });
+});
+
 describe('Array.prototype.sort', () => {
   // Holes go after undefined; js-interpreter puts them before
   it('moves holes past undefined', () => {
