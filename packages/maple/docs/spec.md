@@ -289,7 +289,9 @@ accepts:
 Anything else (class instances, typed arrays, boxed primitives, symbols, promises) throws a plain
 `TypeError` before the run starts. Nothing is flattened silently. So does a value nested deeper
 than 1000 levels, the same limit as for the [output](#output), instead of overflowing the host
-stack: `Unsupported value at data.v[0]…: nested deeper than 1000 levels`.
+stack: `Unsupported value at data: nested deeper than 1000 levels`. Other errors name the path to
+the value, such as `Unsupported value at data.a.b: Thing`; for a value nested too deep, that path
+would only repeat the nesting.
 
 There is no serialization step, so a large `data` object costs one copy and no intermediate
 string. The converted copies are frozen (see [Input](#input)); the host's own objects are never

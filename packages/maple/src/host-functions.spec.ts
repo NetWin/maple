@@ -191,8 +191,8 @@ describe('host functions', () => {
 
     const error = runAndCatch(maple, 'try { f(); } catch (e) { return "caught"; }');
     expect(error.code).toBe('INTERNAL_ERROR');
-    expect(error.message).toMatch(
-      /^f returned a value the sandbox cannot hold: Unsupported value at f\(\)(\[0\]){1001}: nested deeper than 1000 levels$/
+    expect(error.message).toBe(
+      'f returned a value the sandbox cannot hold: Unsupported value at f(): nested deeper than 1000 levels'
     );
   });
 

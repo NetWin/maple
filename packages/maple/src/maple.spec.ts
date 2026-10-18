@@ -173,7 +173,7 @@ describe('Maple.run', () => {
       expect(() => maple.run('return 1;', json)).toThrow(/nested deeper than 1000 levels$/);
       expect(() => maple.run('return 1;', json)).toThrow(TypeError);
       expect(() => new Maple({ globals: { v: deep } })).toThrow(
-        /^Unsupported value at globals\.v\[0\].*: nested deeper than 1000 levels$/
+        new TypeError('Unsupported value at globals: nested deeper than 1000 levels')
       );
     });
   });

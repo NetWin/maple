@@ -19,11 +19,14 @@ export interface FromHostOptions {
 interface Settings {
   freeze: boolean;
   functions: boolean;
+  /** The path `fromHost` was given, which names a value nested too deep: its own path says no more. */
+  root: string;
 }
 
 /**
  * Copies a host value into the sandbox's value model. Throws a `TypeError` naming the path of
- * the first value the model does not cover, or that is nested deeper than `MAX_NESTING`.
+ * the first value the model does not cover, or only the root for a value nested deeper than
+ * `MAX_NESTING`.
  */
 export function fromHost(
   value: unknown,
@@ -32,7 +35,8 @@ export function fromHost(
 ): unknown {
   const settings: Settings = {
     freeze: options.freeze ?? true,
-    functions: options.functions ?? true
+    functions: options.functions ?? true,
+    root: path
   };
   return convert(value, path, new Map(), settings, 0);
 }
@@ -45,7 +49,7 @@ function convert(
   depth: number
 ): unknown {
   if (depth > MAX_NESTING) {
-    throw unsupported(path, `nested deeper than ${MAX_NESTING} levels`);
+    throw unsupported(settings.root, `nested deeper than ${MAX_NESTING} levels`);
   }
   if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
     if (typeof value === 'symbol' || typeof value === 'bigint') {
