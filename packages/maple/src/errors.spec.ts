@@ -427,6 +427,17 @@ describe('uncaught errors at the boundary', () => {
     expect(error.sandboxError?.properties).toEqual({ a: { n: 1 }, b: [{ n: 1 }] });
   });
 
+  it('keep a nested error with its name, message and stack', () => {
+    const error = runAndCatch(
+      maple,
+      'const e = new Error("m");\ne.inner = new TypeError("n"); throw e;'
+    );
+
+    expect(error.sandboxError?.properties).toEqual({
+      inner: { name: 'TypeError', message: 'n', stack: 'TypeError: n\n    at <script> (2:10)' }
+    });
+  });
+
   it('leave out properties larger than the budget, counted as serialized', () => {
     const under = runAndCatch(
       maple,
@@ -437,7 +448,9 @@ describe('uncaught errors at the boundary', () => {
     for (const code of [
       'const e = new Error("m"); e.big = "x".repeat(70000); throw e;',
       'const e = new Error("m"); for (let i = 0; i < 20000; i++) e["k" + i] = i; throw e;',
-      'let a = [1]; for (let i = 0; i < 40; i++) a = [a, a]; const e = new Error("m"); e.a = a; throw e;'
+      'let a = [1]; for (let i = 0; i < 40; i++) a = [a, a]; const e = new Error("m"); e.a = a; throw e;',
+      'const e = new Error("m"); e.inner = new Error("x".repeat(40000)); throw e;',
+      'const s = "x".repeat(10000); const e = new Error("m"); for (let i = 0; i < 8; i++) e["k" + i] = new Error(s); throw e;'
     ]) {
       const error = runAndCatch(maple, code);
       expect(error.code).toBe('RUNTIME_ERROR');

@@ -804,8 +804,8 @@ Host error handling tends to serialize and log what it gets, so an uncaught erro
 strictly than a returned one. `name`, `message` and `stack` (and with them `MapleError.message`)
 are cut to 10,000 characters, the last of which is `…`. `properties` is a tree: a value reached
 twice is copied once per reference. It is left out when it holds a cycle, or when the copy costs
-more than 65,536, counting one per value plus the length of every string, key and RegExp source. A
-returned error keeps its full text and properties, cycles included, like any other returned value.
+more than 65,536, counting one per value plus the length of every string, key and RegExp source,
+and of the `name`, `message` and `stack` of every error in it. A returned error keeps its full text and properties, cycles included, like any other returned value.
 
 `line` and `column` point into the source of the program that was executing, which for a nested
 run is the nested source. Messages are written for the person debugging the script, for example

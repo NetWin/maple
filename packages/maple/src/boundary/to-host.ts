@@ -14,7 +14,7 @@ import type { SandboxErrorInfo } from './maple-error.ts';
 
 /**
  * What the copy of an uncaught error's properties may cost: one per value plus each string's
- * length.
+ * length, and for a nested error the length of its name, message and stack.
  */
 export const MAX_ERROR_PROPERTIES_SIZE = 65_536;
 
@@ -201,6 +201,11 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
  * always had. A wrapper's added properties stay behind: a Date or a Map leaves as the host's own.
  */
 function copyError(error: SandboxError, walk: Walk, depth: number): SandboxErrorInfo {
+  // The root's text is cut on its own; a nested error's text is part of the properties
+  if (depth > 0) {
+    charge(walk, error.name.length + error.message.length + error.stack.length);
+  }
+
   const copy: SandboxErrorInfo = error.toInfo();
   walk.copies.set(error, copy);
 
