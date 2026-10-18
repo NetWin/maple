@@ -1,3 +1,22 @@
+## [0.1.1](https://github.com/NetWin/maple/compare/0.1.0...0.1.1) (2026-10-18)
+
+### 📖 Documentation
+
+* add all the badges ([61899d2](https://github.com/NetWin/maple/commit/61899d2562e000eca00d8f174c1f93084e471a7b))
+
+### 🏗 Dependency Updates
+
+* **deps:** update dependencies ([3b869a4](https://github.com/NetWin/maple/commit/3b869a4d153593cfc13a78d7f09a493474539871))
+
+### 📦 Build System
+
+* **maple:** bundle for a neutral platform ([e9d0695](https://github.com/NetWin/maple/commit/e9d069591bd4bda4f9fac78b1f44dd076658c2af))
+
+### 🔄️ Continuous Integration
+
+* install npm globally for OIDC to work correctly ([85b87ec](https://github.com/NetWin/maple/commit/85b87ecb0a7e36e5bc81f14b750c9fda77a802d5))
+* remove NPM_TOKEN as deployment runs with OIDC now ([91475bb](https://github.com/NetWin/maple/commit/91475bb96e9f0755277a646fdedea1c2953e6960))
+
 ## [0.1.0](https://github.com/NetWin/maple/compare/0.0.0...0.1.0) (2026-10-18)
 
 ### 🚀 Features
