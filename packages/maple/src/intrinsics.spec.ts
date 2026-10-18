@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { intrinsic, type Sandbox } from './boundary/host.ts';
+import { exposed, intrinsic, type Sandbox } from './boundary/host.ts';
 import { MapleError } from './boundary/maple-error.ts';
 import { Maple } from './maple.ts';
 import { runAndCatch } from './spec-helpers.ts';
@@ -161,11 +161,17 @@ describe('intrinsics', () => {
       globals: {
         broken: intrinsic(() => {
           throw new Error('bug');
+        }),
+        shown: intrinsic(() => {
+          throw exposed(new Error('bug'));
         })
       }
     });
 
-    expect(maple.run('try { broken(); } catch (e) { return e.message; }').value).toBe('bug');
+    expect(maple.run('try { broken(); } catch (e) { return e.message; }').value).toBe(
+      'A host function failed'
+    );
+    expect(maple.run('try { shown(); } catch (e) { return e.message; }').value).toBe('bug');
   });
 
   it('expose the Sandbox handle with exactly four methods', () => {

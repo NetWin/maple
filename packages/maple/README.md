@@ -68,7 +68,10 @@ with code `PARSE_ERROR` if `code` doesn't parse.
 ### Host functions and `intrinsic(fn)`
 
 Any function in `globals` or `data` is callable from the script. Arguments arrive as copies, the return value is
-copied back, and an exception becomes a catchable error inside the script. A function wrapped in `intrinsic(fn)`
+copied back, and an exception becomes a catchable error inside the script. That error only says
+`A host function failed`, since host messages can hold secrets; throw `exposed(error)` to show the script its
+`name` and `message`. When the error ends the run, the host gets the exception back as `MapleError.cause`, cut to
+10,000 characters. A function wrapped in `intrinsic(fn)`
 instead receives the raw sandbox arguments and a `Sandbox` handle to call script functions or run further code on
 the same budget; see the spec before writing one.
 

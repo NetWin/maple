@@ -77,6 +77,7 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
       line: error.node?.loc?.start.line,
       column: error.node?.loc?.start.column,
       sandboxError,
+      cause: error.value instanceof SandboxError ? error.value.hostError : undefined,
       stats
     });
   }
@@ -93,20 +94,53 @@ function extractError(error: SandboxThrow): SandboxErrorInfo {
 
   if (value instanceof SandboxError) {
     try {
-      return capText(toHostError(value));
+      return extractCappedText(toHostError(value));
     } catch {
-      return capText(value.toInfo());
+      return extractCappedText(value.toInfo());
     }
   }
 
   const message = describeThrown(value);
-  return capText(new SandboxError('Error', message, 'Error', error.frames).toInfo());
+  const info = new SandboxError('Error', message, 'Error', error.frames).toInfo();
+  return extractCappedText(info);
 }
 
-function capText(info: SandboxErrorInfo): SandboxErrorInfo {
+/**
+ * What the host receives as `MapleError.cause` for a host exception: its `name`, `message` and
+ * `stack`, capped like an uncaught error's, and nothing else, since its text and fields can hold
+ * script data. Another thrown value leaves no cause; converting it would run host code.
+ */
+export function capHostError(error: unknown): Error | undefined {
+  if (typeof error === 'string') {
+    return new Error(truncate(error));
+  }
+
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
+
+  // Assigning the full strings copies references only; capText cuts them
+  const copy = new Error(error.message);
+  copy.name = error.name;
+
+  if (typeof error.stack === 'string') {
+    copy.stack = error.stack;
+  } else {
+    delete copy.stack;
+  }
+
+  return extractCappedText(copy);
+}
+
+/** Cuts `name`, `message` and `stack` in place, for an uncaught error and a host error's copy alike. */
+function extractCappedText<T extends { name: string; message: string; stack?: string }>(
+  info: T
+): T {
   info.name = truncate(info.name);
   info.message = truncate(info.message);
-  info.stack = truncate(info.stack);
+  if (info.stack !== undefined) {
+    info.stack = truncate(info.stack);
+  }
   return info;
 }
 

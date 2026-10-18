@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { intrinsic } from './boundary/host.ts';
+import { exposed, intrinsic } from './boundary/host.ts';
 import { Maple } from './maple.ts';
 import { runAndCatch } from './spec-helpers.ts';
 
@@ -325,23 +325,32 @@ describe('escape attempts', () => {
   });
 
   describe('exceptions from host code', () => {
-    it('reach the script as name and message only', () => {
+    it('reach the script as a generic error unless marked, and as name and message only', () => {
       const leaky = new Maple({
         globals: {
           boom: (): never => {
-            const error = new Error('boom');
-            Object.assign(error, { secret: 'host state' });
-            throw error;
+            throw Object.assign(new Error('password=hunter2'), { secret: 'host state' });
+          },
+          shown: (): never => {
+            throw exposed(Object.assign(new Error('boom'), { secret: 'host state' }));
           }
         }
       });
-
-      expect(
+      const probe = (call: string): unknown =>
         leaky.run(
-          'try { boom(); } catch (e) { return [e.message, e.secret, "secret" in e, Object.keys(e)]; }'
-        ).value
-      ).toEqual(['boom', undefined, false, []]);
-      expect(leaky.run('try { boom(); } catch (e) { return e.stack; }').value).toBe(
+          `try { ${call}; } catch (e) { return [e.message, e.secret, "secret" in e, e.hostError, e.cause, Object.keys(e)]; }`
+        ).value;
+
+      expect(probe('boom()')).toEqual([
+        'A host function failed',
+        undefined,
+        false,
+        undefined,
+        undefined,
+        []
+      ]);
+      expect(probe('shown()')).toEqual(['boom', undefined, false, undefined, undefined, []]);
+      expect(leaky.run('try { shown(); } catch (e) { return e.stack; }').value).toBe(
         'Error: boom\n    at <script> (1:6)'
       );
     });

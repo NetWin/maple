@@ -30,8 +30,8 @@ import type {
   WhileStatement
 } from 'acorn';
 import { fromHost } from '../boundary/from-host.ts';
-import type { HostFunction, Intrinsic, Sandbox } from '../boundary/host.ts';
-import { asMapleError, MapleError, MapleErrorCode } from '../boundary/maple-error.ts';
+import { type HostFunction, type Intrinsic, isExposed, type Sandbox } from '../boundary/host.ts';
+import { asMapleError, capHostError, MapleError, MapleErrorCode } from '../boundary/maple-error.ts';
 import { toHost, UnconvertibleValueError } from '../boundary/to-host.ts';
 import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
 import type { MapleRunResult, RunOptions } from '../maple.ts';
@@ -119,6 +119,9 @@ const HOST_ONLY_NAMES: ReadonlySet<string> = new Set([
   'queueMicrotask',
   'requestAnimationFrame'
 ]);
+
+/** What the script sees of a host exception that is not marked with `exposed`. */
+const HOST_FAILURE_MESSAGE = 'A host function failed';
 
 /** Keywords for the error message where the node type alone would read badly. */
 const NODE_NAMES: Partial<Record<Node['type'], string>> = {
@@ -1177,14 +1180,19 @@ export class Evaluator {
     }
   }
 
-  /** What the host threw becomes a sandbox error with name and message; Maple's own errors pass. */
+  /**
+   * What the host threw becomes a sandbox error that says only that the host failed, unless the
+   * host marked it with `exposed`; the host gets it back as `cause`. Maple's own errors pass.
+   */
   private throwHostError(error: unknown, node: Node): never {
     if (error instanceof MapleError || error instanceof SandboxThrow) {
       throw error;
     }
-    const name = error instanceof Error ? error.name : 'Error';
-    const message = error instanceof Error ? error.message : String(error);
-    return this.throwError(name, message, node);
+    const sandboxError = isExposed(error)
+      ? this.createError(error.name, error.message, node)
+      : this.createError('Error', HOST_FAILURE_MESSAGE, node);
+    sandboxError.hostError = capHostError(error);
+    throw new SandboxThrow(sandboxError, node);
   }
 
   /** One line per active script frame, innermost first, with the position each frame is at. */
@@ -1378,7 +1386,11 @@ export class Evaluator {
 
   /** Raises an error the script can catch, with the position of the node that caused it. */
   private throwError(name: string, message: string, node: Node): never {
-    throw new SandboxThrow(new SandboxError(name, message, name, this.stackTrace(node)), node);
+    throw new SandboxThrow(this.createError(name, message, node), node);
+  }
+
+  private createError(name: string, message: string, node: Node): SandboxError {
+    return new SandboxError(name, message, name, this.stackTrace(node));
   }
 
   private failAt(node: Node): Fail {

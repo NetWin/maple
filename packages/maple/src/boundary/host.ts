@@ -37,6 +37,22 @@ export function isIntrinsic(value: unknown): value is Intrinsic {
   return typeof value === 'function' && INTRINSICS.has(value);
 }
 
+const EXPOSED = new WeakSet<Error>();
+
+/**
+ * Marks a host exception whose `name` and `message` the script may see. Without the mark, the
+ * script sees only that a host function failed, since host messages can hold secrets. Returns the
+ * error, for `throw exposed(new RangeError('No such id'))`.
+ */
+export function exposed<T extends Error>(error: T): T {
+  EXPOSED.add(error);
+  return error;
+}
+
+export function isExposed(value: unknown): value is Error {
+  return value instanceof Error && EXPOSED.has(value);
+}
+
 export function isHostFunction(value: unknown): value is HostFunction {
   return typeof value === 'function';
 }

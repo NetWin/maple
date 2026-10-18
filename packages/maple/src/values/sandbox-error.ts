@@ -41,6 +41,12 @@ export class SandboxError extends SandboxObject {
 
   public readonly tag = 'Error';
 
+  /**
+   * For an error that stands for a host exception, a copy of it with its text capped, which the
+   * host receives as `MapleError.cause`.
+   */
+  public hostError: Error | undefined;
+
   protected readonly fixed: FixedProperties<SandboxError> = ERROR_PROPERTIES;
 
   constructor(name: string, message: string, kind: string = name, frames: string = '') {

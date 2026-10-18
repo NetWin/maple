@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { exposed } from './boundary/host.ts';
 import { Maple } from './maple.ts';
 import { runAndCatch } from './spec-helpers.ts';
 
@@ -158,14 +159,45 @@ describe('host functions', () => {
     );
   });
 
-  it('turn host exceptions into catchable sandbox errors with name and message only', () => {
+  it('turn host exceptions into catchable errors that say only that the host failed', () => {
     const maple = new Maple({
       globals: {
         boom: (): never => {
-          throw new RangeError('too far');
+          throw new RangeError('secret 10.0.3.7');
         },
         text: (): never => {
-          throw 'plain';
+          throw 'secret';
+        }
+      }
+    });
+
+    for (const call of ['boom()', 'text()']) {
+      expect(
+        maple.run(
+          `try { ${call}; } catch (e) { return [e.name, e.message, e instanceof RangeError, e instanceof Error, e.stack]; }`
+        ).value
+      ).toEqual([
+        'Error',
+        'A host function failed',
+        false,
+        true,
+        'Error: A host function failed\n    at <script> (1:6)'
+      ]);
+    }
+    const error = runAndCatch(maple, 'boom();');
+    expect(error).toMatchObject({
+      code: 'RUNTIME_ERROR',
+      message: 'A host function failed',
+      sandboxError: { name: 'Error', message: 'A host function failed' }
+    });
+    expect(JSON.stringify(error.sandboxError)).not.toContain('secret');
+  });
+
+  it('show the script the name and message of an exception marked with exposed', () => {
+    const maple = new Maple({
+      globals: {
+        boom: (): never => {
+          throw exposed(new RangeError('too far'));
         }
       }
     });
@@ -178,15 +210,72 @@ describe('host functions', () => {
     expect(maple.run('try { boom(); } catch (e) { return e.stack; }').value).toBe(
       'RangeError: too far\n    at <script> (1:6)'
     );
-    expect(maple.run('try { text(); } catch (e) { return [e.name, e.message]; }').value).toEqual([
-      'Error',
-      'plain'
-    ]);
     expect(runAndCatch(maple, 'boom();')).toMatchObject({
       code: 'RUNTIME_ERROR',
       message: 'too far',
       sandboxError: { name: 'RangeError', message: 'too far' }
     });
+  });
+
+  it('hand the host exception back as cause, a copy with only name, message and stack', () => {
+    const original = Object.assign(new RangeError('secret 10.0.3.7'), { code: 'E_SECRET' });
+    const maple = new Maple({
+      globals: {
+        boom: (): never => {
+          throw original;
+        },
+        shown: (): never => {
+          throw exposed(original);
+        }
+      }
+    });
+
+    for (const code of ['boom();', 'shown();', 'try { boom(); } catch (e) { throw e; }']) {
+      const cause = runAndCatch(maple, code).cause;
+      expect(cause).toBeInstanceOf(Error);
+      expect(cause).not.toBe(original);
+      expect(cause).toMatchObject({
+        name: 'RangeError',
+        message: 'secret 10.0.3.7',
+        stack: original.stack
+      });
+      expect(cause).not.toHaveProperty('code');
+    }
+    expect(runAndCatch(maple, 'try { boom(); } catch (e) { throw new Error("mine"); }').cause).toBe(
+      undefined
+    );
+  });
+
+  it('cap the cause like an uncaught error, and leave it out for a thrown non-string', () => {
+    const maple = new Maple({
+      globals: {
+        long: (): never => {
+          throw new RangeError('x'.repeat(100_000));
+        },
+        text: (): never => {
+          throw 'y'.repeat(100_000);
+        },
+        object: (): never => {
+          throw { toString: (): string => 'z'.repeat(100_000) };
+        },
+        stackless: (): never => {
+          const error = new Error('m');
+          delete error.stack;
+          throw error;
+        }
+      }
+    });
+
+    expect(runAndCatch(maple, 'long();').cause).toMatchObject({
+      name: 'RangeError',
+      message: `${'x'.repeat(9_999)}…`,
+      stack: expect.stringMatching(/^RangeError: x{9987}…$/)
+    });
+    expect(runAndCatch(maple, 'text();').cause).toMatchObject({
+      message: `${'y'.repeat(9_999)}…`
+    });
+    expect(runAndCatch(maple, 'object();').cause).toBe(undefined);
+    expect(runAndCatch(maple, 'stackless();').cause).not.toHaveProperty('stack');
   });
 
   it('cost one operation per call', () => {

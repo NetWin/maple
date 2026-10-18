@@ -122,6 +122,12 @@ Parses source text with Maple's parser settings and returns the ESTree `Program`
 Marks a function as an intrinsic (see [Intrinsics](#intrinsics)). Without the mark, a function in
 `globals` is an ordinary host function.
 
+### `exposed<T extends Error>(error: T): T`
+
+Marks a host exception whose `name` and `message` the script may see, and returns it, for
+`throw exposed(new RangeError('No such id'))` (see [Errors and budget](#errors-and-budget)).
+Without the mark, the script sees only that a host function failed.
+
 ### `MapleError`
 
 See [Errors](#errors).
@@ -643,11 +649,21 @@ promise has a bug, and that must not be silent, so the script cannot catch it ei
 
 ### Errors and budget
 
-An exception thrown by a host function becomes a sandbox error with `name` and `message` taken
-from the exception (or `'Error'` and `String(value)` for non-errors) and can be caught by the
-script; `instanceof` follows the name, so a host `RangeError` is a `RangeError` to the script.
-Nothing else of the host exception, in particular no `stack` or `cause`, enters the sandbox; the
-error's `stack` is the script's own call stack.
+An exception thrown by a host function becomes a sandbox error the script can catch. Host messages
+can hold secrets such as addresses or credentials, so by default it is an `Error` with the message
+`A host function failed`, whatever was thrown. The host opts in per exception with `exposed`, which
+marks an `Error` and returns it:
+
+```ts
+throw exposed(new RangeError('No such id'));
+```
+
+An exposed exception reaches the script with its `name` and `message`; `instanceof` follows the
+name, so an exposed `RangeError` is a `RangeError` to the script. Nothing else of the host
+exception, in particular no `stack`, `cause` or other property, enters the sandbox, exposed or not;
+the error's `stack` is the script's own call stack. When the error ends the run, also after the
+script caught and rethrew it, `MapleError.cause` holds a copy of the host exception (see
+[Errors](#errors)).
 
 A host call costs what any call costs: its call expression and its arguments (see
 [Limits](#limits)). The work and the time inside the host function are not measured.
@@ -681,7 +697,7 @@ interface Sandbox {
   nested program is one more call level and appears as `<nested>` in stack traces. Misusing
   `run` (data that is not an object) throws a plain `TypeError` to the intrinsic.
 - An exception the intrinsic itself throws is treated like a host function's: it becomes a
-  catchable sandbox error.
+  catchable sandbox error that says only `A host function failed`, unless marked with `exposed`.
 - Errors from `call` and `run` arrive in the intrinsic as `MapleError`s and may be caught there. A
   sandbox error that passes through an intrinsic uncaught is still the same sandbox error when it
   reaches the calling script, so the script's `try` / `catch` works across an intrinsic. A
@@ -768,7 +784,10 @@ class MapleError extends Error {
     stack: string;
     properties?: Record<string, unknown>;
   };
-  /** The host exception, for INTERNAL_ERROR. */
+  /**
+   * The host exception, for INTERNAL_ERROR; for RUNTIME_ERROR, a capped copy of the host function's
+   * exception the uncaught error stands for.
+   */
   readonly cause?: unknown;
   /** Operations and depth consumed up to the failure; absent for PARSE_ERROR. */
   readonly stats?: MapleRunStats;
@@ -806,6 +825,12 @@ are cut to 10,000 characters, the last of which is `…`. `properties` is a tree
 twice is copied once per reference. It is left out when it holds a cycle, or when the copy costs
 more than 65,536, counting one per value plus the length of every string, key and RegExp source,
 and of the `name`, `message` and `stack` of every error in it. A returned error keeps its full text and properties, cycles included, like any other returned value.
+
+A host exception's text can carry script data too, so the `cause` of a `RUNTIME_ERROR` that stands
+for one is a new `Error` with only the exception's `name`, `message` and `stack`, each cut the same
+way. Its own `stack` is left out when the exception had none. A thrown string becomes the copy's
+message, and any other thrown non-error leaves `cause` undefined, since converting it would run
+host code.
 
 `line` and `column` point into the source of the program that was executing, which for a nested
 run is the nested source. Messages are written for the person debugging the script, for example

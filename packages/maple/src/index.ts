@@ -1,5 +1,11 @@
 export type { MapleRunStats } from './evaluator/budget.ts';
-export { intrinsic, type HostFunction, type Intrinsic, type Sandbox } from './boundary/host.ts';
+export {
+  exposed,
+  intrinsic,
+  type HostFunction,
+  type Intrinsic,
+  type Sandbox
+} from './boundary/host.ts';
 export {
   MapleError,
   MapleErrorCode,
