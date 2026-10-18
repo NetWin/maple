@@ -182,6 +182,20 @@ describe('host functions', () => {
     );
   });
 
+  it('report a result nested deeper than 1000 levels as an internal error', () => {
+    let deep: unknown = [];
+    for (let i = 0; i < 20_000; i++) {
+      deep = [deep];
+    }
+    const maple = new Maple({ globals: { f: (): unknown => deep } });
+
+    const error = runAndCatch(maple, 'try { f(); } catch (e) { return "caught"; }');
+    expect(error.code).toBe('INTERNAL_ERROR');
+    expect(error.message).toMatch(
+      /^f returned a value the sandbox cannot hold: Unsupported value at f\(\)(\[0\]){1001}: nested deeper than 1000 levels$/
+    );
+  });
+
   it('turn host exceptions into catchable errors that say only that the host failed', () => {
     const maple = new Maple({
       globals: {

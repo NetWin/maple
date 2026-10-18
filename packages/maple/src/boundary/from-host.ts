@@ -1,4 +1,5 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
+import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { toArrayIndex } from '../values/members.ts';
 import { NativeFunction, type NativeImplementation } from '../values/native.ts';
@@ -22,7 +23,7 @@ interface Settings {
 
 /**
  * Copies a host value into the sandbox's value model. Throws a `TypeError` naming the path of
- * the first value the model does not cover.
+ * the first value the model does not cover, or that is nested deeper than `MAX_NESTING`.
  */
 export function fromHost(
   value: unknown,
@@ -33,15 +34,19 @@ export function fromHost(
     freeze: options.freeze ?? true,
     functions: options.functions ?? true
   };
-  return convert(value, path, new Map(), settings);
+  return convert(value, path, new Map(), settings, 0);
 }
 
 function convert(
   value: unknown,
   path: string,
   copies: Map<object, object>,
-  settings: Settings
+  settings: Settings,
+  depth: number
 ): unknown {
+  if (depth > MAX_NESTING) {
+    throw unsupported(path, `nested deeper than ${MAX_NESTING} levels`);
+  }
   if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
     if (typeof value === 'symbol' || typeof value === 'bigint') {
       throw unsupported(path, typeof value);
@@ -77,7 +82,7 @@ function convert(
     copies.set(value, copy);
     for (const key of Object.keys(value)) {
       const keyPath = toArrayIndex(key) === undefined ? `${path}.${key}` : `${path}[${key}]`;
-      defineOwn(copy, key, convert(Reflect.get(value, key), keyPath, copies, settings));
+      defineOwn(copy, key, convert(Reflect.get(value, key), keyPath, copies, settings, depth + 1));
     }
     return freeze ? Object.freeze(copy) : copy;
   }
@@ -86,7 +91,7 @@ function convert(
     const copy: Record<string, unknown> = {};
     copies.set(value, copy);
     for (const key of Object.keys(value)) {
-      defineOwn(copy, key, convert(value[key], `${path}.${key}`, copies, settings));
+      defineOwn(copy, key, convert(value[key], `${path}.${key}`, copies, settings, depth + 1));
     }
     return freeze ? Object.freeze(copy) : copy;
   }
@@ -125,8 +130,8 @@ function convert(
     for (const [key, entry] of value) {
       const keyPath = `${path}[${typeof key === 'string' ? JSON.stringify(key) : String(key)}]`;
       wrapper.map.set(
-        convert(key, `${keyPath} (key)`, copies, settings),
-        convert(entry, keyPath, copies, settings)
+        convert(key, `${keyPath} (key)`, copies, settings, depth + 1),
+        convert(entry, keyPath, copies, settings, depth + 1)
       );
     }
     return wrapper;
@@ -135,7 +140,7 @@ function convert(
     const wrapper = new SetWrapper(new Set(), freeze);
     copies.set(value, wrapper);
     for (const [index, entry] of [...value].entries()) {
-      wrapper.set.add(convert(entry, `${path}{${index}}`, copies, settings));
+      wrapper.set.add(convert(entry, `${path}{${index}}`, copies, settings, depth + 1));
     }
     return wrapper;
   }

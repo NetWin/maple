@@ -286,7 +286,9 @@ accepts:
   They may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
 
 Anything else (class instances, typed arrays, boxed primitives, symbols, promises) throws a plain
-`TypeError` before the run starts. Nothing is flattened silently.
+`TypeError` before the run starts. Nothing is flattened silently. So does a value nested deeper
+than 1000 levels, the same limit as for the [output](#output), instead of overflowing the host
+stack: `Unsupported value at data.v[0]…: nested deeper than 1000 levels`.
 
 There is no serialization step, so a large `data` object costs one copy and no intermediate
 string. The converted copies are frozen (see [Input](#input)); the host's own objects are never
@@ -645,8 +647,8 @@ anything executable.
 The return value goes through the [input conversion](#input-conversion) walk with three
 differences: the copy is not frozen, because the script owns it; functions are not accepted; and a
 violation throws `INTERNAL_ERROR` (`fn returned a value the sandbox cannot hold: …`, with the
-path) instead of a `TypeError`. A host function that returns a function, a class instance or a
-promise has a bug, and that must not be silent, so the script cannot catch it either.
+path) instead of a `TypeError`. A host function that returns a function, a class instance, a
+promise or a value nested deeper than 1000 levels has a bug, and that must not be silent, so the script cannot catch it either.
 
 ### Errors and budget
 

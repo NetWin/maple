@@ -137,6 +137,29 @@ describe('fromHost', () => {
     );
   });
 
+  it('rejects values nested deeper than 1000 levels, as toHost does', () => {
+    // A Map's key is one level down like its value and converted first, so it is the one named
+    const builders: Array<[string, string, (inner: unknown) => unknown]> = [
+      ['[0]', '', (inner) => [inner]],
+      ['.a', '', (inner) => ({ a: inner })],
+      ['[1]', ' (key)', (inner) => new Map([[1, inner]])],
+      ['{0}', '', (inner) => new Set([inner])]
+    ];
+
+    for (const [segment, suffix, wrap] of builders) {
+      let value: unknown = 0;
+      for (let i = 0; i < 1000; i++) {
+        value = wrap(value);
+      }
+      expect(() => fromHost(value)).not.toThrow();
+      expect(() => fromHost(wrap(value))).toThrow(
+        new TypeError(
+          `Unsupported value at value${segment.repeat(1001)}${suffix}: nested deeper than 1000 levels`
+        )
+      );
+    }
+  });
+
   it('rejects a RegExp whose lastIndex is not a number', () => {
     expect(() => fromHost({ r: withLastIndex({ n: 1 }) }, 'data')).toThrow(
       new TypeError('Unsupported value at data.r.lastIndex: Object')

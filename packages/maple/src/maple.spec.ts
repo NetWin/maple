@@ -156,6 +156,23 @@ describe('Maple.run', () => {
       expect(() => maple.run('return 1;', '[1]')).toThrow(TypeError);
       expect(() => maple.run('return 1;', 'not json')).toThrow(TypeError);
     });
+
+    it('rejects data nested deeper than 1000 levels with a plain TypeError', () => {
+      const levels = 20_000;
+      let deep: unknown = [];
+      for (let i = 0; i < levels; i++) {
+        deep = [deep];
+      }
+      // Built by hand, since the host's own JSON.stringify overflows at this depth
+      const json = `{"v":${'['.repeat(levels + 1)}${']'.repeat(levels + 1)}}`;
+
+      expect(() => maple.run('return 1;', { v: deep })).toThrow(/nested deeper than 1000 levels$/);
+      expect(() => maple.run('return 1;', json)).toThrow(/nested deeper than 1000 levels$/);
+      expect(() => maple.run('return 1;', json)).toThrow(TypeError);
+      expect(() => new Maple({ globals: { v: deep } })).toThrow(
+        /^Unsupported value at globals\.v\[0\].*: nested deeper than 1000 levels$/
+      );
+    });
   });
 });
 
