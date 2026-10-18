@@ -1,4 +1,4 @@
-# @netwin/maple
+# 🍁 Maple
 
 A secure JavaScript interpreter written in TypeScript. Maple parses a string of JavaScript using [acorn](https://github.com/acornjs/acorn) and interprets it itself
 instead of handing it to `eval`, so a script only ever sees the values you pass in.
