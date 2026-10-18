@@ -211,12 +211,12 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
  * a Date or a Map leaves as the host's own.
  */
 function copyError(error: SandboxError, walk: Walk, depth: number): SandboxErrorInfo {
+  const copy: SandboxErrorInfo = error.toInfo();
   // The root's text is cut on its own; a nested error's text is part of the properties
   if (depth > 0) {
-    charge(walk, error.name.length + error.message.length + error.stack.length);
+    charge(walk, copy.name.length + copy.message.length + copy.stack.length);
   }
 
-  const copy: SandboxErrorInfo = error.toInfo();
   walk.copies.set(error, copy);
 
   const keys = error.properties.enumerableKeys().filter((key) => key !== 'cause');

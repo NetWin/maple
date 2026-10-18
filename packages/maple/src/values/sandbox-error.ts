@@ -2,7 +2,7 @@ import type { Node } from 'acorn';
 import { type Primitive, toString } from './coercion.ts';
 import { type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
-/** `name` and `message` take any value as a string. */
+/** `name` and `message` keep any value, as in JavaScript; converting the error reads them. */
 const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
   [
     'name',
@@ -10,7 +10,7 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
       get: (error) => error.name,
       configurable: true,
       set: (error, value) => {
-        error.name = toString(value);
+        error.name = value;
       }
     }
   ],
@@ -20,7 +20,7 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
       get: (error) => error.message,
       configurable: true,
       set: (error, value) => {
-        error.message = toString(value);
+        error.message = value;
       }
     }
   ],
@@ -29,9 +29,11 @@ const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
 
 /** An error object as the script sees it: name, message and a stack of script positions. */
 export class SandboxError extends SandboxObject {
-  public name: string;
+  /** What the script assigned, or the constructor's name. */
+  public name: unknown;
 
-  public message: string;
+  /** What the script assigned, or the constructor's message. */
+  public message: unknown;
 
   /** The constructor it came from, which `instanceof` checks; `name` is only the display. */
   public readonly kind: string;
@@ -58,14 +60,46 @@ export class SandboxError extends SandboxObject {
     this.stack = frames === '' ? header : `${header}\n${frames}`;
   }
 
-  /** What JavaScript's `Error.prototype.toString` gives: `name: message`, or `name` alone. */
+  /**
+   * What JavaScript's `Error.prototype.toString` gives: an `undefined` name reads as `Error` and an
+   * `undefined` message as empty, and an empty part leaves out the `: `. Converting an assigned
+   * value can throw, as it can in JavaScript.
+   */
   public override toPrimitive(): Primitive {
-    return this.message === '' ? this.name : `${this.name}: ${this.message}`;
+    const name = this.name === undefined ? 'Error' : toString(this.name);
+    const message = this.message === undefined ? '' : toString(this.message);
+    if (name === '') {
+      return message;
+    }
+    if (message === '') {
+      return name;
+    }
+    return `${name}: ${message}`;
   }
 
   /** The fixed part of the error as the host receives it; the boundary adds `properties`. */
   public toInfo(): { name: string; message: string; stack: string } {
-    return { name: this.name, message: this.message, stack: this.stack };
+    return {
+      name: hostText(this.name, 'Error'),
+      message: hostText(this.message, ''),
+      stack: this.stack
+    };
+  }
+}
+
+/**
+ * `name` or `message` as text for the host, converted like `toPrimitive` does. A value that cannot
+ * be converted gives the fallback, as `undefined` does, since a conversion failing at the boundary
+ * must not replace the error being reported.
+ */
+function hostText(value: unknown, fallback: string): string {
+  if (value === undefined) {
+    return fallback;
+  }
+  try {
+    return toString(value);
+  } catch {
+    return fallback;
   }
 }
 

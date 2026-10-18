@@ -63,6 +63,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `[3, , undefined, 1].sort()`: Maple leaves the hole last, js-interpreter before `undefined`           | Holes sort after `undefined`, as in JavaScript.                                                                           |
 | `new Error('m', { cause: 1 }).cause`: Maple gives `1`, js-interpreter `undefined`                     | The `cause` option is ES2022; js-interpreter follows ES5 and ignores the second argument.                                 |
 | `'abc'.split(undefined, 0)`: Maple gives `[]`, js-interpreter `['abc']`                               | A limit of 0 gives no parts, as in JavaScript (and ES5); js-interpreter checks the separator first.                       |
+| An error with `name` set to `''` or `undefined`: Maple prints `oops` and `Error: x`                   | As in JavaScript (and ES5); js-interpreter joins `name` and `message` with `: ` regardless.                               |
 
 ### Maple departs from JavaScript
 

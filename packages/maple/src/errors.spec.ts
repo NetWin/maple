@@ -597,3 +597,74 @@ describe('the cause option', () => {
     expect(seen).toEqual([expect.objectContaining({ message: 'm', cause: [1, 2] })]);
   });
 });
+
+describe('name and message as assigned', () => {
+  it('keep any value and convert as Error.prototype.toString does', () => {
+    expect(run('const e = new Error("oops"); e.name = ""; return [String(e), e.name];')).toEqual([
+      'oops',
+      ''
+    ]);
+    expect(
+      run(
+        'const e = new TypeError("x"); e.name = undefined; return [String(e), e.name === undefined];'
+      )
+    ).toEqual(['Error: x', true]);
+    expect(
+      run(
+        'const e = new Error("x"); e.message = undefined; return [String(e), e.message === undefined];'
+      )
+    ).toEqual(['Error', true]);
+    expect(run('const e = new Error("x"); e.name = 5; return [typeof e.name, String(e)];')).toEqual(
+      ['number', '5: x']
+    );
+    expect(run('const e = new Error(""); e.name = ""; return String(e);')).toBe('');
+    expect(run('const e = new Error("oops"); e.name = ""; return [e.toString(), `${e}`];')).toEqual(
+      ['oops', 'oops']
+    );
+  });
+
+  it('read back what was assigned, and leave the stack as it was created', () => {
+    expect(
+      run(
+        'const o = { n: 1 }; const e = new Error("m"); e.name = o; return [e.name === o, e.stack];'
+      )
+    ).toEqual([true, 'Error: m\n    at <script> (1:30)']);
+  });
+
+  it('throw where JavaScript cannot convert them', () => {
+    expect(
+      run(
+        'const e = new Error("m"); e.name = Object.groupBy([], (x) => x); try { String(e); } catch (x) { return x.message; }'
+      )
+    ).toBe('Cannot convert object to primitive value');
+  });
+
+  it('reach the host as strings, with Error and an empty message for what does not convert', () => {
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); e.name = undefined; throw e;').sandboxError
+        ?.name
+    ).toBe('Error');
+
+    const noMessage = runAndCatch(
+      maple,
+      'const e = new Error("m"); e.message = undefined; throw e;'
+    );
+    expect(noMessage.sandboxError?.message).toBe('');
+    expect(noMessage.message).toBe('');
+
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); e.name = 5; throw e;').sandboxError?.name
+    ).toBe('5');
+
+    const unconvertible = runAndCatch(
+      maple,
+      'const e = new Error("m"); e.name = Object.groupBy([], (x) => x); throw e;'
+    );
+    expect(unconvertible.code).toBe('RUNTIME_ERROR');
+    expect(unconvertible.sandboxError).toMatchObject({ name: 'Error', message: 'm' });
+
+    expect(
+      run('const e = new Error("m"); e.name = undefined; e.message = 7; return e;')
+    ).toMatchObject({ name: 'Error', message: '7' });
+  });
+});

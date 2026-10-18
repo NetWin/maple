@@ -22,6 +22,16 @@ describe('Error', () => {
   });
 });
 
+describe('Error.prototype.toString', () => {
+  it('converts assigned values as JavaScript does', () => {
+    expect(
+      parity(
+        "var a = new Error('x'); a.message = undefined; var b = new Error('x'); b.name = 5; var c = new Error(''); c.name = ''; return [String(a), a.message === undefined, typeof b.name, String(b), String(c)];"
+      )
+    ).toEqual(['Error', true, 'number', '5: x', '']);
+  });
+});
+
 describe('Error.prototype.message', () => {
   it('Error without a message has an empty message', () => {
     expect(parity("var e = new Error(); return [e.message, e.message === ''];")).toEqual([

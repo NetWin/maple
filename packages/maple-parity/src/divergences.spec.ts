@@ -162,6 +162,18 @@ describe('Array.prototype.toLocaleString', () => {
   });
 });
 
+describe('Error.prototype.toString', () => {
+  // ES5 15.11.4.4 too: an empty name gives the message alone and an undefined one reads as Error;
+  // js-interpreter joins them with ': ' regardless
+  it('converts an empty or undefined name', () => {
+    expect(
+      followsJavaScript(
+        "var a = new Error('oops'); a.name = ''; var b = new TypeError('x'); b.name = undefined; return [String(a), String(b)];"
+      )
+    ).toEqual({ maple: ['oops', 'Error: x'], jsInterpreter: [': oops', 'undefined: x'] });
+  });
+});
+
 describe('Error:cause', () => {
   // ES2022 installs options.cause on the error; js-interpreter follows ES5 and ignores options
   it('takes the cause option', () => {

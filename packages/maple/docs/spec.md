@@ -591,15 +591,17 @@ never leaves the sandbox: at the output boundary it becomes `undefined`.
 `new Error(message?, options?)` and its six subtypes create sandbox error objects with own `name`,
 `message` and `stack` properties. When `options` is an object with a `cause` property, own or
 inherited, the error gets an own `cause` with its value, writable and configurable but not
-enumerable, as in JavaScript. `name` and `message`
-can be assigned and `stack` is read-only. Any other property the script adds behaves like one of a
+enumerable, as in JavaScript. `name` and `message` keep any value assigned to them, as in
+JavaScript, and `stack` is read-only. Any other property the script adds behaves like one of a
 plain object: `e.code = 123` shows up in `Object.keys(e)`, `for...in`, spread and `JSON.stringify`,
 while `name`, `message`, `stack` and a `cause` from `options` do not, as in JavaScript. An error
 that leaves the run carries them as `properties`, and its `cause` on its own (see
 [Output](#output)).
 `stack` lists the script's own frames and nothing of the host, innermost first, in the familiar
 shape, and is fixed when the error is created. `toString()` returns the same `Name: message` text
-as converting the error to a string:
+as converting the error to a string, following `Error.prototype.toString`: an `undefined` name
+reads as `Error`, an `undefined` message as empty, and an empty name or message leaves out the
+`: `:
 
 ```
 TypeError: Cannot read properties of null (reading 'x')
@@ -770,8 +772,10 @@ host's responsibility.
   `properties` holding what the script added, converted like any other value. `properties` is
   absent when the script added nothing. An error with an own `cause`, from `options` or
   assigned, carries it as `cause`, converted the same way, also when it is `undefined`, and never
-  in `properties` too. The properties a script added to a wrapper stay behind,
-  since a native `Date` or `Map` takes their place.
+  in `properties` too. `name` and `message` arrive as strings, converted as `toString()` reads
+  them; `undefined`, or a value that cannot be converted, gives `Error` and an empty message. The
+  properties a script added to a wrapper stay behind, since a native `Date` or `Map` takes their
+  place.
 
 A value nested deeper than 1000 levels is refused instead of overflowing the host stack. The script
 built it, so the run ends with `RUNTIME_ERROR` and a `RangeError` sandbox error naming the limit
