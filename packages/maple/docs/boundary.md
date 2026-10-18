@@ -1,0 +1,94 @@
+# Boundary
+
+Values cross between host and script in four places, and always as copies: the input (`data` and
+globals), the arguments of a host function, its return value, and the result of the run.
+
+| Value                          | Into the run       | To a host function | From a host function | Out of the run  |
+| ------------------------------ | ------------------ | ------------------ | -------------------- | --------------- |
+| Primitive                      | as is              | as is              | as is                | as is           |
+| Plain object, array            | frozen copy        | fresh copy         | mutable copy         | fresh copy      |
+| `Date`, `RegExp`, `Map`, `Set` | read-only wrapper  | fresh native       | mutable wrapper      | fresh native    |
+| Sandbox error                  | –                  | plain object       | –                    | plain object    |
+| Function                       | host function      | `TypeError`        | `INTERNAL_ERROR`     | `undefined`     |
+| Iterator                       | –                  | `TypeError`        | –                    | `undefined`     |
+| Anything else                  | `TypeError` before | –                  | `INTERNAL_ERROR`     | –               |
+| Value reached twice            | shared             | shared             | shared               | shared          |
+| Cycle                          | kept               | `TypeError`        | kept                 | kept            |
+| Nested deeper than 1000 levels | `TypeError` before | `RangeError`       | `INTERNAL_ERROR`     | `RUNTIME_ERROR` |
+| Key named `__proto__`          | plain key          | dropped            | plain key            | dropped         |
+
+- "Anything else" is a class instance, a typed array, a boxed primitive, a symbol, a promise or a
+  host `Error`. Nothing is flattened silently.
+- "`TypeError` before" is a plain `TypeError` thrown by `run` or `new Maple` before the run starts,
+  naming the path to the value, such as `Unsupported value at data.a.b: Thing`.
+- A `TypeError` or `RangeError` on the way to a host function is thrown in the script at the call,
+  so the script can catch it. The host function is not called.
+- `INTERNAL_ERROR` from a host function's return value means the host function has a bug, so the
+  script cannot catch it.
+- Copies are built from own enumerable properties, so an array keeps its holes and named
+  properties such as the `index` of a match result. Primitives keep `undefined`, `NaN`, `Infinity`
+  and `-0`: this is a value copy, not a serialization.
+
+## Into the run
+
+The global scope is composed from three layers, a later one shadowing an earlier one, on top of the
+[standard globals](builtins.md#standard-globals):
+
+1. Instance globals (`new Maple({ globals })`), converted once at construction
+2. Run globals (`run(code, data, { globals })`), converted once per run
+3. The top-level keys of `data`, converted once per run
+
+One instance can serve many runs: what every run needs goes into the instance globals, what
+belongs to one run into its run globals or `data`:
+
+```ts
+const maple = new Maple({
+  globals: {
+    currency: 'EUR',
+    format: (amount: number, currency: string) => `${amount} ${currency}`
+  }
+});
+
+maple.run('return format(total, currency);', { total: 12 }).value;
+// '12 EUR'
+
+maple.run('return format(total, currency);', { total: 12 }, { globals: { currency: 'USD' } }).value;
+// '12 USD'
+```
+
+Every global binding is read-only: assigning to one throws a `TypeError`. A script may declare its
+own `var`, `let`, `const` or function with the same name, which shadows the global for the whole
+script.
+
+A function may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
+It becomes a host function, or an intrinsic if it carries the `intrinsic` mark.
+
+Every object and array of the copy is frozen, so the script can never observe mutable input: writes,
+deletes and mutating methods throw a `TypeError`. Wrappers are read-only as well, so `Map.set`,
+`Set.add`, the Date setters, assigning `lastIndex` and adding a property throw a `TypeError`. A
+read-only regexp matches on a fresh copy every time, so its `lastIndex` stays `0`. A copy the
+script makes (`new Map(input)`, `new Date(input)`, `new RegExp(input)`, `[...input]`) is its own to
+change.
+
+## Host function calls
+
+Arguments are copied into normal host objects, so the host function cannot mutate anything the
+script sees, and the script cannot hand it anything executable. A sandbox error arrives as the plain
+object described below.
+
+The return value is copied like the input, except that the copy is not frozen, because the script
+owns it, and functions are not accepted.
+
+## Out of the run
+
+`value` is a fresh copy of the script's return value, never a reference into the sandbox, and is
+safe to pass to `JSON.stringify`. `undefined` at the top level is returned as `undefined`.
+
+A sandbox error becomes a plain object with `name`, `message` and `stack`, and with `properties`
+holding what the script added to it, absent when it added nothing. An error with an own `cause`
+carries it as `cause`. `name` and `message` arrive as strings, as `toString()` reads them. The
+properties a script added to a wrapper stay behind, since a native `Date` or `Map` takes its place.
+
+A result nested deeper than 1000 levels ends the run with `RUNTIME_ERROR` and a `RangeError`
+without a position, since the program has already finished. In a nested run, the intrinsic receives
+it like any other script error.

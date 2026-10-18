@@ -19,15 +19,17 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
   `Function`, and no escape through prototypes (`constructor`, `__proto__`). Never evaluate a script with the host
   engine. When in doubt, reject the code. Security means isolation: capping a script's CPU time or memory is not a
   goal for now, so a script that exhausts them is not a security bug.
-- **JavaScript is the reference.** What Maple supports behaves as the ECMAScript specification has it, with V8's
-  messages; check Node when in doubt. Where security requires otherwise, document the difference in `docs/spec.md`.
+- **JavaScript is the reference.** What Maple supports behaves as the ECMAScript specification has it, with V8-like
+  messages; check Node when in doubt. Where security requires otherwise, document the difference in
+  `docs/divergences.md`.
 - Scripts return their result with an explicit `return`. The completion value of the last expression is not used.
 - Library code must run on Node >= 22 and in browsers and web workers alike, so don't use Node or DOM APIs.
 - `acorn` is a peer dependency. Don't add runtime dependencies without discussing it first.
 - Use the `.ts` extension in relative imports (`./scope.ts`).
 - Put tests next to the code as `*.spec.ts` (Vitest). Every interpreter feature and every rejected escape needs a test.
   Specs that exercise a whole language chapter through `Maple.run` live in the directory whose behaviour they cover.
-- `docs/spec.md` is the contract; change it in the same commit as the behaviour.
+- `docs/` is the contract, indexed in `docs/README.md`; change it in the same commit as the behaviour. Contributor
+  notes such as adding a built-in are in `CONTRIBUTING.md`.
 
 ## Playground (`apps/maple-playground`)
 

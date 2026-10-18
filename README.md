@@ -11,8 +11,16 @@ untrusted code in a worker you can terminate if you need that.
 ```ts
 import { Maple } from '@netwin/maple';
 
-const result = new Maple().run('return "Hello " + name;', { name: 'Steve' });
-// result.value === 'Hello Steve'
+const maple = new Maple();
+
+const code = `
+  const message = "Hello " + name;
+  return message;
+`;
+
+const result = maple.run(code, { name: 'Steve' });
+// result.value === "Hello Steve"
+// result.stats === { ops: number, maxDepth: number, durationMs: number }
 ```
 
 ## Repository layout

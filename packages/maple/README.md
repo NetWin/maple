@@ -47,7 +47,7 @@ come back as native instances; functions never leave the sandbox and become `und
 Creates a sandbox configuration. `globals` holds bindings every run of this instance can read, such as constants or
 host functions. `maxOps` (default `1_000_000`) bounds the operations of one run, `maxDepth` (default `100`) bounds
 call nesting. Exceeding either aborts the run with a `MapleError` of code `LIMIT_EXCEEDED`. They stop runaway
-scripts such as infinite loops; they are not a CPU or memory limit, since work inside built-ins is not counted.
+scripts such as infinite loops; they are not a CPU or memory limit.
 
 ```ts
 const maple = new Maple({ globals: { upper: (s: string) => s.toUpperCase() }, maxOps: 10_000 });
@@ -74,7 +74,7 @@ as `MapleError.cause`. A function wrapped in `intrinsic(fn)` instead receives th
 and a `Sandbox` handle to call script functions or run further code on the same budget.
 
 The complete contract, including the supported language subset and all error codes, is in
-[docs/spec.md](docs/spec.md).
+[docs](docs/README.md).
 
 ## License
 
