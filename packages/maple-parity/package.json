@@ -11,6 +11,6 @@
   },
   "devDependencies": {
     "@netwin/js-interpreter": "^2.6.1",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.3"
   }
 }
