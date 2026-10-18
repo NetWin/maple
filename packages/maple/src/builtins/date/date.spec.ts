@@ -175,9 +175,9 @@ describe('legacy Date methods', () => {
     expect(run('const d = new Date(2024, 0, 1); return d.setYear("x");')).toBeNaN();
     expect(
       run(
-        'const d = new Date(NaN); d.setYear(2000); return [d.getFullYear(), d.getMonth(), d.getDate()];'
+        'const d = new Date(NaN); d.setYear(2000); return [d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getTime() === new Date(2000, 0, 1).getTime()];'
       )
-    ).toEqual([2000, 0, 1]);
+    ).toEqual([2000, 0, 1, 0, true]);
     expect(run('return new Date(0).toGMTString();')).toBe('Thu, 01 Jan 1970 00:00:00 GMT');
     expect(
       runAndCatch(maple, 'when.setYear(1);', { when: new Date(0) }).sandboxError?.message

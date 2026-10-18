@@ -5,7 +5,7 @@ import { asMutableOrThrow } from '../../../values/wrappers/wrapper.ts';
 
 /**
  * The legacy `setYear`, which the host's typings leave out: two-digit years mean 19xx, and an
- * invalid date starts over from the epoch in local time.
+ * invalid date starts over from local midnight on 1 January, as `setFullYear` does.
  */
 export const DATE_METHOD_SET_YEAR: Method<DateWrapper> = method(
   1 /* Annex B, not in TypeScript's lib */,
@@ -16,9 +16,6 @@ export const DATE_METHOD_SET_YEAR: Method<DateWrapper> = method(
       return date.setTime(Number.NaN);
     }
     const whole = Math.trunc(value);
-    if (Number.isNaN(date.getTime())) {
-      date.setTime(0);
-    }
     return date.setFullYear(whole >= 0 && whole <= 99 ? 1900 + whole : whole);
   }
 );

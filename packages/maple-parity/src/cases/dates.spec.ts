@@ -317,6 +317,14 @@ describe('Date.prototype.setYear', () => {
       parity('var d = new Date(2024, 0, 1); d.setYear(99); return [d.getFullYear(), d.getYear()];')
     ).toEqual([1999, 99]);
   });
+
+  it('starts an invalid date from local midnight', () => {
+    expect(
+      parity(
+        'var d = new Date(NaN); d.setYear(99); return [d.getHours(), d.getTime() === new Date(1999, 0, 1).getTime()];'
+      )
+    ).toEqual([0, true]);
+  });
 });
 
 describe('Date.prototype.setUTCFullYear', () => {
