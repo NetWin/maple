@@ -800,6 +800,13 @@ An uncaught non-error value is reported as an `Error` whose message is the value
 conversion. When that conversion fails itself, as for an array nested deeper than 1000 levels, the
 message is `A value that cannot be converted to a string was thrown`.
 
+Host error handling tends to serialize and log what it gets, so an uncaught error is copied more
+strictly than a returned one. `name`, `message` and `stack` (and with them `MapleError.message`)
+are cut to 10,000 characters, the last of which is `…`. `properties` is a tree: a value reached
+twice is copied once per reference. It is left out when it holds a cycle, or when the copy costs
+more than 65,536, counting one per value plus the length of every string, key and RegExp source. A
+returned error keeps its full text and properties, cycles included, like any other returned value.
+
 `line` and `column` point into the source of the program that was executing, which for a nested
 run is the nested source. Messages are written for the person debugging the script, for example
 `'class' is not supported` or `Cannot assign to read-only global 'name'`. `INTERNAL_ERROR`

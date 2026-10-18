@@ -401,3 +401,78 @@ describe('properties added to errors', () => {
     ).toEqual({ self: first });
   });
 });
+
+describe('uncaught errors at the boundary', () => {
+  it('leave out properties that hold a cycle, so the host can serialize them', () => {
+    const error = runAndCatch(maple, 'const e = new Error("m"); e.code = 1; e.self = e; throw e;');
+
+    expect(error.sandboxError).toEqual({
+      name: 'Error',
+      message: 'm',
+      stack: 'Error: m\n    at <script> (1:10)'
+    });
+    expect(() => JSON.stringify(error)).not.toThrow();
+    expect(
+      runAndCatch(maple, 'const a = []; a.push(a); const e = new Error("m"); e.a = a; throw e;')
+        .sandboxError
+    ).not.toHaveProperty('properties');
+  });
+
+  it('keep a value the properties reach twice, copied once per reference', () => {
+    const error = runAndCatch(
+      maple,
+      'const shared = { n: 1 }; const e = new Error("m"); e.a = shared; e.b = [shared]; throw e;'
+    );
+
+    expect(error.sandboxError?.properties).toEqual({ a: { n: 1 }, b: [{ n: 1 }] });
+  });
+
+  it('leave out properties larger than the budget, counted as serialized', () => {
+    const under = runAndCatch(
+      maple,
+      'const e = new Error("m"); e.big = "x".repeat(60000); throw e;'
+    ).sandboxError;
+    expect(under?.properties?.['big']).toHaveLength(60_000);
+
+    for (const code of [
+      'const e = new Error("m"); e.big = "x".repeat(70000); throw e;',
+      'const e = new Error("m"); for (let i = 0; i < 20000; i++) e["k" + i] = i; throw e;',
+      'let a = [1]; for (let i = 0; i < 40; i++) a = [a, a]; const e = new Error("m"); e.a = a; throw e;'
+    ]) {
+      const error = runAndCatch(maple, code);
+      expect(error.code).toBe('RUNTIME_ERROR');
+      expect(error.sandboxError).not.toHaveProperty('properties');
+    }
+  });
+
+  it('cut name, message and stack to 10,000 characters', () => {
+    const long = runAndCatch(maple, 'throw new Error("x".repeat(100000));');
+    expect(long.message).toHaveLength(10_000);
+    expect(long.message.endsWith('x…')).toBe(true);
+    expect(long.sandboxError?.message).toBe(long.message);
+    expect(long.sandboxError?.stack).toHaveLength(10_000);
+
+    const named = runAndCatch(
+      maple,
+      'const e = new Error("m"); e.name = "N".repeat(100000); throw e;'
+    );
+    expect(named.sandboxError?.name).toHaveLength(10_000);
+
+    const thrown = runAndCatch(maple, 'throw "x".repeat(100000);');
+    expect(thrown.message).toHaveLength(10_000);
+    expect(thrown.sandboxError?.stack).toHaveLength(10_000);
+
+    expect(runAndCatch(maple, `throw new Error("${'x'.repeat(10_000)}");`).message).toHaveLength(
+      10_000
+    );
+  });
+
+  it('leave a returned error as it is', () => {
+    const value = run(
+      'const e = new Error("x".repeat(20000)); e.big = "y".repeat(70000); return e;'
+    );
+
+    expect(value).toMatchObject({ message: 'x'.repeat(20_000) });
+    expect(value).toHaveProperty('properties.big', 'y'.repeat(70_000));
+  });
+});

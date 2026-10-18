@@ -3,6 +3,9 @@ import { toString } from '../values/coercion.ts';
 import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
 import { toHostError } from './to-host.ts';
 
+/** How many characters of an uncaught error's `name`, `message` and `stack` reach the host. */
+export const MAX_ERROR_TEXT = 10_000;
+
 export const MapleErrorCode = {
   /** The source does not parse. */
   PARSE_ERROR: 'PARSE_ERROR',
@@ -81,20 +84,37 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
   return new MapleError(MapleErrorCode.INTERNAL_ERROR, message, { cause: error, stats });
 }
 
-/** Extracts the sandbox error information from a thrown value. */
+/**
+ * Extracts the sandbox error information from a thrown value. Host error handling logs what comes
+ * out, so its text is capped, and properties that are cyclic or too large are left out.
+ */
 function extractError(error: SandboxThrow): SandboxErrorInfo {
   const value = error.value;
 
   if (value instanceof SandboxError) {
     try {
-      return toHostError(value);
+      return capText(toHostError(value));
     } catch {
-      return value.toInfo();
+      return capText(value.toInfo());
     }
   }
 
   const message = describeThrown(value);
-  return new SandboxError('Error', message, 'Error', error.frames).toInfo();
+  return capText(new SandboxError('Error', message, 'Error', error.frames).toInfo());
+}
+
+function capText(info: SandboxErrorInfo): SandboxErrorInfo {
+  info.name = truncate(info.name);
+  info.message = truncate(info.message);
+  info.stack = truncate(info.stack);
+  return info;
+}
+
+function truncate(text: string): string {
+  if (text.length <= MAX_ERROR_TEXT) {
+    return text;
+  }
+  return `${text.slice(0, MAX_ERROR_TEXT - 1)}…`;
 }
 
 /**
