@@ -2,7 +2,7 @@
 
 [semantic-release](https://semantic-release.gitbook.io) releases `@netwin/maple` from `master` via
 `cycjimmy/semantic-release-action` in `.github/workflows/push.yml`. Its config is `.releaserc.json`. The `release` job
-runs after the `check` job and only on `master`.
+runs after the `check` job and all three `test` jobs (Node 22, 24 and 26) have passed, and only on `master`.
 
 Each release:
 
@@ -34,8 +34,8 @@ The initial commit is tagged `0.0.0`, which anchors the version line. Without a 
 
 ## Graduating to 1.0.0
 
-Remove `"releaseRules": [{ "breaking": true, "release": "minor" }]` from `.releaserc.json`. The next breaking change
-then releases `1.0.0`.
+In `releaseRules` in `.releaserc.json`, change `{ "breaking": true, "release": "minor" }` to
+`{ "breaking": true, "release": "major" }`. The next breaking change then releases `1.0.0`.
 
 ## Branch protection
 

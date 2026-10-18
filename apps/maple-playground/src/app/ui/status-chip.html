@@ -3,3 +3,7 @@
   [class]="dot()"></span>
 
 {{ label() }}
+
+@if (detail(); as text) {
+  <span class="text-neutral-400 dark:text-neutral-500">· {{ text }}</span>
+}

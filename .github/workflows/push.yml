@@ -24,12 +24,30 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm build
+
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Report every version, so a failure on one doesn't hide the state of the others
+      fail-fast: false
+      matrix:
+        # The minimum from packages/maple's engines field, then every newer even release
+        node: [22, 24, 26]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
+        with:
+          runtime: node@${{ matrix.node }}
+          cache: true
+          require-lockfile: true
+      - run: node --version
+      - run: pnpm test
 
   release:
     name: Release
-    needs: check
+    needs: [check, test]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
@@ -56,6 +74,6 @@ jobs:
           extra_plugins: |
             @semantic-release/changelog@7
             @semantic-release/git@11
-            conventional-changelog-conventionalcommits@10
+            conventional-changelog-conventionalcommits@9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

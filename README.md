@@ -4,11 +4,15 @@ Maple is a secure JavaScript interpreter written in TypeScript. It parses a stri
 itself instead of handing it to `eval`, so a script only ever sees the values you pass in. Scripts must `return`
 their result explicitly.
 
-```ts
-import { execute } from '@netwin/maple';
+Secure means that a script cannot escape: it cannot reach host globals, `require` or the file system on Node, or
+`localStorage`, cookies or the DOM in a browser. It does not mean that a run's CPU time or memory is capped; run
+untrusted code in a worker you can terminate if you need that.
 
-const result = execute('return "Hello " + name;', { name: 'Steve' });
-//    ^ 'Hello Steve'
+```ts
+import { Maple } from '@netwin/maple';
+
+const { value } = new Maple().run('return "Hello " + name;', { name: 'Steve' });
+//      ^ 'Hello Steve'
 ```
 
 ## Repository layout
@@ -19,6 +23,7 @@ This is a pnpm workspace:
 | ----------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
 | `packages/maple`        | [`@netwin/maple`](packages/maple)                   | The published library (ESM, Node >= 22, peer dep: `acorn`) |
 | `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Private Angular app for trying out the interpreter         |
+| `packages/maple-parity` | [`@netwin/maple-parity`](packages/maple-parity)     | Private tests: Maple runs everything js-interpreter runs   |
 
 The playground has editors for code and a JSON context and shows the result and the AST live. It runs Maple in a web
 worker and stops runs after 1 s, so an endless loop can't freeze the page.
@@ -45,7 +50,8 @@ pnpm install    # also installs the lefthook git hooks
 | `pnpm lint`      | oxlint (type-aware)                      |
 | `pnpm format`    | Format with oxfmt (`format:check` in CI) |
 
-CI (`.github/workflows/push.yml`) runs `format:check`, `lint`, `typecheck`, `test` and `build` on every push.
+CI (`.github/workflows/push.yml`) runs `format:check`, `lint`, `typecheck` and `build` on every push, and `test` on
+Node 22, 24 and 26: the minimum from the library's `engines` field and every newer even release.
 
 ## Commits & releases
 
@@ -56,9 +62,13 @@ changes bump the minor version:
 
 | Commit                                 | 0.x   | ≥ 1.0 |
 | -------------------------------------- | ----- | ----- |
-| `fix: …`                               | patch | patch |
+| `fix: …` / `perf: …` / `refactor: …`   | patch | patch |
+| `build(deps): …`                       | patch | patch |
 | `feat: …`                              | minor | minor |
 | `feat!: …` / `BREAKING CHANGE:` footer | minor | major |
+
+On every pull request, `.github/workflows/changelog-preview.yml` runs semantic-release in dry-run mode against the PR
+branch and posts the changelog it would produce as a sticky comment.
 
 Releases currently run in **dry-run** mode. [docs/releasing.md](docs/releasing.md) covers how to go live, how to
 graduate to 1.0.0 and what branch protection requires.

@@ -9,6 +9,7 @@
     "dev": "pnpm --filter @netwin/maple-playground start",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "test:watch": "pnpm -r test -- --watch",
     "typecheck": "pnpm -r typecheck",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

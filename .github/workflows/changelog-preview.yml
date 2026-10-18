@@ -1,0 +1,77 @@
+name: Preview Changelog
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  # semantic-release does a push test even in dry-run mode
+  contents: write
+  pull-requests: write # post the sticky preview comment
+
+jobs:
+  preview:
+    name: Preview
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - uses: pnpm/setup@v3
+        with:
+          install: false
+          cache: true
+
+      - name: Run semantic-release dry-run
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v8
+        with:
+          semantic_version: 25
+          ci: false
+          dry_run: true
+          unset_gha_env: true
+          # Pretend the PR branch is the release branch, so its commits count as unreleased
+          branches: |
+            ['${{ github.head_ref }}']
+          extra_plugins: |
+            @semantic-release/changelog@7
+            @semantic-release/git@11
+            conventional-changelog-conventionalcommits@9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment PR with release preview
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: semantic-release-preview
+          message: |
+            ## 📋 Release Preview
+
+            ### Changelog
+
+            ${{ steps.semantic.outputs.new_release_notes }}
+
+      - name: Comment PR with no release info
+        if: steps.semantic.outputs.new_release_published != 'true'
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: semantic-release-preview
+          message: |
+            ## 📋 Release Preview
+
+            ### ℹ️ No Release
+
+            This PR does not contain any commits that trigger a release.
+
+            **Commits that trigger a release:**
+            - `fix(scope):` / `perf(scope):` / `refactor(scope):` → patch version
+            - `build(deps):` → patch version
+            - `feat(scope):` → minor version
+            - `feat!:` or a `BREAKING CHANGE:` footer → minor version while on 0.x, major from 1.0

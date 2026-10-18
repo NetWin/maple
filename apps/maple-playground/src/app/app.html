@@ -6,6 +6,10 @@
     <span class="text-sm text-neutral-400 dark:text-neutral-500">Playground</span>
   </div>
   <div class="flex items-center gap-2">
+    <maple-settings-menu
+      [(maxOps)]="maxOps"
+      [(maxDepth)]="maxDepth">
+    </maple-settings-menu>
     <button
       type="button"
       title="Reset playground"
@@ -64,7 +68,8 @@
       </maple-tabs>
       <maple-status-chip
         slot="badge"
-        [status]="status()">
+        [status]="status()"
+        [detail]="statusDetail()">
       </maple-status-chip>
       <!-- Both viewers stay alive, so each tab keeps its own folds and scroll position. -->
       <div
@@ -85,8 +90,24 @@
           [value]="astDocument()">
         </maple-code-editor>
       </div>
+      @if (outputTab() === 'benchmark') {
+        <maple-benchmark-panel
+          [status]="benchmarkStatus()"
+          [response]="benchmarkResponse()"
+          (start)="runBenchmark()">
+        </maple-benchmark-panel>
+      }
       @if (outputMissing()) {
-        <p class="p-4 text-sm text-neutral-400 dark:text-neutral-600">{{ outputPlaceholder() }}</p>
+        @if (outputError(); as error) {
+          <p
+            class="p-4 font-mono text-sm wrap-break-word whitespace-pre-wrap text-rose-600 dark:text-rose-400">
+            {{ error }}
+          </p>
+        } @else {
+          <p class="p-4 text-sm text-neutral-400 dark:text-neutral-600">
+            {{ outputPlaceholder() }}
+          </p>
+        }
       }
     </maple-pane>
   </maple-split>

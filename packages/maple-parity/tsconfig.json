@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "ES2025.Collection", "ES2025.Iterator"],
+    "paths": { "@netwin/maple": ["../maple/src/index.ts"] }
+  },
+  "include": ["src", "vitest.config.ts"]
+}
