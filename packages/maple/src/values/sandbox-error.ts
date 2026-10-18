@@ -104,6 +104,21 @@ function hostText(value: unknown, fallback: string): string {
 }
 
 /**
+ * A script error raised where no node is at hand, such as inside a conversion. It is no script
+ * value yet, so no `catch` sees it: the evaluator throws it as a script error at the position of
+ * the expression it surfaces from.
+ */
+export class UnplacedError {
+  public readonly name: string;
+  public readonly message: string;
+
+  constructor(name: string, message: string) {
+    this.name = name;
+    this.message = message;
+  }
+}
+
+/**
  * Carries a thrown script value through host frames until a script `catch` or the boundary takes
  * it.
  */

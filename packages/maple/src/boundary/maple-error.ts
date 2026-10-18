@@ -1,6 +1,6 @@
 import type { MapleRunStats } from '../evaluator/budget.ts';
 import { toString } from '../values/coercion.ts';
-import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
+import { SandboxError, SandboxThrow, UnplacedError } from '../values/sandbox-error.ts';
 import { toHostError } from './to-host.ts';
 
 /** How many characters of an uncaught error's `name`, `message` and `stack` reach the host. */
@@ -83,6 +83,12 @@ export function asMapleError(error: unknown, stats: MapleRunStats): MapleError {
       stats
     });
   }
+
+  // The evaluator places these; one that got past it is still the script's error, not Maple's
+  if (error instanceof UnplacedError) {
+    return asMapleError(new SandboxThrow(new SandboxError(error.name, error.message)), stats);
+  }
+
   const message = error instanceof Error ? error.message : String(error);
   return new MapleError(MapleErrorCode.INTERNAL_ERROR, message, { cause: error, stats });
 }

@@ -55,7 +55,7 @@ import {
 } from '../values/members.ts';
 import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
 import { RunState } from '../values/run-state.ts';
-import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
+import { SandboxError, SandboxThrow, UnplacedError } from '../values/sandbox-error.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
 import { BREAK, type Completion, CONTINUE, NORMAL } from './completion.ts';
@@ -239,66 +239,74 @@ export class Evaluator {
     labels: Labels = NO_LABELS
   ): Completion {
     this.tick(node);
-    switch (node.type) {
-      case 'EmptyStatement':
-      // There is no debugger to stop in, and without one the statement does nothing
-      case 'DebuggerStatement':
-        return NORMAL;
-      case 'ExpressionStatement':
-        this.evaluateExpression(node.expression, scope);
-        return NORMAL;
-      case 'BlockStatement':
-        return this.evaluateBlock(node.body, new Scope(scope));
-      case 'VariableDeclaration':
-        this.evaluateDeclaration(node, scope);
-        return NORMAL;
-      case 'FunctionDeclaration':
-        // Already bound when the enclosing block was entered
-        return NORMAL;
-      case 'ReturnStatement':
-        return {
-          type: 'return',
-          value: node.argument ? this.evaluateExpression(node.argument, scope) : undefined
-        };
-      case 'IfStatement':
-        if (toBoolean(this.evaluateExpression(node.test, scope))) {
-          return this.evaluateStatement(node.consequent, scope);
+    // The net for conversions outside any expression, such as a computed key in a pattern
+    try {
+      switch (node.type) {
+        case 'EmptyStatement':
+        // There is no debugger to stop in, and without one the statement does nothing
+        case 'DebuggerStatement':
+          return NORMAL;
+        case 'ExpressionStatement':
+          this.evaluateExpression(node.expression, scope);
+          return NORMAL;
+        case 'BlockStatement':
+          return this.evaluateBlock(node.body, new Scope(scope));
+        case 'VariableDeclaration':
+          this.evaluateDeclaration(node, scope);
+          return NORMAL;
+        case 'FunctionDeclaration':
+          // Already bound when the enclosing block was entered
+          return NORMAL;
+        case 'ReturnStatement':
+          return {
+            type: 'return',
+            value: node.argument ? this.evaluateExpression(node.argument, scope) : undefined
+          };
+        case 'IfStatement':
+          if (toBoolean(this.evaluateExpression(node.test, scope))) {
+            return this.evaluateStatement(node.consequent, scope);
+          }
+          return node.alternate ? this.evaluateStatement(node.alternate, scope) : NORMAL;
+        case 'WhileStatement':
+          return this.evaluateWhile(node, scope, labels);
+        case 'DoWhileStatement':
+          return this.evaluateDoWhile(node, scope, labels);
+        case 'ForStatement':
+          return this.evaluateFor(node, scope, labels);
+        case 'ForOfStatement':
+          return this.evaluateForOf(node, scope, labels);
+        case 'ForInStatement':
+          return this.evaluateForIn(node, scope, labels);
+        case 'LabeledStatement': {
+          const name = node.label.name;
+          const completion = this.evaluateStatement(node.body, scope, [...labels, name]);
+          // A break to this label ends here; anything else travels on to its own target
+          return completion.type === 'break' && completion.label === name ? NORMAL : completion;
         }
-        return node.alternate ? this.evaluateStatement(node.alternate, scope) : NORMAL;
-      case 'WhileStatement':
-        return this.evaluateWhile(node, scope, labels);
-      case 'DoWhileStatement':
-        return this.evaluateDoWhile(node, scope, labels);
-      case 'ForStatement':
-        return this.evaluateFor(node, scope, labels);
-      case 'ForOfStatement':
-        return this.evaluateForOf(node, scope, labels);
-      case 'ForInStatement':
-        return this.evaluateForIn(node, scope, labels);
-      case 'LabeledStatement': {
-        const name = node.label.name;
-        const completion = this.evaluateStatement(node.body, scope, [...labels, name]);
-        // A break to this label ends here; anything else travels on to its own target
-        return completion.type === 'break' && completion.label === name ? NORMAL : completion;
+        case 'BreakStatement':
+          return node.label ? { type: 'break', label: node.label.name } : BREAK;
+        case 'ContinueStatement':
+          return node.label ? { type: 'continue', label: node.label.name } : CONTINUE;
+        case 'SwitchStatement':
+          return this.evaluateSwitch(node, scope);
+        case 'ThrowStatement': {
+          const value = this.evaluateExpression(node.argument, scope);
+          throw new SandboxThrow(
+            value,
+            node,
+            value instanceof SandboxError ? '' : this.stackTrace(node)
+          );
+        }
+        case 'TryStatement':
+          return this.evaluateTry(node, scope);
+        default:
+          return this.unsupported(node);
       }
-      case 'BreakStatement':
-        return node.label ? { type: 'break', label: node.label.name } : BREAK;
-      case 'ContinueStatement':
-        return node.label ? { type: 'continue', label: node.label.name } : CONTINUE;
-      case 'SwitchStatement':
-        return this.evaluateSwitch(node, scope);
-      case 'ThrowStatement': {
-        const value = this.evaluateExpression(node.argument, scope);
-        throw new SandboxThrow(
-          value,
-          node,
-          value instanceof SandboxError ? '' : this.stackTrace(node)
-        );
+    } catch (error) {
+      if (error instanceof UnplacedError) {
+        return this.throwError(error.name, error.message, node);
       }
-      case 'TryStatement':
-        return this.evaluateTry(node, scope);
-      default:
-        return this.unsupported(node);
+      throw error;
     }
   }
 
@@ -653,81 +661,90 @@ export class Evaluator {
 
   private evaluateExpression(node: Expression, scope: Scope): unknown {
     this.tick(node);
-    switch (node.type) {
-      case 'Literal':
-        if (node.regex) {
-          // Every evaluation creates a new regexp, as the spec requires for literals
-          const { pattern, flags } = node.regex;
-          return new RegExpWrapper(
-            guardHostErrors(this.failAt(node), () => new RegExp(pattern, flags))
-          );
+    // An error from a conversion gets the position of the innermost expression it surfaces from
+    try {
+      switch (node.type) {
+        case 'Literal':
+          if (node.regex) {
+            // Every evaluation creates a new regexp, as the spec requires for literals
+            const { pattern, flags } = node.regex;
+            return new RegExpWrapper(
+              guardHostErrors(this.failAt(node), () => new RegExp(pattern, flags))
+            );
+          }
+          if (typeof node.value === 'bigint') {
+            return this.unsupportedFeature(node, 'bigint literals');
+          }
+          return node.value;
+        case 'Identifier':
+          return this.readIdentifier(node, scope);
+        case 'TemplateLiteral':
+          return this.evaluateTemplate(node, scope);
+        case 'ObjectExpression':
+          return this.evaluateObject(node, scope);
+        case 'ArrayExpression':
+          return this.evaluateArray(node, scope);
+        case 'MemberExpression':
+          return this.evaluateMember(node, scope);
+        case 'ChainExpression': {
+          const value = this.evaluateExpression(node.expression, scope);
+          return value === SHORT_CIRCUIT ? undefined : value;
         }
-        if (typeof node.value === 'bigint') {
-          return this.unsupportedFeature(node, 'bigint literals');
+        case 'AssignmentExpression':
+          return this.evaluateAssignment(node, scope);
+        case 'UpdateExpression':
+          return this.evaluateUpdate(node, scope);
+        case 'UnaryExpression':
+          return this.evaluateUnary(node, scope);
+        case 'BinaryExpression': {
+          if (node.left.type === 'PrivateIdentifier') {
+            return this.unsupported(node.left);
+          }
+          const left = this.evaluateExpression(node.left, scope);
+          const right = this.evaluateExpression(node.right, scope);
+          if (node.operator === 'in') {
+            const propertyKey = toPropertyKey(left);
+            return (
+              hasMember(right, propertyKey, this.memberContext(node)) ||
+              hasMethod(right, propertyKey)
+            );
+          }
+          if (node.operator === 'instanceof') {
+            return this.instanceOf(left, right, node);
+          }
+          const operator = node.operator;
+          return guardHostErrors(this.failAt(node), () => applyBinary(operator, left, right));
         }
-        return node.value;
-      case 'Identifier':
-        return this.readIdentifier(node, scope);
-      case 'TemplateLiteral':
-        return this.evaluateTemplate(node, scope);
-      case 'ObjectExpression':
-        return this.evaluateObject(node, scope);
-      case 'ArrayExpression':
-        return this.evaluateArray(node, scope);
-      case 'MemberExpression':
-        return this.evaluateMember(node, scope);
-      case 'ChainExpression': {
-        const value = this.evaluateExpression(node.expression, scope);
-        return value === SHORT_CIRCUIT ? undefined : value;
+        case 'LogicalExpression':
+          return this.evaluateLogical(node, scope);
+        case 'ConditionalExpression':
+          return toBoolean(this.evaluateExpression(node.test, scope))
+            ? this.evaluateExpression(node.consequent, scope)
+            : this.evaluateExpression(node.alternate, scope);
+        case 'SequenceExpression': {
+          let result: unknown;
+          for (const expression of node.expressions) {
+            result = this.evaluateExpression(expression, scope);
+          }
+          return result;
+        }
+        case 'FunctionExpression':
+        case 'ArrowFunctionExpression':
+          return this.createClosure(node, scope);
+        case 'CallExpression':
+          return this.evaluateCall(node, scope);
+        case 'NewExpression':
+          return this.evaluateNew(node, scope);
+        case 'MetaProperty':
+          return this.unsupported(node, `${node.meta.name}.${node.property.name}`);
+        default:
+          return this.unsupported(node);
       }
-      case 'AssignmentExpression':
-        return this.evaluateAssignment(node, scope);
-      case 'UpdateExpression':
-        return this.evaluateUpdate(node, scope);
-      case 'UnaryExpression':
-        return this.evaluateUnary(node, scope);
-      case 'BinaryExpression': {
-        if (node.left.type === 'PrivateIdentifier') {
-          return this.unsupported(node.left);
-        }
-        const left = this.evaluateExpression(node.left, scope);
-        const right = this.evaluateExpression(node.right, scope);
-        if (node.operator === 'in') {
-          const propertyKey = toPropertyKey(left);
-          return (
-            hasMember(right, propertyKey, this.memberContext(node)) || hasMethod(right, propertyKey)
-          );
-        }
-        if (node.operator === 'instanceof') {
-          return this.instanceOf(left, right, node);
-        }
-        const operator = node.operator;
-        return guardHostErrors(this.failAt(node), () => applyBinary(operator, left, right));
+    } catch (error) {
+      if (error instanceof UnplacedError) {
+        return this.throwError(error.name, error.message, node);
       }
-      case 'LogicalExpression':
-        return this.evaluateLogical(node, scope);
-      case 'ConditionalExpression':
-        return toBoolean(this.evaluateExpression(node.test, scope))
-          ? this.evaluateExpression(node.consequent, scope)
-          : this.evaluateExpression(node.alternate, scope);
-      case 'SequenceExpression': {
-        let result: unknown;
-        for (const expression of node.expressions) {
-          result = this.evaluateExpression(expression, scope);
-        }
-        return result;
-      }
-      case 'FunctionExpression':
-      case 'ArrowFunctionExpression':
-        return this.createClosure(node, scope);
-      case 'CallExpression':
-        return this.evaluateCall(node, scope);
-      case 'NewExpression':
-        return this.evaluateNew(node, scope);
-      case 'MetaProperty':
-        return this.unsupported(node, `${node.meta.name}.${node.property.name}`);
-      default:
-        return this.unsupported(node);
+      throw error;
     }
   }
 
@@ -1195,7 +1212,11 @@ export class Evaluator {
    * host marked it with `exposed`; the host gets it back as `cause`. Maple's own errors pass.
    */
   private throwHostError(error: unknown, node: Node): never {
-    if (error instanceof MapleError || error instanceof SandboxThrow) {
+    if (
+      error instanceof MapleError ||
+      error instanceof SandboxThrow ||
+      error instanceof UnplacedError
+    ) {
       throw error;
     }
     const sandboxError = isExposed(error)

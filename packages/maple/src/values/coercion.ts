@@ -1,7 +1,7 @@
 import { isPrototypeless } from '../support/is-plain-object.ts';
 import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { isArgumentsObject } from './arguments-object.ts';
-import { SandboxError, SandboxThrow } from './sandbox-error.ts';
+import { UnplacedError } from './sandbox-error.ts';
 import { SandboxObject } from './sandbox-object.ts';
 
 export type Primitive = undefined | null | boolean | number | string;
@@ -48,9 +48,7 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
     return ARGUMENTS_PLACEHOLDER;
   }
   if (isPrototypeless(value)) {
-    throw new SandboxThrow(
-      new SandboxError('TypeError', 'Cannot convert object to primitive value')
-    );
+    throw new UnplacedError('TypeError', 'Cannot convert object to primitive value');
   }
   return OBJECT_PLACEHOLDER;
 }
@@ -149,11 +147,9 @@ function joinArray(array: ReadonlyArray<unknown>, seen: Set<object>, separator =
     return '';
   }
   if (seen.size >= MAX_NESTING) {
-    throw new SandboxThrow(
-      new SandboxError(
-        'RangeError',
-        `An array nested deeper than ${MAX_NESTING} levels cannot be converted to a string`
-      )
+    throw new UnplacedError(
+      'RangeError',
+      `An array nested deeper than ${MAX_NESTING} levels cannot be converted to a string`
     );
   }
   seen.add(array);

@@ -3,7 +3,7 @@ import { Scope } from '../evaluator/scope.ts';
 import { parse } from '../parse.ts';
 import { Closure } from './closure.ts';
 import { add, lessThan, looseEquals, toNumber, toString, typeOf } from './coercion.ts';
-import { SandboxError, SandboxThrow } from './sandbox-error.ts';
+import { SandboxError, UnplacedError } from './sandbox-error.ts';
 
 function someClosure(): Closure {
   const [statement] = parse('(() => 1);').body;
@@ -44,14 +44,14 @@ describe('coercion', () => {
       expect(toString(cyclic)).toBe('1,');
     });
 
-    it('refuses arrays nested deeper than the nesting limit with a sandbox RangeError', () => {
+    it('refuses arrays nested deeper than the nesting limit with a RangeError for the evaluator to place', () => {
       let nested: Array<unknown> = [];
       for (let depth = 1; depth < 1000; depth++) {
         nested = [nested];
       }
       expect(toString(nested)).toBe('');
 
-      expect(() => toString([nested])).toThrow(SandboxThrow);
+      expect(() => toString([nested])).toThrow(UnplacedError);
     });
   });
 

@@ -668,3 +668,56 @@ describe('name and message as assigned', () => {
     ).toMatchObject({ name: 'Error', message: '7' });
   });
 });
+
+describe('errors from conversions', () => {
+  const g = 'const g = Object.groupBy([], (x) => x);';
+
+  it('carry the position and the stack of the expression they occur in', () => {
+    const error = runAndCatch(maple, `${g}\nString(g);`);
+
+    expect(error).toMatchObject({
+      code: 'RUNTIME_ERROR',
+      line: 2,
+      column: 0,
+      sandboxError: {
+        name: 'TypeError',
+        message: 'Cannot convert object to primitive value',
+        stack: 'TypeError: Cannot convert object to primitive value\n    at <script> (2:0)'
+      }
+    });
+    expect(run(`${g}\ntry { String(g); } catch (e) { return e.stack; }`)).toBe(
+      'TypeError: Cannot convert object to primitive value\n    at <script> (2:6)'
+    );
+  });
+
+  it('list the frames of the function they occur in', () => {
+    expect(
+      run(
+        `${g}\nfunction show(v) {\n  return \`\${v}\`;\n}\ntry { show(g); } catch (e) { return e.stack; }`
+      )
+    ).toBe(
+      'TypeError: Cannot convert object to primitive value\n    at show (3:9)\n    at <script> (5:6)'
+    );
+  });
+
+  it('are placed for a too-deep join, a comparison and a computed key in a pattern', () => {
+    expect(
+      runAndCatch(maple, 'let a = []; for (let i = 0; i < 1100; i++) a = [a];\n[a].join();')
+    ).toMatchObject({ code: 'RUNTIME_ERROR', line: 2, sandboxError: { name: 'RangeError' } });
+    expect(runAndCatch(maple, `${g}\ng < 1;`)).toMatchObject({ line: 2, column: 0 });
+
+    const pattern = runAndCatch(maple, `${g}\nconst { [g]: x } = {};`);
+    expect(pattern).toMatchObject({ code: 'RUNTIME_ERROR', line: 2 });
+    expect(pattern.sandboxError?.stack).toMatch(/\n {4}at <script> \(2:\d+\)$/);
+  });
+
+  it('leave a result too deep to copy out without a position, since the run has ended', () => {
+    const error = runAndCatch(
+      maple,
+      'let a = []; for (let i = 0; i < 1100; i++) a = [a];\nreturn a;'
+    );
+
+    expect(error.code).toBe('RUNTIME_ERROR');
+    expect(error.line).toBeUndefined();
+  });
+});

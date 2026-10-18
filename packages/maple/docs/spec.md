@@ -860,7 +860,9 @@ host code. This `MapleError.cause` says why the run failed; `sandboxError.cause`
 script gave its own error.
 
 `line` and `column` point into the source of the program that was executing, which for a nested
-run is the nested source. Messages are written for the person debugging the script, for example
+run is the nested source. An error from inside a conversion, such as converting an object without
+a prototype, points at the innermost expression it occurs in, and its `stack` lists the frames
+there, like any other script error. Messages are written for the person debugging the script, for example
 `'class' is not supported` or `Cannot assign to read-only global 'name'`. `INTERNAL_ERROR`
 messages describe the host-side problem and never reach the script.
 
