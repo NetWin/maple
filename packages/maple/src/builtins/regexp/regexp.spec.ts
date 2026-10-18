@@ -193,6 +193,19 @@ describe('string methods with regexps', () => {
     expect(run('return /(a)/.exec("a").groups;')).toBeUndefined();
   });
 
+  it('carries the indices of a match with the d flag, as JavaScript does', () => {
+    const indices = { 0: [1, 3], 1: [1, 2], 2: undefined, length: 3, groups: { x: [1, 2] } };
+
+    expect(run('return /(?<x>a)(b)?c/d.exec("xac");')).toMatchObject({ 0: 'ac', indices });
+    expect(run('return "xac".match(/(?<x>a)(b)?c/d);')).toMatchObject({ indices });
+    expect(run('return [..."xac".matchAll(/(?<x>a)(b)?c/dg)];')).toMatchObject([{ indices }]);
+    expect(
+      run('const m = /(a)/d.exec("a"); return [m.indices[1][1], typeof m.indices.groups];')
+    ).toEqual([1, 'undefined']);
+    expect(run('return /(a)/.exec("a").indices;')).toBeUndefined();
+    expect(run('return "aa".match(/a/dg).indices;')).toBeUndefined();
+  });
+
   it('keeps the match conversion and the callbacks under the budget', () => {
     const error = runAndCatch(
       new Maple({ maxOps: 300 }),
