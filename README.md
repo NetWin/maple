@@ -1,6 +1,6 @@
-# maple
+# 🍁 Maple
 
-Maple is a secure JavaScript interpreter written in TypeScript. It parses a string of JavaScript and interprets it
+Maple is a secure JavaScript interpreter written in TypeScript. It parses a string of JavaScript using acorn and interprets it
 itself instead of handing it to `eval`, so a script only ever sees the values you pass in. Scripts must `return`
 their result explicitly.
 
@@ -11,25 +11,22 @@ untrusted code in a worker you can terminate if you need that.
 ```ts
 import { Maple } from '@netwin/maple';
 
-const { value } = new Maple().run('return "Hello " + name;', { name: 'Steve' });
-//      ^ 'Hello Steve'
+const result = new Maple().run('return "Hello " + name;', { name: 'Steve' });
+// result.value === 'Hello Steve'
 ```
 
 ## Repository layout
 
 This is a pnpm workspace:
 
-| Path                    | Package                                             | Description                                                |
-| ----------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
-| `packages/maple`        | [`@netwin/maple`](packages/maple)                   | The published library (ESM, Node >= 22, peer dep: `acorn`) |
-| `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Private Angular app for trying out the interpreter         |
-| `packages/maple-parity` | [`@netwin/maple-parity`](packages/maple-parity)     | Private tests: Maple runs everything js-interpreter runs   |
+| Path                    | Package                                             | Description                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/maple`        | [`@netwin/maple`](packages/maple)                   | The published library (ESM, Node >= 22, peer dep: `acorn`)                                                                                                          |
+| `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Private Angular app for trying out the interpreter                                                                                                                  |
+| `packages/maple-parity` | [`@netwin/maple-parity`](packages/maple-parity)     | Private parity tests: Maple adheres to JS standards and (for internal reasons) documents the parity with [JS-Interpreter](https://github.com/NetWin/js-interpreter) |
 
 The playground has editors for code and a JSON context and shows the result and the AST live. It runs Maple in a web
 worker and stops runs after 1 s, so an endless loop can't freeze the page.
-
-It resolves `@netwin/maple` straight to `packages/maple/src/index.ts` (tsconfig `paths`), so library edits show up
-live. Anything not exported from the entry point is invisible to the app.
 
 ## Setup
 

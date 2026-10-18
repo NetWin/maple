@@ -1,6 +1,6 @@
 # @netwin/maple
 
-A secure JavaScript interpreter written in TypeScript. Maple parses a string of JavaScript and interprets it itself
+A secure JavaScript interpreter written in TypeScript. Maple parses a string of JavaScript using [acorn](https://github.com/acornjs/acorn) and interprets it itself
 instead of handing it to `eval`, so a script only ever sees the values you pass in.
 
 Secure means that a script cannot escape: it cannot reach host globals, `require` or the file system on Node, or
@@ -29,10 +29,9 @@ const code = `
   return message;
 `;
 
-const {
-  value, // <-- "Hello Steve"
-  stats // <-- { ops, maxDepth, durationMs }
-} = maple.run(code, { name: 'Steve' });
+const result = maple.run(code, { name: 'Steve' });
+// result.value === "Hello Steve"
+// result.stats === { ops: number, maxDepth: number, durationMs: number }
 ```
 
 The script runs against `data` and nothing else: each top-level key of `data` becomes a read-only variable the
@@ -69,15 +68,14 @@ Parses `code` into an [ESTree](https://github.com/estree/estree) `Program`, with
 
 Any function in `globals` or `data` is callable from the script. Arguments arrive as copies, the return value is
 copied back, and an exception becomes a catchable error inside the script. That error only says
-`A host function failed`, since host messages can hold secrets; throw `exposed(error)` to show the script its
-`name` and `message`. When the error ends the run, the host gets the exception back as `MapleError.cause`, cut to
-10,000 characters. A function wrapped in `intrinsic(fn)`
-instead receives the raw sandbox arguments and a `Sandbox` handle to call script functions or run further code on
-the same budget; see the spec before writing one.
+`A host function failed`, since host messages can hold secrets; use `throw exposed(new Error('my message'))`
+to show the script its `name` and `message`. When the error ends the run, the host gets the exception back
+as `MapleError.cause`. A function wrapped in `intrinsic(fn)` instead receives the raw sandbox arguments
+and a `Sandbox` handle to call script functions or run further code on the same budget.
 
 The complete contract, including the supported language subset and all error codes, is in
 [docs/spec.md](docs/spec.md).
 
 ## License
 
-MIT
+[MIT](LICENSE) © [NetWin](https://github.com/NetWin)

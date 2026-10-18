@@ -1,9 +1,7 @@
-# @netwin/maple-parity
+# 🍁 Maple Parity
 
 A private test package that compares Maple with [`@netwin/js-interpreter`](https://github.com/netwin/JS-Interpreter)
-and with Node: a script js-interpreter runs should run in Maple too, with the same result. Maple may support more,
-since it speaks modern JavaScript and js-interpreter only ES5. Where the two differ, Maple does what Node does, and
-each difference is listed below as a divergence, as is everything Maple leaves out on purpose.
+and with Node: a script js-interpreter runs should run in Maple too, with the same result.
 
 ```sh
 pnpm --filter @netwin/maple-parity test
