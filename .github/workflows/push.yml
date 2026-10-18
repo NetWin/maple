@@ -66,6 +66,8 @@ jobs:
           cache: true
           require-lockfile: true
       - run: pnpm --filter @netwin/maple build
+      # Trusted publishing needs npm >= 11.5.1;
+      - run: pnpm add --global npm@^11 && npm --version
       - uses: cycjimmy/semantic-release-action@v8
         with:
           semantic_version: 25
