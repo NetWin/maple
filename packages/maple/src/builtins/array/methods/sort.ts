@@ -7,11 +7,12 @@ export const ARRAY_METHOD_SORT: Method<Array<unknown>> = method(
   Array.prototype.sort.length,
   (a, [fn], context) => {
     const length = a.length;
-    // Only the elements that are there get sorted, and the comparator, which is script code, runs
-    // on the copy before the guarded write
-    const sorted = presentEntries(a)
-      .map(([, value]) => value)
-      .toSorted(comparator(fn, context));
+    // Only the elements that are there get sorted, all collected before the first comparison as
+    // JavaScript does, and the comparator, which is script code, runs on the copy before the
+    // guarded write
+    const sorted = Array.from(presentEntries(a), ([, value]) => value).toSorted(
+      comparator(fn, context)
+    );
     return guardIntegrityErrors(context.fail, a, () => {
       for (const [index, value] of sorted.entries()) {
         a[index] = value;

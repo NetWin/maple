@@ -6,7 +6,7 @@ import type { ArrayCallback } from './array-callback.ts';
  */
 export function findEntryBy(
   array: ReadonlyArray<unknown>,
-  entries: ReadonlyArray<[number, unknown]>,
+  entries: Iterable<[number, unknown]>,
   call: ArrayCallback,
   truthy: boolean
 ): [number, unknown] | undefined {

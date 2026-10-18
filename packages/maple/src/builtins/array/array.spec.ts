@@ -37,6 +37,63 @@ describe('array methods', () => {
       expect(run('let n = 0; [1, 2, 3].some((x) => { n++; return x === 1; }); return n;')).toBe(1);
     });
 
+    it('read each element when they reach it, with the length fixed at the start', () => {
+      expect(
+        run('const a = [1, 2]; return a.map((x, i) => { if (i === 0) a[1] = 9; return x; });')
+      ).toEqual([1, 9]);
+      expect(
+        run(
+          'const a = [1, 2, 3]; const seen = []; a.forEach((x, i) => { if (i === 0) delete a[1]; seen.push(x); }); return seen;'
+        )
+      ).toEqual([1, 3]);
+      expect(
+        run(
+          'const a = [1, 2]; const seen = []; a.forEach((x) => { a.push(0); seen.push(x); }); return seen;'
+        )
+      ).toEqual([1, 2]);
+      expect(
+        run(
+          'const a = [1, 2, 3]; const seen = []; a.forEach((x, i) => { if (i === 0) a.length = 1; seen.push(x); }); return seen;'
+        )
+      ).toEqual([1]);
+      expect(
+        run(
+          'return [1, 2, 3].reduce((acc, x, i, arr) => { if (i === 1) arr[2] = 10; return acc + x; });'
+        )
+      ).toBe(13);
+      expect(
+        run(
+          'return [1, 2, 3].reduceRight((acc, x, i, arr) => { if (i === 1) delete arr[0]; return acc + x; });'
+        )
+      ).toBe(5);
+      expect(
+        run(
+          'const a = [1, 2, 3]; return a.filter((x, i) => { if (i === 0) a[2] = 30; return x > 1; });'
+        )
+      ).toEqual([2, 30]);
+      expect(
+        run(
+          'const a = [1, 2]; return a.some((x, i) => { if (i === 0) a[1] = 7; return x === 7; });'
+        )
+      ).toBe(true);
+      expect(
+        run('const a = [1, 2]; return a.every((x, i) => { if (i === 0) a[1] = 0; return x > 0; });')
+      ).toBe(false);
+      expect(
+        run(
+          'const a = [1, 2]; return a.find((x, i) => { if (i === 0) a[1] = 7; return x === 7; });'
+        )
+      ).toBe(7);
+      expect(
+        run(
+          'const a = [1, 2]; const seen = []; a.findLast((x, i) => { if (i === 1) delete a[0]; seen.push(x); }); return seen;'
+        )
+      ).toEqual([2, undefined]);
+      expect(
+        run('const a = [1, 2]; return a.flatMap((x, i) => { if (i === 0) a[1] = 5; return [x]; });')
+      ).toEqual([1, 5]);
+    });
+
     it('find and findLast return the element the predicate saw, and undefined on a miss', () => {
       expect(run('const a = [1, 2]; return a.find((x, i) => { a[0] = 9; return i === 0; });')).toBe(
         1

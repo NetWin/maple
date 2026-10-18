@@ -158,6 +158,14 @@ describe('Array.prototype.join', () => {
 });
 
 describe('Array.prototype.every', () => {
+  it('tests each element when it reaches it', () => {
+    expect(
+      parity(
+        'var a = [1, 2]; return a.every(function (x, i) { if (i === 0) a[1] = 0; return x > 0; });'
+      )
+    ).toEqual(false);
+  });
+
   it('with true and false outcomes', () => {
     expect(
       parity(
@@ -168,6 +176,14 @@ describe('Array.prototype.every', () => {
 });
 
 describe('Array.prototype.some', () => {
+  it('tests each element when it reaches it', () => {
+    expect(
+      parity(
+        'var a = [1, 2]; return a.some(function (x, i) { if (i === 0) a[1] = 7; return x === 7; });'
+      )
+    ).toEqual(true);
+  });
+
   it('with true and false outcomes', () => {
     expect(
       parity(
@@ -178,6 +194,14 @@ describe('Array.prototype.some', () => {
 });
 
 describe('Array.prototype.filter', () => {
+  it('reads each element when it reaches it', () => {
+    expect(
+      parity(
+        'var a = [1, 2, 3]; return a.filter(function (x, i) { if (i === 0) a[2] = 30; return x > 1; });'
+      )
+    ).toEqual([2, 30]);
+  });
+
   it('keeps matching elements', () => {
     expect(parity('return [1, 2, 3, 4, 5].filter(function (x) { return x % 2 === 1; });')).toEqual([
       1, 3, 5
@@ -230,6 +254,24 @@ describe('holes', () => {
 });
 
 describe('Array.prototype.forEach', () => {
+  it('skips deleted elements and keeps the length it started with', () => {
+    expect(
+      parity(
+        'var a = [1, 2, 3]; var seen = []; a.forEach(function (x, i) { if (i === 0) delete a[1]; seen.push(x); }); return seen;'
+      )
+    ).toEqual([1, 3]);
+    expect(
+      parity(
+        'var a = [1, 2]; var seen = []; a.forEach(function (x) { a.push(0); seen.push(x); }); return seen;'
+      )
+    ).toEqual([1, 2]);
+    expect(
+      parity(
+        'var a = [1, 2, 3]; var seen = []; a.forEach(function (x, i) { if (i === 0) a.length = 1; seen.push(x); }); return seen;'
+      )
+    ).toEqual([1]);
+  });
+
   it('passes element, index and array', () => {
     expect(
       parity(
@@ -247,6 +289,12 @@ describe('Array.prototype.forEach', () => {
 });
 
 describe('Array.prototype.map', () => {
+  it('reads each element when it reaches it', () => {
+    expect(
+      parity('var a = [1, 2]; return a.map(function (x, i) { if (i === 0) a[1] = 9; return x; });')
+    ).toEqual([1, 9]);
+  });
+
   it('passes the index', () => {
     expect(parity('return [5, 6, 7].map(function (x, i) { return x * i; });')).toEqual([0, 6, 14]);
   });
@@ -261,6 +309,14 @@ describe('Array.prototype.map', () => {
 });
 
 describe('Array.prototype.reduce', () => {
+  it('reads each element when it reaches it', () => {
+    expect(
+      parity(
+        'var a = [1, 2, 3]; return a.reduce(function (acc, x, i, arr) { if (i === 1) arr[2] = 10; return acc + x; });'
+      )
+    ).toEqual(13);
+  });
+
   it('with an initial value', () => {
     expect(parity('return [1, 2, 3].reduce(function (sum, x) { return sum + x; }, 10);')).toEqual(
       16
@@ -279,6 +335,14 @@ describe('Array.prototype.reduce', () => {
 });
 
 describe('Array.prototype.reduceRight', () => {
+  it('skips an element deleted before it is reached', () => {
+    expect(
+      parity(
+        'var a = [1, 2, 3]; return a.reduceRight(function (acc, x, i, arr) { if (i === 1) delete arr[0]; return acc + x; });'
+      )
+    ).toEqual(5);
+  });
+
   it('goes from the end', () => {
     expect(
       parity(
