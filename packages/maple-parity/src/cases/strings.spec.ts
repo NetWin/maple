@@ -121,6 +121,12 @@ describe('String.prototype.localeCompare', () => {
   });
 });
 
+describe('String.prototype.valueOf', () => {
+  it('returns the string', () => {
+    expect(parity("return ['a'.valueOf(), ''.valueOf()];")).toEqual(['a', '']);
+  });
+});
+
 describe('String.prototype.split', () => {
   it('by a string', () => {
     expect(

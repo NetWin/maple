@@ -35,6 +35,7 @@ import { STRING_METHOD_TRIM_LEFT } from './methods/trim-left.ts';
 import { STRING_METHOD_TRIM_RIGHT } from './methods/trim-right.ts';
 import { STRING_METHOD_TRIM_START } from './methods/trim-start.ts';
 import { STRING_METHOD_TRIM } from './methods/trim.ts';
+import { STRING_METHOD_VALUE_OF } from './methods/value-of.ts';
 
 /**
  * Every entry hands the host method primitives only, converted hook-free first, so a script
@@ -79,6 +80,7 @@ export const STRING_PROTOTYPE: Prototype<string> = new Prototype(
     trimEnd: STRING_METHOD_TRIM_END,
     trimLeft: STRING_METHOD_TRIM_LEFT,
     trimRight: STRING_METHOD_TRIM_RIGHT,
-    trimStart: STRING_METHOD_TRIM_START
+    trimStart: STRING_METHOD_TRIM_START,
+    valueOf: STRING_METHOD_VALUE_OF
   }
 );

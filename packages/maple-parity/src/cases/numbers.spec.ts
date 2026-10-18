@@ -45,6 +45,16 @@ describe('Number.prototype.toPrecision', () => {
   });
 });
 
+describe('Number.prototype.valueOf', () => {
+  it('returns the number', () => {
+    expect(parity('return [(7).valueOf(), (1.5).valueOf(), (-0).valueOf() === 0];')).toEqual([
+      7,
+      1.5,
+      true
+    ]);
+  });
+});
+
 describe('Number.prototype.toString', () => {
   it('with a radix', () => {
     expect(

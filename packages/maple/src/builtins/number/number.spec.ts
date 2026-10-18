@@ -17,6 +17,8 @@ describe('number methods', () => {
     expect(run('return (12345).toExponential(1);')).toBe('1.2e+4');
     expect(run('return (255).toString(16);')).toBe('ff');
     expect(run('return (255).toString();')).toBe('255');
+    expect(run('return [(7).valueOf(), (7).valueOf.length];')).toEqual([7, 0]);
+    expect(run('return NaN.valueOf();')).toBeNaN();
     expect(run('return (0.1 + 0.2).toFixed(1);')).toBe('0.3');
   });
 

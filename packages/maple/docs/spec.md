@@ -402,7 +402,7 @@ Instance: `length`, `at`, `charAt`, `charCodeAt`, `codePointAt`, `concat`, `ends
 `includes`, `indexOf`, `isWellFormed`, `lastIndexOf`, `match`, `matchAll`, `normalize`, `padEnd`,
 `padStart`, `repeat`, `replace`, `replaceAll`, `search`, `slice`, `split`, `startsWith`, `substr`,
 `substring`, `toLowerCase`, `toUpperCase`, `toString`, `toWellFormed`, `trim`, `trimEnd`,
-`trimLeft`, `trimRight`, `trimStart`. The legacy `substr`, `trimLeft` and `trimRight` are kept
+`trimLeft`, `trimRight`, `trimStart`, `valueOf`. The legacy `substr`, `trimLeft` and `trimRight` are kept
 because older scripts use them; the HTML methods such as `anchor` and `bold` are not.
 
 Static: `String.fromCharCode`, `String.fromCodePoint`.
@@ -439,7 +439,7 @@ input array; `toSorted`, `map` and the other non-mutating ones work on it. `keys
 
 ### Number
 
-Instance: `toFixed`, `toPrecision`, `toExponential`, `toString` (with radix).
+Instance: `toFixed`, `toPrecision`, `toExponential`, `toString` (with radix), `valueOf`.
 
 Static: `Number.isInteger`, `Number.isFinite`, `Number.isNaN`, `Number.isSafeInteger`,
 `Number.parseFloat`, `Number.parseInt`, `Number.MAX_SAFE_INTEGER`, `Number.MIN_SAFE_INTEGER`,
