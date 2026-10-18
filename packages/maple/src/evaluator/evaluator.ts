@@ -182,8 +182,8 @@ export class Evaluator {
   /** The active script calls, outermost first; `Error.stack` is rendered from it. */
   readonly #frames: Array<Frame> = [];
 
-  /** What this run changed on the values every run shares; a nested run shares it with its budget. */
-  readonly #runState = new RunState();
+  /** What this run changed on the values every run shares; a nested run gets its own for its length. */
+  #runState = new RunState();
 
   /** Script throws handed to an intrinsic as `MapleError`s, so they can be restored on the way out. */
   readonly #wrapped = new WeakMap<MapleError, SandboxThrow>();
@@ -1112,7 +1112,11 @@ export class Evaluator {
     return this.throwError('TypeError', `${description} is not a function`, node);
   }
 
-  /** A nested program is one more call level and one more frame on the same budget. */
+  /**
+   * A nested program is one more call level and one more frame on the same budget. It starts from
+   * the shared values as they were, like any run, and what it changes on them is gone when it
+   * returns.
+   */
   private runNested(
     code: string | Program,
     data: unknown,
@@ -1127,9 +1131,12 @@ export class Evaluator {
       );
     }
     this.#frames.push({ name: '<nested>', calledFrom: node });
+    const outer = this.#runState;
+    this.#runState = new RunState();
     try {
       return this.#nestedRun(code, data, options);
     } finally {
+      this.#runState = outer;
       this.#frames.pop();
       this.#budget.leave();
     }

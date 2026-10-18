@@ -94,15 +94,35 @@ describe('intrinsics', () => {
       message: 'Call depth limit of 5 exceeded'
     });
     expect(runAndCatch(maple, 'exec("return 1 +;");').code).toBe('PARSE_ERROR');
-    expect(maple.run('Math.x = 1; return exec("Math.x++; return Math.x;") + Math.x;').value).toBe(
-      4
-    );
-    expect(maple.run('return exec("return Math.x;");').value).toBeUndefined();
     expect(
       maple.run(
         'try { exec("throw new RangeError(\\"deep\\");"); } catch (e) { return [e.name, e.message]; }'
       ).value
     ).toEqual(['RangeError', 'deep']);
+  });
+
+  it('run nested programs from the shared values as they were, and keep their changes to them', () => {
+    const maple = new Maple({
+      globals: {
+        exec: intrinsic(([code], sandbox) => sandbox.run(String(sandbox.toHost(code))).value)
+      }
+    });
+
+    expect(maple.run('Math.x = 1; return exec("return Math.x;");').value).toBeUndefined();
+    expect(maple.run('return exec("Math.x = 1; return Math.x;");').value).toBe(1);
+    expect(maple.run('exec("Math.x = 1;"); return Math.x;').value).toBeUndefined();
+    expect(maple.run('Object.freeze(Math); return exec("Math.x = 1; return Math.x;");').value).toBe(
+      1
+    );
+    expect(maple.run('exec("Object.freeze(Math);"); Math.x = 2; return Math.x;').value).toBe(2);
+    expect(
+      maple.run(
+        'Math.x = 1; try { exec("Math.y = 2; throw 1;"); } catch {} return [Math.x, Math.y];'
+      ).value
+    ).toEqual([1, undefined]);
+    expect(
+      maple.run('Math.x = 1; return ["a"].map((s) => exec("return 1;") + Math.x);').value
+    ).toEqual([2]);
   });
 
   it('cannot escape the budget by swallowing a limit error', () => {

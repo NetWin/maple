@@ -265,6 +265,26 @@ describe('escape attempts', () => {
       expect(new Maple().run('return [].push.x;').value).toBeUndefined();
     });
 
+    it('keep what a run and its nested runs add to a shared value apart', () => {
+      const nesting = new Maple({
+        globals: {
+          exec: intrinsic(([code], sandbox) => sandbox.run(String(sandbox.toHost(code))).value)
+        }
+      });
+
+      expect(
+        nesting.run('[].push.planted = 1; return exec("return [].push.planted;");').value
+      ).toBe(undefined);
+      expect(nesting.run('exec("[].push.planted = 1;"); return [].push.planted;').value).toBe(
+        undefined
+      );
+      expect(
+        nesting.run(
+          '[].push.planted = 1; const inner = exec("[].push.planted = 2; return [].push.planted;"); return [inner, [].push.planted];'
+        ).value
+      ).toEqual([2, 1]);
+    });
+
     it('keep a shared value frozen only for the run that froze it', () => {
       expect(run('Object.freeze(Math); return Object.isFrozen(Math);')).toBe(true);
       expect(errorName('Object.freeze(Math); Math.x = 1;')).toBe('TypeError');

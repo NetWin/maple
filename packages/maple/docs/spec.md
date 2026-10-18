@@ -352,7 +352,8 @@ Closures and built-in functions have their read-only `length` and `name`, and ho
 intrinsics have no properties at all. Every function takes the properties a script adds, as in
 `fn.cache = {}`, and so does a namespace such as `Math`. Built-in functions, host functions,
 intrinsics and namespaces are shared by every run, so what a run adds to one, or `freeze`s on it,
-is kept by that run and gone when the next one starts; a nested run sees what its run added.
+is kept by that run and gone when the next one starts. A nested run starts from them as they were,
+like any run, and what it changes is gone when it returns.
 Their methods are listed under [Functions](#functions).
 
 ### Methods
@@ -697,7 +698,9 @@ interface Sandbox {
 - `sandbox.run` composes its global scope exactly like the public `run`, with the instance globals
   as layer one, and returns the same envelope as the public `run`, with `stats` covering only the
   nested run's own operations and time, and `value` copied out (see [Output](#output)). The
-  nested program is one more call level and appears as `<nested>` in stack traces. Misusing
+  nested program is one more call level and appears as `<nested>` in stack traces. It starts from
+  the shared built-ins, host functions and namespaces as they were, so it neither sees nor leaves
+  properties added to them or a `freeze` on them (see [Value model](#value-model)). Misusing
   `run` (data that is not an object) throws a plain `TypeError` to the intrinsic.
 - An exception the intrinsic itself throws is treated like a host function's: it becomes a
   catchable sandbox error that says only `A host function failed`, unless marked with `exposed`.
