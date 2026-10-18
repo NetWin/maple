@@ -25,6 +25,26 @@ describe('string methods', () => {
     expect(run('return "hello".startsWith("lo", 3);')).toBe(true);
     expect(run('return "hello".endsWith("lo");')).toBe(true);
     expect(run('return "hello".endsWith("he", 2);')).toBe(true);
+    expect(run('try { "abc".includes(/a/); } catch (e) { return [e.name, e.message]; }')).toEqual([
+      'TypeError',
+      'First argument to String.prototype.includes must not be a regular expression'
+    ]);
+    expect(run('try { "abc".startsWith(/a/); } catch (e) { return [e.name, e.message]; }')).toEqual(
+      [
+        'TypeError',
+        'First argument to String.prototype.startsWith must not be a regular expression'
+      ]
+    );
+    expect(run('try { "abc".endsWith(/c/); } catch (e) { return [e.name, e.message]; }')).toEqual([
+      'TypeError',
+      'First argument to String.prototype.endsWith must not be a regular expression'
+    ]);
+    expect(run('try { "abc".includes(new RegExp("a")); } catch (e) { return e.name; }')).toBe(
+      'TypeError'
+    );
+    expect(
+      run('return ["/a/".includes("/a/"), "/a/x".startsWith("/a/"), "x/a/".endsWith("/a/")];')
+    ).toEqual([true, true, true]);
   });
 
   it('slice and index', () => {

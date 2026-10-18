@@ -1,10 +1,26 @@
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { toNumber, toString } from './coercion.ts';
+import type { Fail } from './members.ts';
+import { RegExpWrapper } from './wrappers/regexp-wrapper.ts';
 
 /** An optional string argument: `undefined` stays absent, everything else converts hook-free. */
 export function optionalStringArgument(value: unknown): string | undefined {
   return value === undefined ? undefined : toString(value);
+}
+
+/**
+ * The search string of `includes`, `startsWith` and `endsWith`,
+ * which refuse a regex, as JavaScript does.
+ */
+export function searchStringArgument(value: unknown, method: string, fail: Fail): string {
+  if (value instanceof RegExpWrapper) {
+    return fail(
+      'TypeError',
+      `First argument to String.prototype.${method} must not be a regular expression`
+    );
+  }
+  return toString(value);
 }
 
 /** An optional numeric argument: `undefined` stays absent, everything else converts hook-free. */
