@@ -88,7 +88,15 @@ describe('iterator helpers', () => {
     expect(run('try { [1].values().map(5); } catch (e) { return e.message; }')).toBe(
       '5 is not a function'
     );
-    expect(run('try { [1].values().take(-1); } catch (e) { return e.name; }')).toBe('RangeError');
+    expect(run('try { [1].values().take(-1); } catch (e) { return [e.name, e.message]; }')).toEqual(
+      ['RangeError', '-1 must be positive']
+    );
+    expect(run('try { [1].values().drop("x"); } catch (e) { return e.message; }')).toBe(
+      'x must be positive'
+    );
+    expect(run('return [1, 2].values().take(-0.5).toArray();')).toEqual([]);
+    expect(run('return [1, 2].values().take(Infinity).toArray();')).toEqual([1, 2]);
+    expect(run('return [1, 2].values().drop(-0.5).toArray();')).toEqual([1, 2]);
     expect(
       runAndCatch(
         new Maple({ maxOps: 300 }),
@@ -113,6 +121,10 @@ describe('iterator helpers', () => {
     expect(after('it.find(5)')).toBe(true);
     expect(after('it.forEach(5)')).toBe(true);
     expect(after('it.take(-1)')).toBe(true);
+    expect(after('it.take(NaN)')).toBe(true);
+    expect(after('it.take(Object.groupBy([], (x) => x))')).toBe(true);
+    expect(after('it.drop(-1)')).toBe(true);
+    expect(after('it.drop(NaN)')).toBe(true);
     expect(after('it.forEach(() => { throw 1; })')).toBe(true);
     expect(
       run(`${make} try { make().reduce(() => { throw "mine"; }, 0); } catch (e) { return e; }`)
