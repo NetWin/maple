@@ -59,6 +59,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `String(Math)`, `"" + JSON`: Maple gives `[object Math]`, js-interpreter `[object Object]`            | A namespace converts with its own tag, as in JavaScript; js-interpreter tags every object as a plain one.                 |
 | `Object.isExtensible(5)`: Maple gives `false`, js-interpreter `true`                                  | A primitive is never extensible since ES2015; js-interpreter follows ES5.                                                 |
 | `push` on an array after `Object.preventExtensions`                                                   | It throws a `TypeError`, as in JavaScript; js-interpreter changes nothing and throws nothing.                             |
+| `[1].toLocaleString('en', { style: 'currency' })` without a `currency`                                | Inconsistent options are a `TypeError` from `Intl`, as in JavaScript; js-interpreter ignores them and gives `"1"`.        |
 
 ### Maple departs from JavaScript
 

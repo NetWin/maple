@@ -8,6 +8,18 @@ function run(code: string, data?: unknown): unknown {
   return maple.run(code, data).value;
 }
 
+/** The name and message of the `TypeError` the host throws, to compare the script's with. */
+function hostTypeError(format: () => string): Array<string> {
+  try {
+    format();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      return [error.name, error.message];
+    }
+  }
+  throw new Error('expected the host to throw a TypeError');
+}
+
 describe('toLocale methods', () => {
   it('format numbers for an explicit locale, with options', () => {
     expect(run('return (1234.5).toLocaleString("en-US");')).toBe('1,234.5');
@@ -73,6 +85,27 @@ describe('toLocale methods', () => {
     expect(runAndCatch(maple, '(1).toLocaleString("en", { style: "currency" });').code).toBe(
       'RUNTIME_ERROR'
     );
+  });
+
+  it('report inconsistent options in an array as catchable TypeErrors', () => {
+    expect(
+      run(
+        'try { [1].toLocaleString("en", { style: "currency" }); } catch (e) { return [e.name, e.message]; }'
+      )
+    ).toEqual(hostTypeError(() => [1].toLocaleString('en', { style: 'currency' })));
+    expect(
+      run(
+        'try { [new Date(0)].toLocaleString("en", { dateStyle: "full", year: "numeric" }); } catch (e) { return [e.name, e.message]; }'
+      )
+    ).toEqual(
+      hostTypeError(() =>
+        [new Date(0)].toLocaleString('en', { dateStyle: 'full', year: 'numeric' })
+      )
+    );
+    expect(runAndCatch(maple, '[1].toLocaleString("en", { style: "currency" });').code).toBe(
+      'RUNTIME_ERROR'
+    );
+    expect(run('return [null, "a"].toLocaleString("en", { style: "currency" });')).toBe(',a');
   });
 
   it('hand the host only primitive option values', () => {

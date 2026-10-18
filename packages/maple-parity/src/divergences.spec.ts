@@ -151,6 +151,17 @@ describe('Object.preventExtensions', () => {
   });
 });
 
+describe('Array.prototype.toLocaleString', () => {
+  // Intl rejects inconsistent options; js-interpreter ignores the arguments altogether
+  it('throws a TypeError for inconsistent options', () => {
+    expect(
+      followsJavaScript(
+        "try { return [1].toLocaleString('en', { style: 'currency' }); } catch (e) { return e.name; }"
+      )
+    ).toEqual({ maple: 'TypeError', jsInterpreter: '1' });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes or receivers. An object's behaviour
