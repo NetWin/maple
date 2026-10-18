@@ -37,6 +37,28 @@ describe('array methods', () => {
       expect(run('let n = 0; [1, 2, 3].some((x) => { n++; return x === 1; }); return n;')).toBe(1);
     });
 
+    it('find and findLast return the element the predicate saw, and undefined on a miss', () => {
+      expect(run('const a = [1, 2]; return a.find((x, i) => { a[0] = 9; return i === 0; });')).toBe(
+        1
+      );
+      expect(
+        run('const a = [1, 2]; return a.findLast((x, i) => { a[1] = 9; return i === 1; });')
+      ).toBe(2);
+      expect(
+        run('const a = [1]; a[-1] = "x"; return [a.find(() => false), a.findLast(() => false)];')
+      ).toEqual([undefined, undefined]);
+      expect(
+        run(
+          'return [[1, 2].findIndex((x) => x === 2), [1, 2].findLastIndex((x) => x === 1), [1].findIndex(() => false), [1].findLastIndex(() => false)];'
+        )
+      ).toEqual([1, 0, -1, -1]);
+      expect(
+        run(
+          'return [[].some(() => true), [].every(() => false), [1].some(() => false), [1].every(() => true)];'
+        )
+      ).toEqual([false, true, false, true]);
+    });
+
     it('reduce from either end, with and without an initial value', () => {
       expect(run('return [1, 2, 3].reduce((a, b) => a + b);')).toBe(6);
       expect(run('return [1, 2, 3].reduce((a, b) => a + b, 10);')).toBe(16);
