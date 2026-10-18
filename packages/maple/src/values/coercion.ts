@@ -1,3 +1,4 @@
+import { isPrototypeless } from '../support/is-plain-object.ts';
 import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { isArgumentsObject } from './arguments-object.ts';
 import { SandboxError, SandboxThrow } from './sandbox-error.ts';
@@ -45,6 +46,11 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
   }
   if (isArgumentsObject(value)) {
     return ARGUMENTS_PLACEHOLDER;
+  }
+  if (isPrototypeless(value)) {
+    throw new SandboxThrow(
+      new SandboxError('TypeError', 'Cannot convert object to primitive value')
+    );
   }
   return OBJECT_PLACEHOLDER;
 }

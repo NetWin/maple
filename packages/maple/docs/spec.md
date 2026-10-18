@@ -369,7 +369,10 @@ another type is refused the same way, so `({ t: 'x'.trim }).t()` is a `TypeError
 JavaScript would convert the object. Own data properties win: `obj.toString()` where `obj` has an own key
 `toString` calls that value. Plain objects have four dispatched methods: `hasOwnProperty`,
 `toString` and `toLocaleString`, which give what coercion gives, and `valueOf`, which gives the
-object itself. Booleans have `toString` and `valueOf`.
+object itself. An object without a prototype, which `Object.groupBy` returns and a match gives as
+`groups`, has none of them, converting it to a primitive is a `TypeError` (`Cannot convert object
+to primitive value`), and `instanceof Object` is `false`, as in JavaScript. It copies out like any
+plain object. Booleans have `toString` and `valueOf`.
 Calling a member that is missing or not callable is a `TypeError` that names the member path, as
 in `o.g is not a function`.
 
@@ -474,7 +477,8 @@ need a wrapper object, so it is a `TypeError`.
 
 `Object.groupBy(items, callback)` takes any iterable and calls `callback(item, index)` under the
 budget. Its result converts to a key hook-free, like any property key, so a script object always
-groups as `[object Object]`. The groups are mutable arrays in a mutable object.
+groups as `[object Object]`. The groups are mutable arrays in a mutable object without a
+prototype, as in JavaScript.
 
 `Object.fromEntries` accepts any iterable of pairs, which is the way to turn a Map into a result.
 
@@ -523,8 +527,8 @@ does. A replacement function receives `(match, ...captures, offset, string, grou
 under the budget. `replaceAll` and `matchAll` require the `g` flag.
 
 Match results (`exec`, `match`, `matchAll`) are plain sandbox arrays with `index`, `input` and
-`groups` (an ordinary object or `undefined`) as own properties; a global `match` returns the
-matched strings only.
+`groups` (an object without a prototype, or `undefined`) as own properties; a global `match`
+returns the matched strings only.
 
 ### Date
 

@@ -92,6 +92,37 @@ describe('Object statics', () => {
     expect(run('return Object.groupBy([], (x) => x);')).toEqual({});
   });
 
+  it('group into an object without a prototype, as JavaScript does', () => {
+    const g = 'const g = Object.groupBy([1, 2], (x) => (x % 2 ? "odd" : "even"));';
+    expect(
+      run(
+        `${g} return [typeof g.toString, typeof g.hasOwnProperty, typeof g.valueOf, typeof g.toLocaleString];`
+      )
+    ).toEqual(['undefined', 'undefined', 'undefined', 'undefined']);
+    expect(run(`${g} try { g.hasOwnProperty("odd"); } catch (e) { return e.name; }`)).toBe(
+      'TypeError'
+    );
+    for (const conversion of ['String(g)', '`${g}`', 'g + ""', '[g].join()', '({})[g]', 'g < 1']) {
+      expect(run(`${g} try { ${conversion}; } catch (e) { return [e.name, e.message]; }`)).toEqual([
+        'TypeError',
+        'Cannot convert object to primitive value'
+      ]);
+    }
+    expect(run(`${g} return [g instanceof Object, {} instanceof Object];`)).toEqual([false, true]);
+    expect(
+      run(
+        `${g} return [Object.keys(g), Object.hasOwn(g, "odd"), "odd" in g, JSON.stringify(g), ({ ...g }).toString()];`
+      )
+    ).toEqual([['odd', 'even'], true, true, '{"odd":[1],"even":[2]}', '[object Object]']);
+
+    const value = run(`${g} return g;`);
+    expect(value).toEqual({ odd: [1], even: [2] });
+    expect(Object.getPrototypeOf(value)).toBe(Object.prototype);
+    expect(runAndCatch(maple, `${g} throw g;`).message).toBe(
+      'A value that cannot be converted to a string was thrown'
+    );
+  });
+
   it('keep a __proto__ group a plain key and validate their arguments', () => {
     expect(run('return Object.keys(Object.groupBy([1], () => "__proto__"));')).toEqual([
       '__proto__'

@@ -1,3 +1,4 @@
+import { isPrototypeless } from '../../support/is-plain-object.ts';
 import { Builtin } from '../../values/builtin.ts';
 import { type CallContext, isCallable } from '../../values/native.ts';
 import { OBJECT_PROTOTYPE } from './object-prototype.ts';
@@ -8,7 +9,7 @@ export const OBJECT_BUILTIN: Builtin = new Builtin({
   length: Object.length,
   call: constructObject,
   construct: constructObject,
-  isInstance: (value) => typeof value === 'object' && value !== null,
+  isInstance: (value) => typeof value === 'object' && value !== null && !isPrototypeless(value),
   members: OBJECT_STATICS,
   prototype: OBJECT_PROTOTYPE
 });

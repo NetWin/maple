@@ -170,6 +170,29 @@ describe('string methods with regexps', () => {
     expect(run('try { "a".replaceAll(/a/, "b"); } catch (e) { return e.name; }')).toBe('TypeError');
   });
 
+  it('gives named groups an object without a prototype, as JavaScript does', () => {
+    const m = 'const m = "2024-03".match(/(?<y>\\d+)-(?<m>\\d+)/);';
+    expect(run(`${m} return [m.groups.y, m.groups.m, typeof m.groups.toString];`)).toEqual([
+      '2024',
+      '03',
+      'undefined'
+    ]);
+    expect(run(`${m} try { String(m.groups); } catch (e) { return e.message; }`)).toBe(
+      'Cannot convert object to primitive value'
+    );
+    expect(
+      run(
+        'return "x2024".replace(/(?<y>\\d+)/, (match, g1, o, s, groups) => [typeof groups.hasOwnProperty, groups.y]);'
+      )
+    ).toBe('xundefined,2024');
+    expect(
+      run(
+        'return "a1a2".replaceAll(/(?<d>\\d)/g, (match, g1, o, s, groups) => typeof groups.toString);'
+      )
+    ).toBe('aundefinedaundefined');
+    expect(run('return /(a)/.exec("a").groups;')).toBeUndefined();
+  });
+
   it('keeps the match conversion and the callbacks under the budget', () => {
     const error = runAndCatch(
       new Maple({ maxOps: 300 }),
