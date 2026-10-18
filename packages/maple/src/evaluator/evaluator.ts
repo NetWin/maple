@@ -1091,27 +1091,45 @@ export class Evaluator {
    * script.
    */
   private invokeIntrinsic(fn: Intrinsic, args: ReadonlyArray<unknown>, node: Node): unknown {
+    const { handle, revoke } = this.sandboxHandle(node);
     try {
-      return fn(args, this.sandboxHandle(node));
+      return fn(args, handle);
     } catch (error) {
       if (error instanceof MapleError) {
         throw this.#wrapped.get(error) ?? error;
       }
       return this.throwHostError(error, node);
+    } finally {
+      revoke();
     }
   }
 
-  private sandboxHandle(node: Node): Sandbox {
+  /**
+   * The handle an intrinsic works with, and the switch that revokes it once the intrinsic has
+   * returned, so a handle it kept cannot run script code outside the call it was made for.
+   */
+  private sandboxHandle(node: Node): { handle: Sandbox; revoke: () => void } {
+    let revoked = false;
+    const guard = <T>(action: () => T): T => {
+      if (revoked) {
+        throw new Error('The sandbox handle is only usable while the intrinsic runs');
+      }
+      return this.forIntrinsic(action);
+    };
     return {
-      toHost: (value) => this.toHostArgument(value, node),
-      fromHost: (value) => this.fromHostResult(value, node, 'intrinsic'),
-      call: (callee, args) =>
-        this.forIntrinsic(() => {
-          this.tick(node);
-          return this.invoke(undefined, callee, args, node, 'callback');
-        }),
-      run: (code, data, options = {}) =>
-        this.forIntrinsic(() => this.runNested(code, data, options, node))
+      handle: {
+        toHost: (value) => guard(() => this.toHostArgument(value, node)),
+        fromHost: (value) => guard(() => this.fromHostResult(value, node, 'intrinsic')),
+        call: (callee, args) =>
+          guard(() => {
+            this.tick(node);
+            return this.invoke(undefined, callee, args, node, 'callback');
+          }),
+        run: (code, data, options = {}) => guard(() => this.runNested(code, data, options, node))
+      },
+      revoke: () => {
+        revoked = true;
+      }
     };
   }
 

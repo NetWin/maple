@@ -185,9 +185,22 @@ describe('intrinsics', () => {
         roundTrip: intrinsic(([value], sandbox) => sandbox.fromHost(sandbox.toHost(value))),
         later: intrinsic((_args, sandbox) => sandbox.fromHost(new Date(0))),
         leak: intrinsic((_args, sandbox) => sandbox.fromHost(() => 1)),
-        out: intrinsic(([value], sandbox) => sandbox.toHost(value))
+        out: intrinsic(([value], sandbox) => sandbox.toHost(value)),
+        caught: intrinsic(([value], sandbox) => {
+          try {
+            sandbox.toHost(value);
+            return 'converted';
+          } catch (error) {
+            return error instanceof MapleError ? `${error.code}: ${error.message}` : 'other';
+          }
+        })
       }
     });
+
+    expect(maple.run('return [caught(1), caught(() => 1)];').value).toEqual([
+      'converted',
+      'RUNTIME_ERROR: A function cannot be passed to the host'
+    ]);
 
     expect(
       maple.run('const o = { a: [1] }; const c = roundTrip(o); c.a.push(2); return [o, c];').value
@@ -269,5 +282,35 @@ describe('intrinsics', () => {
     maple.run('grab();');
 
     expect(handle && Object.keys(handle).toSorted()).toEqual(['call', 'fromHost', 'run', 'toHost']);
+  });
+
+  it('revoke the handle once the intrinsic has returned, also when it threw', () => {
+    const kept: Array<{ sandbox: Sandbox; callback: unknown }> = [];
+    const maple = new Maple({
+      globals: {
+        keep: intrinsic(([callback], sandbox) => {
+          kept.push({ sandbox, callback });
+          return undefined;
+        }),
+        keepAndThrow: intrinsic(([callback], sandbox) => {
+          kept.push({ sandbox, callback });
+          throw new Error('after keeping');
+        })
+      }
+    });
+    maple.run('keep(() => 1); try { keepAndThrow(() => 2); } catch (e) {}');
+
+    expect(kept).toHaveLength(2);
+    for (const { sandbox, callback } of kept) {
+      for (const use of [
+        (): unknown => sandbox.call(callback, []),
+        (): unknown => sandbox.run('return 1;'),
+        (): unknown => sandbox.toHost(1),
+        (): unknown => sandbox.fromHost(1)
+      ]) {
+        expect(use).toThrow('The sandbox handle is only usable while the intrinsic runs');
+        expect(use).not.toThrow(MapleError);
+      }
+    }
   });
 });

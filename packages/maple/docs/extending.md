@@ -56,7 +56,10 @@ interface Sandbox {
   sees nor leaves properties the calling run added to shared built-ins. Data that is not an object
   throws a plain `TypeError` to the intrinsic.
 - An exception the intrinsic throws is treated like a host function's.
-- Errors from `call` and `run` arrive in the intrinsic as `MapleError`s and may be caught there. A
+- The handle is usable only while the intrinsic runs. Once it has returned, every method throws a
+  plain `Error`, so a handle or closure an intrinsic keeps cannot run script code outside the call.
+- Errors from `call`, `run` and `toHost` arrive in the intrinsic as `MapleError`s and may be caught
+  there. A
   sandbox error that passes through an intrinsic uncaught is still the same sandbox error when it
   reaches the calling script, so the script's `try` / `catch` works across an intrinsic. A
   `LIMIT_EXCEEDED` that an intrinsic swallows does no harm: the exhausted budget trips again on the
