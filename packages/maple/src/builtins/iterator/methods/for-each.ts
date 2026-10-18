@@ -6,7 +6,7 @@ import { iteratorCallback } from '../utils/iterator-callback.ts';
 export const ITERATOR_METHOD_FOR_EACH: Method<IteratorWrapper> = method(
   Iterator.prototype.forEach.length,
   (i, [fn], context) => {
-    const call = iteratorCallback(fn, context);
+    const call = iteratorCallback(fn, i, context);
     helpers(i).forEach((value, index) => call(value, index));
     return undefined;
   }

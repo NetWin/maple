@@ -97,6 +97,33 @@ describe('iterator helpers', () => {
     ).toBe('LIMIT_EXCEEDED');
   });
 
+  it('close the iterator when they fail', () => {
+    const make = 'const make = () => [1, 2, 3].values().map((x) => x);';
+    const after = (attempt: string): unknown =>
+      run(`${make} const it = make(); try { ${attempt}; } catch {} return it.next().done;`);
+
+    expect(after('it.reduce(() => { throw 1; }, 0)')).toBe(true);
+    expect(after('it.reduce((a, x) => { if (x === 2) throw 1; return a; })')).toBe(true);
+    expect(after('it.reduce(5, 0)')).toBe(true);
+    expect(after('it.map(5)')).toBe(true);
+    expect(after('it.filter(5)')).toBe(true);
+    expect(after('it.flatMap(5)')).toBe(true);
+    expect(after('it.some(5)')).toBe(true);
+    expect(after('it.every(5)')).toBe(true);
+    expect(after('it.find(5)')).toBe(true);
+    expect(after('it.forEach(5)')).toBe(true);
+    expect(after('it.take(-1)')).toBe(true);
+    expect(after('it.forEach(() => { throw 1; })')).toBe(true);
+    expect(
+      run(`${make} try { make().reduce(() => { throw "mine"; }, 0); } catch (e) { return e; }`)
+    ).toBe('mine');
+    expect(
+      run(
+        'const a = [1, 2].values(); try { a.reduce(() => { throw 1; }, 0); } catch {} return a.next();'
+      )
+    ).toEqual({ value: 2, done: false });
+  });
+
   it('build iterators with Iterator.from', () => {
     expect(run('return Iterator.from([1, 2]).map((x) => x + 1).toArray();')).toEqual([2, 3]);
     expect(run('return Iterator.from("ab").toArray();')).toEqual(['a', 'b']);
