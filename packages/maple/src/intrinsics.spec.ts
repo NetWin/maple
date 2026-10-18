@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exposed, intrinsic, type Sandbox } from './boundary/host.ts';
 import { MapleError } from './boundary/maple-error.ts';
 import { Maple } from './maple.ts';
-import { runAndCatch } from './spec-helpers.ts';
+import { runAndCatch, type UntypedRunner } from './spec-helpers.ts';
 
 describe('intrinsics', () => {
   it('receive the raw sandbox arguments and may return any sandbox value as is', () => {
@@ -123,6 +123,29 @@ describe('intrinsics', () => {
     expect(
       maple.run('Math.x = 1; return ["a"].map((s) => exec("return 1;") + Math.x);').value
     ).toEqual([2]);
+  });
+
+  it('get a plain TypeError from sandbox.run for code that is not a string', () => {
+    let caught: unknown;
+    const maple = new Maple({
+      globals: {
+        misuse: intrinsic((_args, sandbox) => {
+          const untyped: UntypedRunner = sandbox;
+          try {
+            untyped.run(42);
+          } catch (error) {
+            caught = error;
+          }
+          return untyped.run(42);
+        })
+      }
+    });
+
+    expect(maple.run('try { misuse(); } catch (e) { return e.message; }').value).toBe(
+      'A host function failed'
+    );
+    expect(caught).toEqual(new TypeError('code must be a string'));
+    expect(caught).not.toBeInstanceOf(MapleError);
   });
 
   it('cannot escape the budget by swallowing a limit error', () => {

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { exposed, intrinsic } from './boundary/host.ts';
 import { Maple } from './maple.ts';
-import { runAndCatch } from './spec-helpers.ts';
+import { parse } from './parse.ts';
+import { runAndCatch, type UntypedRunner } from './spec-helpers.ts';
 
 /**
  * The catalogue of escape attempts from the spec's Testing section, in one place for review.
@@ -455,6 +456,24 @@ describe('escape attempts', () => {
 
       expect(result.value).toBe('swallowed');
       expect(result.stats.maxDepth).toBe(10);
+    });
+  });
+
+  describe('hand-built programs', () => {
+    it('are refused, so a literal cannot hand the script a host object', () => {
+      const secret = { token: 'abc' };
+      const program = parse('const o = 0; o.token = "changed"; return o;');
+      const [declaration] = program.body;
+      const init =
+        declaration?.type === 'VariableDeclaration' ? declaration.declarations[0]?.init : undefined;
+      if (init?.type !== 'Literal') {
+        throw new Error('expected a literal initializer');
+      }
+      Reflect.set(init, 'value', secret);
+      const untyped: UntypedRunner = maple;
+
+      expect(() => untyped.run(program)).toThrow(new TypeError('code must be a string'));
+      expect(secret).toEqual({ token: 'abc' });
     });
   });
 

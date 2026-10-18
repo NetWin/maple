@@ -49,7 +49,7 @@ export class Maple {
    * Runs `code` against `data`. Everything that goes wrong inside the run throws a `MapleError`;
    * a misuse of this method itself throws a plain `TypeError` before anything runs.
    */
-  public run(code: string | Program, data?: unknown, options: RunOptions = {}): MapleRunResult {
+  public run(code: string, data?: unknown, options: RunOptions = {}): MapleRunResult {
     const budget = new Budget(this.#maxOps, this.#maxDepth);
     const evaluator: Evaluator = new Evaluator(budget, (nestedCode, nestedData, nestedOptions) => {
       const before = budget.stats();
@@ -66,8 +66,8 @@ export class Maple {
   }
 
   /** Everything a program needs before its first statement: its syntax and its global scope. */
-  private prepare(code: string | Program, data: unknown, options: RunOptions): Prepared {
-    const program = typeof code === 'string' ? parse(code) : code;
+  private prepare(code: string, data: unknown, options: RunOptions): Prepared {
+    const program = parse(asCodeOrThrow(code));
     const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals');
     const dataGlobals = asGlobalsOrThrow(asDataObjectOrThrow(data), 'data');
     const globals = createGlobalScope([STANDARD_GLOBALS, this.#globals, runGlobals, dataGlobals]);
@@ -118,6 +118,15 @@ function createGlobalScope(layers: ReadonlyArray<Readonly<Record<string, unknown
     }
   }
   return scope;
+}
+
+// Typed as a string, but a JavaScript caller may pass anything, and the evaluator must only ever
+// see what `parse` produced
+function asCodeOrThrow(code: unknown): string {
+  if (typeof code !== 'string') {
+    throw new TypeError('code must be a string');
+  }
+  return code;
 }
 
 function asGlobalsOrThrow(globals: Record<string, unknown>, path: string): Record<string, unknown> {

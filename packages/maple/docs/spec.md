@@ -79,7 +79,7 @@ const {
 Instance globals are converted once at construction (see [Globals](#globals)). An instance holds
 no state between runs; the budget lives only for the duration of one top-level `run`.
 
-### `maple.run(code: string | Program, data?: unknown, options?: RunOptions): MapleRunResult`
+### `maple.run(code: string, data?: unknown, options?: RunOptions): MapleRunResult`
 
 Runs `code` against `data` and returns the copied result together with the run's statistics:
 
@@ -104,18 +104,19 @@ interface MapleRunStats {
 falls back to `Date.now()`, which is the one host API Maple touches, behind a guard. The envelope
 exists so that further metadata can be added without changing the shape.
 
-`code` is source text or a `Program` returned by `parse`. `data` is `undefined`, a plain object, or a JSON string encoding a plain
-object. Its contents follow the [input conversion](#input-conversion) rules; a value that violates
-them throws a plain `TypeError` before the run starts, because that is a host programming error,
-not a script error. `options.globals` adds bindings for this run only.
+`code` is source text. `data` is `undefined`, a plain object, or a JSON string encoding a plain
+object. Its contents follow the [input conversion](#input-conversion) rules. A `code` that is not a
+string, or a `data` value that violates those rules, throws a plain `TypeError` before the run
+starts, because that is a host programming error, not a script error. `options.globals` adds
+bindings for this run only.
 
 `run` is synchronous. It throws a `MapleError` for every failure that originates in the script, the
 budget or a host function (see [Errors](#errors)).
 
 ### `parse(code: string): Program`
 
-Parses source text with Maple's parser settings and returns the ESTree `Program`. Throws a
-`MapleError` with code `PARSE_ERROR`. Use it to cache parses or to rewrite the AST before `run`.
+Parses source text with the settings `run` uses and returns the ESTree `Program`. Throws a
+`MapleError` with code `PARSE_ERROR`.
 
 ### `intrinsic(fn: Intrinsic): Intrinsic`
 
@@ -690,7 +691,7 @@ interface Sandbox {
   /** Calls a script closure under the current budget. */
   call(closure: unknown, args: ReadonlyArray<unknown>): unknown;
   /** Runs another program on the shared budget, one depth level down. */
-  run(code: string | Program, data?: unknown, options?: RunOptions): MapleRunResult;
+  run(code: string, data?: unknown, options?: RunOptions): MapleRunResult;
 }
 ```
 

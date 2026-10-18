@@ -54,7 +54,7 @@ scripts such as infinite loops; they are not a CPU or memory limit, since work i
 const maple = new Maple({ globals: { upper: (s: string) => s.toUpperCase() }, maxOps: 10_000 });
 ```
 
-### `maple.run(code: string | Program, data?: object | string, options?: RunOptions): MapleRunResult`
+### `maple.run(code: string, data?: object | string, options?: RunOptions): MapleRunResult`
 
 Runs `code` against `data` and returns `{ value, stats }`. `data` may also be a JSON string. `options.globals` adds
 bindings for this run only; they shadow the instance's `globals`, and the keys of `data` shadow both. Every failure
@@ -62,8 +62,8 @@ inside the run throws a `MapleError` with a `code`, a `message` and, where known
 
 ### `parse(code: string): Program`
 
-Parses `code` into an [ESTree](https://github.com/estree/estree) `Program` that `run` accepts. Throws a `MapleError`
-with code `PARSE_ERROR` if `code` doesn't parse.
+Parses `code` into an [ESTree](https://github.com/estree/estree) `Program`, with the settings `run` uses. Throws a
+`MapleError` with code `PARSE_ERROR` if `code` doesn't parse.
 
 ### Host functions and `intrinsic(fn)`
 

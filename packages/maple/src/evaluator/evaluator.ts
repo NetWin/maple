@@ -158,7 +158,7 @@ const NO_LABELS: Labels = [];
 type BindMode = 'initialize' | 'parameter' | 'assign';
 
 /** Runs one more program on the current budget; `Maple` supplies it because it owns the globals. */
-type NestedRun = (code: string | Program, data: unknown, options: RunOptions) => MapleRunResult;
+type NestedRun = (code: string, data: unknown, options: RunOptions) => MapleRunResult;
 
 /** A script function on the call stack and the call expression that entered it. */
 interface Frame {
@@ -1117,12 +1117,7 @@ export class Evaluator {
    * the shared values as they were, like any run, and what it changes on them is gone when it
    * returns.
    */
-  private runNested(
-    code: string | Program,
-    data: unknown,
-    options: RunOptions,
-    node: Node
-  ): MapleRunResult {
+  private runNested(code: string, data: unknown, options: RunOptions, node: Node): MapleRunResult {
     if (!this.#budget.enter()) {
       this.fail(
         MapleErrorCode.LIMIT_EXCEEDED,

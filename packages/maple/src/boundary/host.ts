@@ -1,4 +1,3 @@
-import type { Program } from 'acorn';
 import type { MapleRunResult, RunOptions } from '../maple.ts';
 
 /**
@@ -16,7 +15,7 @@ export interface Sandbox {
   /** Calls a script function under the current budget. */
   call(callee: unknown, args: ReadonlyArray<unknown>): unknown;
   /** Runs another program on the shared budget, one depth level down. */
-  run(code: string | Program, data?: unknown, options?: RunOptions): MapleRunResult;
+  run(code: string, data?: unknown, options?: RunOptions): MapleRunResult;
 }
 
 /** A host function that receives the raw sandbox arguments and the `Sandbox` handle. */

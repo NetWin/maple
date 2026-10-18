@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Maple } from './maple.ts';
 import { parse } from './parse.ts';
-import { runAndCatch } from './spec-helpers.ts';
+import { runAndCatch, type UntypedRunner } from './spec-helpers.ts';
 
 /** The operations a run costs with three-element data beyond what it costs with empty data. */
 function extra(code: string): number {
@@ -37,8 +37,11 @@ describe('Maple.run', () => {
       expect(maple.run('{ return 1; }').value).toBe(1);
     });
 
-    it('accepts a pre-parsed program', () => {
-      expect(maple.run(parse('return 7;')).value).toBe(7);
+    it('rejects code that is not a string with a plain TypeError before running', () => {
+      const untyped: UntypedRunner = maple;
+      for (const code of [parse('return 7;'), 42, undefined]) {
+        expect(() => untyped.run(code)).toThrow(new TypeError('code must be a string'));
+      }
     });
   });
 

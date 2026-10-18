@@ -2,8 +2,8 @@ import { parse as acornParse, type Program } from 'acorn';
 import { MapleError, MapleErrorCode } from './boundary/maple-error.ts';
 
 /**
- * Parses source text into the ESTree `Program` that `run` accepts, with a top-level `return`
- * allowed. Throws a `MapleError` with code `PARSE_ERROR` when the code does not parse.
+ * Parses source text into the ESTree `Program`, with the settings `run` uses: a top-level `return`
+ * is allowed. Throws a `MapleError` with code `PARSE_ERROR` when the code does not parse.
  */
 export function parse(code: string): Program {
   try {
