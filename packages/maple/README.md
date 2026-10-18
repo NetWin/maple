@@ -3,6 +3,10 @@
 A secure JavaScript interpreter written in TypeScript. Maple parses a string of JavaScript and interprets it itself
 instead of handing it to `eval`, so a script only ever sees the values you pass in.
 
+Secure means that a script cannot escape: it cannot reach host globals, `require` or the file system on Node, or
+`localStorage`, cookies or the DOM in a browser. It does not mean that a run's CPU time or memory is capped; run
+untrusted code in a worker you can terminate if you need that.
+
 ## Install
 
 [acorn](https://github.com/acornjs/acorn) is a peer dependency, so install it alongside Maple:
@@ -43,7 +47,8 @@ come back as native instances; functions never leave the sandbox and become `und
 
 Creates a sandbox configuration. `globals` holds bindings every run of this instance can read, such as constants or
 host functions. `maxOps` (default `1_000_000`) bounds the operations of one run, `maxDepth` (default `100`) bounds
-call nesting. Exceeding either aborts the run with a `MapleError` of code `LIMIT_EXCEEDED`.
+call nesting. Exceeding either aborts the run with a `MapleError` of code `LIMIT_EXCEEDED`. They stop runaway
+scripts such as infinite loops; they are not a CPU or memory limit, since work inside built-ins is not counted.
 
 ```ts
 const maple = new Maple({ globals: { upper: (s: string) => s.toUpperCase() }, maxOps: 10_000 });

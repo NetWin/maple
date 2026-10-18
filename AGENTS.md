@@ -17,7 +17,8 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 
 - **Security is the point.** A script must reach nothing but what is passed in `context`: no host globals, no `eval` or
   `Function`, and no escape through prototypes (`constructor`, `__proto__`). Never evaluate a script with the host
-  engine. When in doubt, reject the code.
+  engine. When in doubt, reject the code. Security means isolation: capping a script's CPU time or memory is not a
+  goal for now, so a script that exhausts them is not a security bug.
 - **JavaScript is the reference.** What Maple supports behaves as the ECMAScript specification has it, with V8's
   messages; check Node when in doubt. Where security requires otherwise, document the difference in `docs/spec.md`.
 - Scripts return their result with an explicit `return`. The completion value of the last expression is not used.

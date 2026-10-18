@@ -4,6 +4,10 @@ Maple is a secure JavaScript interpreter written in TypeScript. It parses a stri
 itself instead of handing it to `eval`, so a script only ever sees the values you pass in. Scripts must `return`
 their result explicitly.
 
+Secure means that a script cannot escape: it cannot reach host globals, `require` or the file system on Node, or
+`localStorage`, cookies or the DOM in a browser. It does not mean that a run's CPU time or memory is capped; run
+untrusted code in a worker you can terminate if you need that.
+
 ```ts
 import { Maple } from '@netwin/maple';
 

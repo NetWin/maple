@@ -9,18 +9,29 @@ synchronously, and hands one value back with `return`. It can reach nothing else
 
 ## Guarantees
 
+"Secure" means isolation: a script cannot escape. It reaches nothing but the values the host passes
+in. On Node it cannot `require` a module or reach the file system, the network or `process`; in a
+browser it cannot reach `window`, the DOM, `localStorage`, cookies or `fetch`; and it cannot get
+there through a prototype either. "Secure" does not mean that a run's CPU time or memory is capped
+(see [Limits](#limits)).
+
 1. **Isolation by construction.** A script sees exactly the values the host passes in. There are no
    host globals, no `eval`, no `Function`, and no path from a sandbox value to a host object or
    prototype. Maple never evaluates script code with the host engine.
 2. **Allowlist, never blocklist.** The evaluator implements a fixed set of syntax and built-ins.
    Anything it does not implement throws when it is reached. There is no separate validation pass;
    the evaluator is the allowlist.
-3. **Termination.** Every run is bounded by an operation budget and a call depth. Exceeding either
-   aborts the run.
+3. **Runaway scripts stop.** Every run is bounded by an operation budget and a call depth, so an
+   infinite loop or unbounded recursion aborts the run. The budget does not charge work done inside
+   built-ins, so it does not cap CPU time or memory (see [Limits](#limits)).
 4. **Host functions are the only opening.** The host decides which functions a script may call.
    Values cross that boundary as copies, never as references to host state.
 5. **Nothing executable leaves.** A result never contains a closure, a host function or any other
    value that could run code on the host side.
+
+Resource exhaustion is not a goal for now. A script can keep the thread busy or allocate a large
+amount of memory without exceeding its limits. A host that runs untrusted code and needs to bound
+either runs Maple in a worker it can terminate.
 
 ## Pipeline
 
