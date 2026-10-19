@@ -81,8 +81,8 @@ const { value } = maple.run('return items.filter((item) => item.price > limit).l
 // value === 1
 ```
 
-The script works on a frozen copy, so `items.push(…)` throws a `TypeError`, and the host's object
-is never touched.
+The script works on a frozen copy, so `items.push(…)` throws a `TypeError` unless the run passes
+`freeze: false`. Either way, the host's object is never touched.
 
 ### Host functions
 

@@ -22,6 +22,11 @@ export interface MapleOptions {
 export interface RunOptions {
   /** Bindings for this run only; they shadow the instance globals and are shadowed by `data`. */
   globals?: Record<string, unknown>;
+  /**
+   * Whether `data` and the run's `globals` arrive frozen (default `true`).
+   * Instance globals are frozen regardless.
+   */
+  freeze?: boolean;
 }
 
 export interface MapleRunResult {
@@ -68,8 +73,10 @@ export class Maple {
   /** Everything a program needs before its first statement: its syntax and its global scope. */
   private prepare(code: string, data: unknown, options: RunOptions): Prepared {
     const program = parse(asCodeOrThrow(code));
-    const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals');
-    const dataGlobals = asGlobalsOrThrow(asDataObjectOrThrow(data), 'data');
+    // Only an explicit `false` unfreezes, so a JavaScript caller's typo keeps the safe default
+    const freeze = options.freeze !== false;
+    const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals', freeze);
+    const dataGlobals = asGlobalsOrThrow(asDataObjectOrThrow(data), 'data', freeze);
     const globals = createGlobalScope([STANDARD_GLOBALS, this.#globals, runGlobals, dataGlobals]);
     return { program, globals };
   }
@@ -129,8 +136,12 @@ function asCodeOrThrow(code: unknown): string {
   return code;
 }
 
-function asGlobalsOrThrow(globals: Record<string, unknown>, path: string): Record<string, unknown> {
-  const converted = fromHost(globals, path);
+function asGlobalsOrThrow(
+  globals: Record<string, unknown>,
+  path: string,
+  freeze: boolean = true
+): Record<string, unknown> {
+  const converted = fromHost(globals, path, { freeze });
   if (!isPlainObject(converted)) {
     throw new TypeError(`${path} must be a plain object`);
   }

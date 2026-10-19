@@ -41,8 +41,10 @@ it can terminate.
   ignored by `+`, templates, comparison and the built-ins (see [Coercion](language.md#coercion)).
   The host never holds a script function: callbacks of built-ins run through the interpreter, and
   set algebra and `Iterator.from` refuse objects whose methods the script wrote.
-- **Read-only input.** Everything the host passes in is a frozen copy (see
-  [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified.
+- **Copied input.** Everything the host passes in is a copy (see
+  [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified. The copy is
+  frozen unless the host asks for a changeable one for a single run; instance globals are frozen
+  always.
 - **No state between runs.** An instance holds only its limits and its frozen globals. What a run
   adds to a shared built-in, host function or namespace is gone when the next run starts. Host
   functions are the one channel through which the host may share state between runs, and that is

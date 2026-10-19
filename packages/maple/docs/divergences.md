@@ -24,7 +24,7 @@ one that does; the linked section has the detail.
 - Plain objects have only `hasOwnProperty`, `toString`, `toLocaleString` and `valueOf`.
 - `defineProperty`, `getPrototypeOf`, `create`, `seal` and the other descriptor and prototype
   functions are not available ([Object](builtins.md#object)).
-- Input data is frozen ([Boundary](boundary.md#into-the-run)).
+- Input data is frozen unless the host passes `freeze: false` ([Boundary](boundary.md#into-the-run)).
 
 ## Functions and constructors
 
