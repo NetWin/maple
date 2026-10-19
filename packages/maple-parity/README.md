@@ -62,6 +62,8 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `new Error('m', { cause: 1 }).cause`: Maple gives `1`, js-interpreter `undefined`                     | The `cause` option is ES2022; js-interpreter follows ES5 and ignores the second argument.                                 |
 | `'abc'.split(undefined, 0)`: Maple gives `[]`, js-interpreter `['abc']`                               | A limit of 0 gives no parts, as in JavaScript (and ES5); js-interpreter checks the separator first.                       |
 | An error with `name` set to `''` or `undefined`: Maple prints `oops` and `Error: x`                   | As in JavaScript (and ES5); js-interpreter joins `name` and `message` with `: ` regardless.                               |
+| An error whose `name` is itself: Maple throws a `RangeError`                                          | Nothing cuts that cycle in JavaScript, so it runs out of stack; js-interpreter stops quietly.                             |
+| An error named by an array that holds it: Maple gives `m: m`                                          | `join` cuts the cycle at the array, as in JavaScript; js-interpreter gives `...: m`.                                      |
 | `f.bind(null, 1)`: Maple names it `bound f` with the rest of `f`'s length, js-interpreter `fBound`, 0 | A bound function's `name` and `length` are ES2015; js-interpreter follows ES5.                                            |
 | `f.apply(null, 1)`, `f.apply(null, 'ab')`                                                             | A primitive is no list of arguments, so it is a `TypeError`. js-interpreter ignores a number and spreads a string.        |
 

@@ -61,6 +61,28 @@ describe('coercion', () => {
 
       expect(() => toString([nested])).toThrow(UnplacedError);
     });
+
+    it('cuts a cycle through an array even where it runs through an error, as the host does', () => {
+      const error = new SandboxError('Error', 'm');
+      error.name = [error];
+      expect(toString(error)).toBe('m: m');
+
+      const list: Array<unknown> = [1];
+      const named = new SandboxError('Error', 'm');
+      named.name = list;
+      list.push(named);
+      expect([toString(list), toString(named)]).toEqual(['1,m', '1,m: m']);
+    });
+
+    it('refuses a cycle between errors with a RangeError for the evaluator to place', () => {
+      const error = new SandboxError('Error', 'm');
+      error.name = error;
+
+      expect(() => toString(error)).toThrow(
+        expect.objectContaining({ name: 'RangeError', message: 'Maximum call stack size exceeded' })
+      );
+      expect(() => toString(error)).toThrow(UnplacedError);
+    });
   });
 
   describe('describeValue', () => {
@@ -81,6 +103,10 @@ describe('coercion', () => {
       expect(describeValue(Object.create(null))).toBe('[object Object]');
       expect(describeValue(nested)).toBe('[object Array]');
       expect(describeValue(error)).toBe('[object Error]');
+
+      const cyclic = new SandboxError('Error', 'm');
+      cyclic.message = cyclic;
+      expect(describeValue(cyclic)).toBe('[object Error]');
     });
   });
 

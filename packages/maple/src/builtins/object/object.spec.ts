@@ -298,6 +298,26 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     ).toBe("Cannot delete property '0' of #<Object>");
   });
 
+  it('refuses deleting from a frozen error that does not convert, as a script error', () => {
+    expect(
+      run(`
+        const e = new Error("m");
+        e.name = e;
+        e.x = 1;
+        Object.freeze(e);
+        const ran = [];
+        try {
+          delete e.x;
+        } catch (t) {
+          ran.push(t.message);
+        } finally {
+          ran.push("finally");
+        }
+        return ran;
+      `)
+    ).toEqual(["Cannot delete property 'x' of [object Error]", 'finally']);
+  });
+
   it('still lets a delete of a fixed property that freeze did not lock change nothing', () => {
     expect(run('const f = () => 1; return delete f.name;')).toBe(true);
     expect(run('return [delete Object.freeze(new Map()).size, delete /a/.source];')).toEqual([
@@ -349,6 +369,14 @@ describe('Object.seal and isSealed', () => {
     expect(errorMessage(maple, `${sealed} delete a[0];`)).toBe(
       "Cannot delete property '0' of [object Array]"
     );
+  });
+
+  it('refuse deleting from a sealed error that does not convert, as a script error', () => {
+    expect(
+      run(
+        'const e = new Error("m"); e.name = e; e.x = 1; Object.seal(e); const ran = []; try { delete e.x; } catch (t) { ran.push(t.message); } finally { ran.push("finally"); } return ran;'
+      )
+    ).toEqual(["Cannot delete property 'x' of [object Error]", 'finally']);
   });
 
   it('seal Maple own values, which keep working', () => {

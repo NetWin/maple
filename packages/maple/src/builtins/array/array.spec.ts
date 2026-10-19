@@ -269,6 +269,13 @@ describe('array methods', () => {
       expect(run('return [1, 2].join();')).toBe('1,2');
       expect(run('return [{ toString: "x" }, () => 1].join();')).toBe('[object Object],[function]');
       expect(run('return [1, [2]].toString();')).toBe('1,2');
+      expect(run('return [1, , 3].join();')).toBe('1,,3');
+    });
+
+    it('join an array that has its own map, which the conversion does not use', () => {
+      expect(
+        run('const a = [1, 2]; a.map = 1; return [a.join("-"), String(a), [a].toString(), `${a}`];')
+      ).toEqual(['1-2', '1,2', '1,2', '1,2']);
     });
 
     it('mutate script arrays', () => {
