@@ -2,7 +2,15 @@
   "name": "@netwin/maple",
   "version": "0.1.1",
   "description": "A secure JavaScript interpreter written in TypeScript",
-  "homepage": "https://github.com/NetWin/maple#readme",
+  "keywords": [
+    "interpreter",
+    "isolation",
+    "javascript-interpreter",
+    "sandbox",
+    "scripting",
+    "untrusted-code"
+  ],
+  "homepage": "https://github.com/NetWin/maple/tree/master/packages/maple#readme",
   "bugs": {
     "url": "https://github.com/NetWin/maple/issues"
   },
@@ -14,7 +22,8 @@
     "directory": "packages/maple"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "type": "module",
   "sideEffects": false,

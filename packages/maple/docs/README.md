@@ -22,7 +22,7 @@ from JavaScript; everything else is plain JavaScript and is not repeated here.
 | [Built-ins](builtins.md)      | The standard globals and every built-in member               |
 | [Divergences](divergences.md) | Every place Maple departs from JavaScript, in one list       |
 
-How to test the library and add a built-in is in [CONTRIBUTING.md](../CONTRIBUTING.md).
+How to test the library and add a built-in is in [CONTRIBUTING.md](https://github.com/NetWin/maple/blob/master/CONTRIBUTING.md).
 
 ## Terms
 
