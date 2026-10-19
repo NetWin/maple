@@ -86,6 +86,22 @@ export function describeValue(value: unknown): string {
   }
 }
 
+/**
+ * An object as a failed `delete` names it in JavaScript: `#<Object>`, `[object Array]`, `#<Map>`,
+ * and a function or an error by its string.
+ */
+export function describeObject(value: object): string {
+  if (Array.isArray(value)) {
+    return ARRAY_PLACEHOLDER;
+  }
+  if (value instanceof SandboxObject) {
+    return value.tag === 'Function' || value.tag === 'Error'
+      ? describeValue(value)
+      : `#<${value.tag}>`;
+  }
+  return '#<Object>';
+}
+
 export function toNumber(value: unknown): number {
   return Number(toPrimitive(value, 'number'));
 }

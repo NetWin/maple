@@ -1,7 +1,7 @@
 import { optionalNumberArgument } from '../../../values/arguments.ts';
 import { toNumber } from '../../../values/coercion.ts';
+import { guardIntegrityErrors } from '../../../values/guard-integrity-errors.ts';
 import { method, type Method } from '../../../values/native.ts';
-import { guardIntegrityErrors } from '../utils/guard-integrity-errors.ts';
 
 export const ARRAY_METHOD_COPY_WITHIN: Method<Array<unknown>> = method(
   Array.prototype.copyWithin.length,

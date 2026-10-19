@@ -21,3 +21,7 @@ export function runAndCatch(maple: Maple, code: string, data?: unknown): MapleEr
   }
   throw new Error('expected run to throw');
 }
+
+export function errorMessage(maple: Maple, code: string): string | undefined {
+  return runAndCatch(maple, code).sandboxError?.message;
+}

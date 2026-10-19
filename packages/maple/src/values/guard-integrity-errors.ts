@@ -1,4 +1,4 @@
-import type { Fail } from '../../../values/members.ts';
+import type { Fail } from './members.ts';
 
 /**
  * Runs a host write on an array that is no longer extensible, where the host refuses exactly what

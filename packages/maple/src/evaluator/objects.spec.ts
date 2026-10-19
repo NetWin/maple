@@ -212,7 +212,7 @@ describe('delete and in', () => {
   it('rejects deleting from input, nullish values and forbidden keys', () => {
     expect(sandboxError('delete obj.a;', { obj: { a: 1 } })).toMatchObject({
       name: 'TypeError',
-      message: "Cannot delete property 'a' of a read-only object"
+      message: "Cannot delete property 'a' of #<Object>"
     });
     expect(sandboxError('delete undefined.a;')?.name).toBe('TypeError');
     expect(sandboxError('const o = {}; delete o.__proto__;')?.name).toBe('TypeError');

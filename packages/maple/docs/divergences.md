@@ -23,8 +23,8 @@ one that does; the linked section has the detail.
 - `in` sees own properties and the methods of the value's type, so `'valueOf' in []` is `false`
   ([Methods](language.md#methods)).
 - Plain objects have only `hasOwnProperty`, `toString`, `toLocaleString` and `valueOf`.
-- `defineProperty`, `getPrototypeOf`, `create`, `seal` and the other descriptor and prototype
-  functions are not available ([Object](builtins.md#object)).
+- `defineProperty`, `getPrototypeOf`, `create` and the other descriptor and prototype functions
+  are not available ([Object](builtins.md#object)).
 - Input data is frozen unless the host passes `freeze: false` ([Boundary](boundary.md#into-the-run)).
 
 ## Functions and constructors

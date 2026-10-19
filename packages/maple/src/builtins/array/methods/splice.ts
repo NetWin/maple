@@ -1,5 +1,5 @@
+import { guardIntegrityErrors } from '../../../values/guard-integrity-errors.ts';
 import { method, type Method } from '../../../values/native.ts';
-import { guardIntegrityErrors } from '../utils/guard-integrity-errors.ts';
 import { splice } from '../utils/splice.ts';
 
 export const ARRAY_METHOD_SPLICE: Method<Array<unknown>> = method(

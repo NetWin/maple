@@ -56,12 +56,14 @@ Boolean instance: `toString`, `valueOf`.
 
 Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, `Object.assign`,
 `Object.hasOwn`, `Object.groupBy`, `Object.is`, `Object.getOwnPropertyNames`, `Object.freeze`,
-`Object.isFrozen`, `Object.preventExtensions`, `Object.isExtensible`.
+`Object.isFrozen`, `Object.seal`, `Object.isSealed`, `Object.preventExtensions`,
+`Object.isExtensible`.
 
-- The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`, `create`, …) and
-  `seal` are not available.
-- `freeze`, `preventExtensions` and their checks work on Maple's own values (functions, errors,
-  wrappers) as well. For a built-in function or a namespace, they last for the current run only.
+- The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`, `create`, …) are not
+  available.
+- `freeze`, `seal`, `preventExtensions` and their checks work on Maple's own values (functions,
+  errors, wrappers) as well. For a built-in function or a namespace, they last for the current run
+  only.
 - `Object.groupBy` converts each key hook-free, so a script object always groups as
   `[object Object]`.
 
