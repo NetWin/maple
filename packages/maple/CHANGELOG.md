@@ -1,3 +1,25 @@
+## [0.3.0](https://github.com/NetWin/maple/compare/0.2.1...0.3.0) (2026-10-19)
+
+### 🚀 Features
+
+* **maple:** add Object.seal and Object.isSealed ([05ac326](https://github.com/NetWin/maple/commit/05ac326f80a42b4052e755a6adbd17d5e4fa6f19))
+* **maple:** support call, apply and bind ([d6236ff](https://github.com/NetWin/maple/commit/d6236ff4adfe5208c33120fd91265f4dcf316434))
+
+### 🩹 Bug Fixes
+
+* **maple:** accept any function as an entry in Object.fromEntries ([e3bec2d](https://github.com/NetWin/maple/commit/e3bec2d8cb000f946583560a625c85ddd6bac53d))
+* **maple:** call the host's array methods past a script's own property ([958bb99](https://github.com/NetWin/maple/commit/958bb99b3260e3b7c16ec46ee4f40b3bb659ae63))
+* **maple:** make converting a cyclic error a catchable RangeError ([8b45f9d](https://github.com/NetWin/maple/commit/8b45f9d19c5ef4544e1accf204cef95a556068e2))
+* **maple:** refuse deleting a frozen property of a function or error ([d67a864](https://github.com/NetWin/maple/commit/d67a86455f0b9a07d352eca4c36d31aad67caa92))
+
+### 📖 Documentation
+
+* describe the increment branch flow ([ba3c461](https://github.com/NetWin/maple/commit/ba3c461e72f5edfea95c0c8a5a2904e3aec3d9cc))
+
+### 🔄️ Continuous Integration
+
+* merge each release back into increment ([918c227](https://github.com/NetWin/maple/commit/918c22762932a0cf4ccd9c80425fdc5dee9707d1))
+
 ## [0.2.1](https://github.com/NetWin/maple/compare/0.2.0...0.2.1) (2026-10-19)
 
 ### 🩹 Bug Fixes
