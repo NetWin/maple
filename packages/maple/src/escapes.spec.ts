@@ -23,6 +23,10 @@ function errorName(source: string, data?: unknown): string | undefined {
   return runAndCatch(maple, source, data).sandboxError?.name;
 }
 
+function runUnfrozen(code: string, data?: unknown, globals?: Record<string, unknown>): unknown {
+  return maple.run(code, data, { freeze: false, globals }).value;
+}
+
 /** Nothing a script did may have reached the host's prototypes. */
 function assertHostUntouched(): void {
   expect('polluted' in {}).toBe(false);
@@ -230,7 +234,66 @@ describe('escape attempts', () => {
       // @ts-expect-error - assigning a host object to lastIndex is normally not allowed in TypeScript
       regexp.lastIndex = host;
       expect(() => run('r.lastIndex.n = 1;', { r: regexp })).toThrow(TypeError);
+      expect(() => maple.run('r.lastIndex.n = 1;', { r: regexp }, { freeze: false })).toThrow(
+        TypeError
+      );
       expect(host.n).toBe(0);
+    });
+  });
+
+  describe('unfrozen input stays a copy of this run', () => {
+    it('so changing it never reaches the host', () => {
+      const data = { obj: { a: [1] }, when: new Date(0), lookup: new Map([['k', 1]]) };
+      const globals = { shared: { n: 1 } };
+
+      runUnfrozen(
+        'obj.a.push(2); obj.b = 1; delete obj.a; when.setTime(1); lookup.set("x", 2); shared.n = 2;',
+        data,
+        globals
+      );
+
+      expect(data).toEqual({ obj: { a: [1] }, when: new Date(0), lookup: new Map([['k', 1]]) });
+      expect(globals).toEqual({ shared: { n: 1 } });
+    });
+
+    it('so the next run starts from the host value again', () => {
+      const data = { obj: { n: 1 } };
+
+      expect(runUnfrozen('obj.n += 1; return obj.n;', data)).toBe(2);
+      expect(runUnfrozen('obj.n += 1; return obj.n;', data)).toBe(2);
+    });
+
+    it('so instance globals stay frozen, since every run shares them', () => {
+      const shared = new Maple({ globals: { config: { n: 1 } } });
+      const attempt = (): unknown =>
+        shared.run('try { config.n = 2; } catch (e) { return e.name; }', undefined, {
+          freeze: false
+        }).value;
+
+      expect(attempt()).toBe('TypeError');
+      expect(shared.run('return config.n;').value).toBe(1);
+    });
+
+    it('so its bindings stay read-only', () => {
+      expect(() => runUnfrozen('obj = {};', { obj: {} })).toThrow(
+        "Cannot assign to read-only global 'obj'"
+      );
+    });
+
+    it('so prototype keys stay out of reach', () => {
+      const data = '{"obj": {}, "own": {"__proto__": {"polluted": true}}}';
+      const errorOf = (code: string): unknown =>
+        runUnfrozen(`try { ${code} } catch (e) { return e.name; }`, data);
+
+      expect(errorOf('obj.__proto__ = { polluted: true };')).toBe('TypeError');
+      expect(errorOf('obj["constructor"] = { prototype: { polluted: true } };')).toBe('TypeError');
+      expect(errorOf('obj.prototype = { polluted: true };')).toBe('TypeError');
+      expect(errorOf('Object.assign(obj, own);')).toBe('TypeError');
+      expect(errorOf('own.__proto__.polluted = 1;')).toBe('TypeError');
+      expect(runUnfrozen('own.x = 1; return [Object.keys(own), ({}).polluted];', data)).toEqual([
+        ['__proto__', 'x'],
+        undefined
+      ]);
     });
   });
 

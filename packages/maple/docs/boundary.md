@@ -70,6 +70,27 @@ read-only regexp matches on a fresh copy every time, so its `lastIndex` stays `0
 script makes (`new Map(input)`, `new Date(input)`, `new RegExp(input)`, `[...input]`) is its own to
 change.
 
+### Changeable input
+
+`run(code, data, { freeze: false })` copies `data` and the run's `globals` without freezing them,
+like a host function's return value, so a script can change its input in place and return it:
+
+```ts
+maple.run('item.price = item.price * 2; return item;', { item: { price: 5 } }, { freeze: false })
+  .value;
+// { price: 10 }
+```
+
+Only an explicit `false` turns freezing off. The bindings themselves stay read-only, so
+`item = {}` still throws a `TypeError`. This does not widen the sandbox:
+
+- The script changes a copy made for this run. The host's objects are never touched, and the next
+  run starts from the host's value again.
+- Instance globals stay frozen, since every run of the instance shares them; otherwise one run could
+  leave values for the next.
+- The script can already create mutable objects of every kind, and `__proto__`, `constructor` and
+  `prototype` are refused on every write, frozen or not.
+
 ## Host function calls
 
 Arguments are copied into normal host objects, so the host function cannot mutate anything the
