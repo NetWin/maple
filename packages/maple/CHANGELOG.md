@@ -1,3 +1,14 @@
+## [0.1.2](https://github.com/NetWin/maple/compare/0.1.1...0.1.2) (2026-10-19)
+
+### 🛠️ Code Refactoring
+
+* **release:** ship the docs with the package and add npm keywords ([5d4fda0](https://github.com/NetWin/maple/commit/5d4fda0c16ace3690842e295b7e132a349fa4c46))
+
+### 🔄️ Continuous Integration
+
+* leave the publishing plugins out of the changelog preview ([5c2b8dd](https://github.com/NetWin/maple/commit/5c2b8ddc3061ae70ea06469ba58ecd3eeb0faf2e))
+* require a scope in commit messages ([2f0c909](https://github.com/NetWin/maple/commit/2f0c909be4c65a07a58f145dbeeca6932076d15e))
+
 ## [0.1.1](https://github.com/NetWin/maple/compare/0.1.0...0.1.1) (2026-10-18)
 
 ### 📖 Documentation
