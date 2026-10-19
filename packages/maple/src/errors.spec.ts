@@ -8,6 +8,11 @@ function run(code: string, data?: unknown): unknown {
   return maple.run(code, data).value;
 }
 
+/** Script that leaves `e` as the last of `length` errors, each named by the one before. */
+function errorChain(length: number): string {
+  return `let e = new Error("m"); for (let i = 1; i < ${length}; i++) { const n = new Error("m"); n.name = e; e = n; }`;
+}
+
 describe('errors', () => {
   describe('throw', () => {
     it('surfaces an uncaught error object as RUNTIME_ERROR', () => {
@@ -279,6 +284,70 @@ describe('errors', () => {
 
   it('counts throw and its argument as operations', () => {
     expect(runAndCatch(maple, 'throw 1;').stats?.ops).toBe(2);
+  });
+});
+
+describe('an error whose name or message leads back to it', () => {
+  it('fails to convert with the RangeError JavaScript gives, which the script can catch', () => {
+    const caught = (setup: string, conversion: string): unknown =>
+      run(
+        `const e = new Error("m"); ${setup} try { ${conversion}; } catch (t) { return [t.name, t.message]; }`
+      );
+    const rangeError = ['RangeError', 'Maximum call stack size exceeded'];
+
+    expect(caught('e.name = e;', 'String(e)')).toEqual(rangeError);
+    expect(caught('e.message = e;', '"" + e')).toEqual(rangeError);
+    expect(caught('e.name = e;', '`${e}`')).toEqual(rangeError);
+    expect(caught('e.name = e;', 'e.toString()')).toEqual(rangeError);
+    expect(caught('e.name = e;', 'new Error(e)')).toEqual(rangeError);
+    expect(caught('const f = new Error("f"); e.name = f; f.name = e;', 'String(e)')).toEqual(
+      rangeError
+    );
+    expect(
+      run(
+        'const e = new Error("m"); e.name = e; try { String(e); } catch {} e.name = "X"; return String(e);'
+      )
+    ).toBe('X: m');
+  });
+
+  it('converts through an array, which cuts the cycle as JavaScript does', () => {
+    expect(run('const e = new Error("m"); e.name = [e]; return String(e);')).toBe('m: m');
+    expect(run('const e = new Error("m"); e.message = [e, 1]; return String(e);')).toBe(
+      'Error: Error,1'
+    );
+    expect(
+      run(
+        'const l = [1]; const e = new Error("m"); e.name = l; l.push(e); return [String(l), String(e)];'
+      )
+    ).toEqual(['1,m', '1,m: m']);
+  });
+
+  it('converts a chain of errors up to the nesting limit', () => {
+    expect(run(`${errorChain(1000)} return String(e);`)).toBe(`Error: m${': m'.repeat(999)}`);
+    expect(run(`${errorChain(1001)} try { String(e); } catch (t) { return t.name; }`)).toBe(
+      'RangeError'
+    );
+  });
+
+  it('is named by its tag in the messages of other errors', () => {
+    expect(
+      run(
+        'const e = new Error("m"); e.name = e; try { Array.from([1], e); } catch (t) { return t.message; }'
+      )
+    ).toBe('[object Error] is not a function');
+  });
+
+  it('still reaches the host, thrown or returned', () => {
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); e.name = e; throw e;').sandboxError
+    ).toMatchObject({
+      name: 'Error',
+      message: 'm'
+    });
+    expect(run('const e = new Error("m"); e.name = e; return e;')).toMatchObject({
+      name: 'Error',
+      message: 'm'
+    });
   });
 });
 

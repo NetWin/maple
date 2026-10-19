@@ -1,5 +1,5 @@
 import type { Node } from 'acorn';
-import { type Primitive, toString } from './coercion.ts';
+import { Conversion, type Primitive, type PrimitiveHint, toString } from './coercion.ts';
 import { type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
 /** `name` and `message` keep any value, as in JavaScript; converting the error reads them. */
@@ -63,18 +63,24 @@ export class SandboxError extends SandboxObject {
   /**
    * What JavaScript's `Error.prototype.toString` gives: an `undefined` name reads as `Error` and an
    * `undefined` message as empty, and an empty part leaves out the `: `. Converting an assigned
-   * value can throw, as it can in JavaScript.
+   * value can throw, as it can in JavaScript, and so can a `name` or `message` that leads back to
+   * the error.
    */
-  public override toPrimitive(): Primitive {
-    const name = this.name === undefined ? 'Error' : toString(this.name);
-    const message = this.message === undefined ? '' : toString(this.message);
-    if (name === '') {
-      return message;
-    }
-    if (message === '') {
-      return name;
-    }
-    return `${name}: ${message}`;
+  public override toPrimitive(
+    _hint: PrimitiveHint,
+    conversion: Conversion = new Conversion()
+  ): Primitive {
+    return conversion.convertError(() => {
+      const name = this.name === undefined ? 'Error' : toString(this.name, conversion);
+      const message = this.message === undefined ? '' : toString(this.message, conversion);
+      if (name === '') {
+        return message;
+      }
+      if (message === '') {
+        return name;
+      }
+      return `${name}: ${message}`;
+    });
   }
 
   /** The fixed part of the error as the host receives it; the boundary adds `properties`. */

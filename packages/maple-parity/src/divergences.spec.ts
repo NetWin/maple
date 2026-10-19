@@ -172,6 +172,22 @@ describe('Error.prototype.toString', () => {
       )
     ).toEqual({ maple: ['oops', 'Error: x'], jsInterpreter: [': oops', 'undefined: x'] });
   });
+
+  it('throws a RangeError for an error that names itself', () => {
+    expect(
+      followsJavaScript(
+        "var e = new Error('m'); e.name = e; try { String(e); } catch (t) { return t.name; }"
+      )
+    ).toEqual({ maple: 'RangeError', jsInterpreter: undefined });
+  });
+
+  // join cuts a cycle through an array, nested conversions included; js-interpreter cuts it as '...'
+  it('converts an error named by an array that holds it', () => {
+    expect(followsJavaScript("var e = new Error('m'); e.name = [e]; return String(e);")).toEqual({
+      maple: 'm: m',
+      jsInterpreter: '...: m'
+    });
+  });
 });
 
 describe('Error:cause', () => {

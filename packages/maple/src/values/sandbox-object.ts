@@ -1,4 +1,4 @@
-import { describeObject, type Primitive, type PrimitiveHint } from './coercion.ts';
+import { type Conversion, describeObject, type Primitive, type PrimitiveHint } from './coercion.ts';
 import type { MemberContext, MethodLookup } from './members.ts';
 import {
   type Attributes,
@@ -81,8 +81,11 @@ export abstract class SandboxObject {
     return this.isShared ? runState.getOwnPropertiesOf(this) : this.properties;
   }
 
-  /** ToPrimitive without hooks, so a script cannot influence a conversion: `[object Map]`. */
-  public toPrimitive(_hint: PrimitiveHint): Primitive {
+  /**
+   * ToPrimitive without hooks, so a script cannot influence a conversion: `[object Map]`. A value
+   * whose conversion converts others, as an error does, hands them `conversion`.
+   */
+  public toPrimitive(_hint: PrimitiveHint, _conversion?: Conversion): Primitive {
     return `[object ${this.tag}]`;
   }
 
