@@ -77,19 +77,34 @@ describe('host functions', () => {
     expect(seen[3]).toEqual(new Set([3]));
   });
 
-  it('refuse functions and iterators as arguments', () => {
+  it('receive functions in arguments as undefined', () => {
+    const seen: Array<unknown> = [];
+    const take = (value: unknown): void => void seen.push(value);
+    const maple = new Maple({ globals: { take, tools: { one } } });
+
+    maple.run(`
+      take(() => 1);
+      take({ nested: [() => 1], kept: 1 });
+      take(take);
+      take({ tools, a: 1 });
+    `);
+
+    expect(seen[0]).toBeUndefined();
+    expect(seen[1]).toStrictEqual({ nested: [undefined], kept: 1 });
+    expect(seen[2]).toBeUndefined();
+    expect(seen[3]).toStrictEqual({ tools: { one: undefined }, a: 1 });
+  });
+
+  it('refuse iterators as arguments', () => {
     const maple = new Maple({ globals: { take: one } });
 
-    expect(sandboxError(maple, 'take(() => 1);')).toMatchObject({
+    expect(sandboxError(maple, 'take([].values());')).toMatchObject({
       name: 'TypeError',
-      message: 'A function cannot be passed to the host'
+      message: 'An iterator cannot be passed to the host'
     });
-    expect(sandboxError(maple, 'take({ nested: [() => 1] });')?.name).toBe('TypeError');
-    expect(sandboxError(maple, 'take(take);')?.name).toBe('TypeError');
-    expect(sandboxError(maple, 'take([].values());')?.message).toBe(
-      'An iterator cannot be passed to the host'
+    expect(maple.run('try { take([].values()); } catch (e) { return "caught"; }').value).toBe(
+      'caught'
     );
-    expect(maple.run('try { take(() => 1); } catch (e) { return "caught"; }').value).toBe('caught');
   });
 
   it('refuse cyclic arguments but keep shared references', () => {

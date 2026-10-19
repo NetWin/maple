@@ -197,9 +197,10 @@ describe('intrinsics', () => {
       }
     });
 
-    expect(maple.run('return [caught(1), caught(() => 1)];').value).toEqual([
+    expect(maple.run('return [caught(1), caught(() => 1), caught([].values())];').value).toEqual([
       'converted',
-      'RUNTIME_ERROR: A function cannot be passed to the host'
+      'converted',
+      'RUNTIME_ERROR: An iterator cannot be passed to the host'
     ]);
 
     expect(
@@ -207,8 +208,12 @@ describe('intrinsics', () => {
     ).toEqual([{ a: [1] }, { a: [1, 2] }]);
     expect(maple.run('return later().getTime();').value).toBe(0);
     expect(runAndCatch(maple, 'leak();').code).toBe('INTERNAL_ERROR');
-    expect(maple.run('try { out(() => 1); } catch (e) { return e.message; }').value).toBe(
-      'A function cannot be passed to the host'
+    expect(maple.run('return out({ f: () => 1, a: 1 });').value).toStrictEqual({
+      f: undefined,
+      a: 1
+    });
+    expect(maple.run('try { out([].values()); } catch (e) { return e.message; }').value).toBe(
+      'An iterator cannot be passed to the host'
     );
     expect(
       maple.run(

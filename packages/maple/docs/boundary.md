@@ -9,7 +9,7 @@ globals), the arguments of a host function, its return value, and the result of 
 | Plain object, array            | frozen copy        | fresh copy         | mutable copy         | fresh copy      |
 | `Date`, `RegExp`, `Map`, `Set` | read-only wrapper  | fresh native       | mutable wrapper      | fresh native    |
 | Sandbox error                  | –                  | plain object       | –                    | plain object    |
-| Function                       | host function      | `TypeError`        | `INTERNAL_ERROR`     | `undefined`     |
+| Function                       | host function      | `undefined`        | `INTERNAL_ERROR`     | `undefined`     |
 | Iterator                       | –                  | `TypeError`        | –                    | `undefined`     |
 | Anything else                  | `TypeError` before | –                  | `INTERNAL_ERROR`     | –               |
 | Value reached twice            | shared             | shared             | shared               | shared          |
@@ -73,8 +73,9 @@ change.
 ## Host function calls
 
 Arguments are copied into normal host objects, so the host function cannot mutate anything the
-script sees, and the script cannot hand it anything executable. A sandbox error arrives as the plain
-object described below.
+script sees. Functions become `undefined` at any depth, as in a result, so the script cannot hand it
+anything executable but can still pass an object that holds functions. A sandbox error arrives as
+the plain object described below.
 
 The return value is copied like the input, except that the copy is not frozen, because the script
 owns it, and functions are not accepted.

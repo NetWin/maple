@@ -18,7 +18,7 @@ import type { SandboxErrorInfo } from './maple-error.ts';
  */
 export const MAX_ERROR_PROPERTIES_SIZE = 65_536;
 
-type UnconvertibleKind = 'function' | 'iterator' | 'cyclic value';
+type UnconvertibleKind = 'iterator' | 'cyclic value';
 
 /**
  * Keys a copy leaves out. Host code that copies by assignment would turn an own `__proto__` into
@@ -48,9 +48,9 @@ export class NestingLimitError extends RangeError {
 }
 
 /**
- * Copies a sandbox value out for the host: a fresh, mutable structure that shares nothing with
- * the run and contains nothing executable. Functions and iterators become `undefined` and cycles
- * are preserved, or, when `strict` as for host function arguments, both throw an
+ * Copies a sandbox value out for the host: a fresh, mutable structure that shares nothing with the
+ * run and contains nothing executable. Functions become `undefined`. Iterators become `undefined`
+ * and cycles are preserved, or, when `strict` as for host function arguments, both throw an
  * `UnconvertibleValueError`. Throws a plain error for a value the sandbox could not have produced.
  */
 export function toHost(value: unknown, strict: boolean = false): unknown {
@@ -108,9 +108,6 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
     return typeof value === 'function' ? undefined : value;
   }
   if (value instanceof Closure || value instanceof Builtin || value instanceof NativeFunction) {
-    if (walk.strict) {
-      throw new UnconvertibleValueError('function');
-    }
     return undefined;
   }
   if (value instanceof IteratorWrapper) {
