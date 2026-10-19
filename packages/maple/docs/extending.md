@@ -102,7 +102,7 @@ knowledge of Maple.
 
 ### Intrinsics with a callback
 
-A host function cannot receive a script function, but an intrinsic can call one through
+A host function receives a script function as `undefined`, but an intrinsic can call one through
 `sandbox.call`, under the budget:
 
 ```ts

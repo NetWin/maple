@@ -243,10 +243,18 @@ describe('escape attempts', () => {
         h: undefined
       });
       expect(run('return [host, [].values()];')).toEqual([undefined, undefined]);
-      expect(errorName('host(() => 1);')).toBe('TypeError');
-      expect(errorName('host({ deep: { fn: () => 1 } });')).toBe('TypeError');
-      expect(errorName('host(host);')).toBe('TypeError');
-      expect(errorName('host(Math.max);')).toBe('TypeError');
+
+      const received: Array<unknown> = [];
+      const spy = new Maple({
+        globals: { host: (value: unknown): number => received.push(value) }
+      });
+      spy.run('host(() => 1); host({ deep: { fn: () => 1 } }); host(host); host(Math.max);');
+      expect(received).toStrictEqual([
+        undefined,
+        { deep: { fn: undefined } },
+        undefined,
+        undefined
+      ]);
     });
 
     it('cannot be inspected', () => {
