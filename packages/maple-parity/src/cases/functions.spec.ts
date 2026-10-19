@@ -363,6 +363,78 @@ describe('Function.prototype.valueOf', () => {
   });
 });
 
+describe('Function.prototype.call', () => {
+  it('calls a script function with the arguments after the receiver', () => {
+    expect(parity('function f(a, b) { return a + b; } return f.call(null, 1, 2);')).toBe(3);
+  });
+
+  it('passes the receiver to a built-in method', () => {
+    expect(parity("return ''.trim.call('  b ');")).toBe('b');
+    expect(parity('var a = [1]; [].push.call(a, 2, 3); return a;')).toEqual([1, 2, 3]);
+  });
+
+  it('calls a global function', () => {
+    expect(parity('return [String.call(null, 5), Math.max.call(null, 1, 3, 2)];')).toEqual([
+      '5',
+      3
+    ]);
+  });
+
+  it('calls call itself', () => {
+    expect(parity('function f(a) { return a; } return f.call.call(f, null, 1);')).toBe(1);
+  });
+
+  it('needs a function as its receiver', () => {
+    expect(allThrow('var c = Math.max.call; return c();')).toBe('TypeError');
+  });
+});
+
+// js-interpreter throws for `f.apply(null, null)`, so the case for no arguments is in Maple's own spec
+describe('Function.prototype.apply', () => {
+  it('spreads an array into the arguments', () => {
+    expect(parity('function f(a, b) { return a + b; } return f.apply(null, [1, 2]);')).toBe(3);
+    expect(parity('return Math.max.apply(null, [1, 3, 2]);')).toBe(3);
+  });
+
+  it('spreads an array-like and arguments', () => {
+    expect(
+      parity(
+        "function f(a, b) { return a + b; } return f.apply(null, { length: 2, 0: 'a', 1: 'b' });"
+      )
+    ).toBe('ab');
+    expect(
+      parity(
+        'function f(a, b) { return a + b; } function g() { return f.apply(null, arguments); } return g(1, 2);'
+      )
+    ).toBe(3);
+  });
+
+  it('passes the receiver to a built-in method', () => {
+    expect(parity("return 'a-b'.split.apply('x-y', ['-']);")).toEqual(['x', 'y']);
+  });
+});
+
+// js-interpreter throws for `f.bind()` without a receiver, so every case passes one
+describe('Function.prototype.bind', () => {
+  it('fixes leading arguments', () => {
+    expect(parity('function f(a, b) { return a + b; } return f.bind(null, 1)(2);')).toBe(3);
+    expect(
+      parity('function f(a, b, c) { return [a, b, c]; } return f.bind(null, 1).bind(null, 2)(3);')
+    ).toEqual([1, 2, 3]);
+  });
+
+  it('binds the receiver of a built-in method', () => {
+    expect(parity("var trim = ''.trim.bind('  b '); return trim();")).toBe('b');
+    expect(parity('var a = []; var push = [].push.bind(a); push(1); push(2); return a;')).toEqual([
+      1, 2
+    ]);
+  });
+
+  it('gives a function', () => {
+    expect(parity('function f() {} return typeof f.bind(null);')).toBe('function');
+  });
+});
+
 describe('method calls', () => {
   it('read the same function for every value of a type', () => {
     expect(

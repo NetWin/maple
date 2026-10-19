@@ -10,7 +10,7 @@ export const MAP_METHOD_FOR_EACH: Method<MapWrapper> = method(
     }
 
     for (const [key, value] of m.map) {
-      context.call(fn, [value, key, m]);
+      context.call(undefined, fn, [value, key, m]);
     }
 
     return undefined;

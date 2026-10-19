@@ -13,7 +13,9 @@ export const ARRAY_STATIC_FROM: NativeFunction = new NativeFunction(
     }
     const items: Array<unknown> = [];
     const add = (item: unknown): void => {
-      items.push(mapper === undefined ? item : context.call(mapper, [item, items.length]));
+      items.push(
+        mapper === undefined ? item : context.call(undefined, mapper, [item, items.length])
+      );
     };
     const iterator = iterate(source);
     if (iterator) {

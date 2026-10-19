@@ -10,7 +10,7 @@ export const SET_METHOD_FOR_EACH: Method<SetWrapper> = method(
     }
 
     for (const value of s.set) {
-      context.call(fn, [value, value, s]);
+      context.call(undefined, fn, [value, value, s]);
     }
 
     return undefined;

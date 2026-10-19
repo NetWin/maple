@@ -1064,10 +1064,7 @@ export class Evaluator {
   private callContext(node: Node): CallContext {
     return {
       ...this.memberContext(node),
-      call: (callee, args) => {
-        this.tick(node);
-        return this.invoke(undefined, callee, args, node, 'callback');
-      },
+      call: (receiver, callee, args) => this.call(receiver, callee, args, node),
       stackTrace: () => this.stackTrace(node),
       invokeHost: (fn, args) => this.invokeHost(fn, args, node),
       invokeIntrinsic: (fn, args) => this.invokeIntrinsic(fn, args, node)
@@ -1120,17 +1117,35 @@ export class Evaluator {
       handle: {
         toHost: (value) => guard(() => this.toHostArgument(value, node)),
         fromHost: (value) => guard(() => this.fromHostResult(value, node, 'intrinsic')),
-        call: (callee, args) =>
-          guard(() => {
-            this.tick(node);
-            return this.invoke(undefined, callee, args, node, 'callback');
-          }),
+        call: (callee, args) => guard(() => this.call(undefined, callee, args, node)),
         run: (code, data, options = {}) => guard(() => this.runNested(code, data, options, node))
       },
       revoke: () => {
         revoked = true;
       }
     };
+  }
+
+  /**
+   * Calls a function for a built-in or an intrinsic. A closure counts its own level; any other
+   * callee counts one here, so built-ins calling each other, as `apply` can, stay under `maxDepth`.
+   */
+  private call(
+    receiver: unknown,
+    callee: unknown,
+    args: ReadonlyArray<unknown>,
+    node: Node
+  ): unknown {
+    this.tick(node);
+    if (callee instanceof Closure) {
+      return this.callClosure(callee, args, node);
+    }
+    this.enterCall(node);
+    try {
+      return this.invoke(receiver, callee, args, node, 'callback');
+    } finally {
+      this.#budget.leave();
+    }
   }
 
   /** Calls any callable sandbox value; `description` names it in the error when it is not one. */
@@ -1159,13 +1174,7 @@ export class Evaluator {
    * returns.
    */
   private runNested(code: string, data: unknown, options: RunOptions, node: Node): MapleRunResult {
-    if (!this.#budget.enter()) {
-      this.fail(
-        MapleErrorCode.LIMIT_EXCEEDED,
-        `Call depth limit of ${this.#budget.maxDepth} exceeded`,
-        node
-      );
-    }
+    this.enterCall(node);
     this.#frames.push({ name: '<nested>', calledFrom: node });
     const outer = this.#runState;
     this.#runState = new RunState();
@@ -1285,8 +1294,8 @@ export class Evaluator {
     return args;
   }
 
-  /** `node` is where the call happened, which is what a depth error points at. */
-  private callClosure(closure: Closure, args: ReadonlyArray<unknown>, node: Node): unknown {
+  /** Enters one call level, or ends the run once the depth limit is reached. */
+  private enterCall(node: Node): void {
     if (!this.#budget.enter()) {
       this.fail(
         MapleErrorCode.LIMIT_EXCEEDED,
@@ -1294,6 +1303,11 @@ export class Evaluator {
         node
       );
     }
+  }
+
+  /** `node` is where the call happened, which is what a depth error points at. */
+  private callClosure(closure: Closure, args: ReadonlyArray<unknown>, node: Node): unknown {
+    this.enterCall(node);
     const { node: fn } = closure;
     this.#frames.push({ name: closure.name || '<anonymous>', calledFrom: node });
     try {

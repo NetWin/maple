@@ -228,7 +228,7 @@ describe('delete and in', () => {
     expect(run('return "map" in list;', data)).toBe(true);
     expect(run('return "x" in (() => 1);')).toBe(false);
     expect(run('return "toString" in (() => 1);')).toBe(true);
-    expect(run('return "call" in (() => 1);')).toBe(false);
+    expect(run('return "call" in (() => 1);')).toBe(true);
     expect(run('return "__proto__" in obj;', data)).toBe(false);
     expect(run('return "__proto__" in own;', '{"own": {"__proto__": 1}}')).toBe(true);
     expect(sandboxError('return "a" in 5;')).toMatchObject({

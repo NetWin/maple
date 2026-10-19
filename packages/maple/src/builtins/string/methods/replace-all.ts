@@ -16,7 +16,7 @@ export const STRING_METHOD_REPLACE_ALL: Method<string> = method(
       return s.replaceAll(search, toString(replacement));
     }
     return s.replaceAll(search, (...hostArgs: Array<unknown>): string =>
-      toString(context.call(replacement, hostArgs))
+      toString(context.call(undefined, replacement, hostArgs))
     );
   }
 );

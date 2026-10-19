@@ -137,6 +137,19 @@ Arrays, strings, Maps, Sets and iterators are the iterables, in `for...of`, spre
 and wherever a built-in takes an iterable. Plain objects are not iterable. An iterator never leaves
 the sandbox (see [Boundary](boundary.md)).
 
+## Functions
+
+Every function, script, built-in or host, answers to `call`, `apply`, `bind`, `toString` and
+`valueOf`.
+
+`apply` takes `null` or `undefined` for no arguments, or an array-like: an array, `arguments` or
+any object with a `length`. A primitive is a `TypeError`.
+
+A bound function is named `bound ` followed by the name of the function it calls, and its `length`
+is what is left of that function's after the bound arguments. One bound from a host function has no
+properties, as host functions have none. A bound function cannot be constructed with `new` or used
+on the right-hand side of `instanceof`, and it adds no frame to `stack`.
+
 ## Errors
 
 `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError` and `EvalError`,
