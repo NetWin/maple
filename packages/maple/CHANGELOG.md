@@ -1,3 +1,9 @@
+## [0.2.0](https://github.com/NetWin/maple/compare/0.1.3...0.2.0) (2026-10-19)
+
+### 🚀 Features
+
+* **run:** let the host opt out of freezing data and run globals ([687c42f](https://github.com/NetWin/maple/commit/687c42f4dbe1f8a0511cb74fefa24cb5164d606f))
+
 ## [0.1.3](https://github.com/NetWin/maple/compare/0.1.2...0.1.3) (2026-10-19)
 
 ### 🩹 Bug Fixes
