@@ -62,7 +62,7 @@ const maple = new Maple({ globals: { upper: (s: string) => s.toUpperCase() }, ma
 
 Runs `code` against `data` and returns `{ value, stats }`. `data` may also be a JSON string. `options.globals` adds
 bindings for this run only; they shadow the instance's `globals`, and the keys of `data` shadow both. `data` and
-`options.globals` arrive frozen; `options.freeze: false` lets the script change its own copy of them. Every failure
+`options.globals` arrive frozen and read-only; `options.freeze: false` lets the script change and reassign its own copy of them. Every failure
 inside the run throws a `MapleError` with a `code`, a `message` and, where known, `line` and `column`.
 
 ### `parse(code: string): Program`

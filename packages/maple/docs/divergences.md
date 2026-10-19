@@ -12,7 +12,8 @@ one that does; the linked section has the detail.
 - Reading host and dangerous globals such as `globalThis`, `eval`, `Function`, `Proxy`, `process`
   or `window` throws `DISALLOWED_SYNTAX` instead of a `ReferenceError` ([Names](language.md#names)).
 - Scripts return their result with `return`; the completion value is not used.
-- Every global binding is read-only, so assigning to one throws a `TypeError`
+- Every global binding is read-only, so assigning to one throws a `TypeError`, unless the host
+  passes `freeze: false` for the bindings from `data` and run globals
   ([Boundary](boundary.md#into-the-run)).
 
 ## Objects and properties

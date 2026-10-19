@@ -274,10 +274,19 @@ describe('escape attempts', () => {
       expect(shared.run('return config.n;').value).toBe(1);
     });
 
-    it('so its bindings stay read-only', () => {
-      expect(() => runUnfrozen('obj = {};', { obj: {} })).toThrow(
-        "Cannot assign to read-only global 'obj'"
-      );
+    it('so reassigning its bindings stays within the run', () => {
+      const data = { obj: { n: 1 } };
+      const shared = new Maple({ globals: { config: { n: 1 } } });
+      const reassign = (code: string): unknown =>
+        shared.run(`try { ${code} } catch (e) { return e.name; }`, data, { freeze: false }).value;
+
+      expect(runUnfrozen('obj = obj.inner; return obj;', { obj: { inner: 2 } })).toBe(2);
+      expect(reassign('obj = { n: 2 }; return obj.n;')).toBe(2);
+      expect(reassign('return obj.n;')).toBe(1);
+      expect(reassign('config = {};')).toBe('TypeError');
+      expect(reassign('Math = {};')).toBe('TypeError');
+      expect(reassign('JSON = { parse: () => 1 };')).toBe('TypeError');
+      expect(data).toEqual({ obj: { n: 1 } });
     });
 
     it('so prototype keys stay out of reach', () => {

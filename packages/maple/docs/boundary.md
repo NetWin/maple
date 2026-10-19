@@ -56,7 +56,8 @@ maple.run('return format(total, currency);', { total: 12 }, { globals: { currenc
 // '12 USD'
 ```
 
-Every global binding is read-only: assigning to one throws a `TypeError`. A script may declare its
+Every global binding is read-only: assigning to one throws a `TypeError` (see
+[Changeable input](#changeable-input) for the exception). A script may declare its
 own `var`, `let`, `const` or function with the same name, which shadows the global for the whole
 script.
 
@@ -73,7 +74,8 @@ change.
 ### Changeable input
 
 `run(code, data, { freeze: false })` copies `data` and the run's `globals` without freezing them,
-like a host function's return value, so a script can change its input in place and return it:
+like a host function's return value, and binds them as ordinary variables. A script can change its
+input in place and return it, or point a name at another value:
 
 ```ts
 maple.run('item.price = item.price * 2; return item;', { item: { price: 5 } }, { freeze: false })
@@ -81,13 +83,23 @@ maple.run('item.price = item.price * 2; return item;', { item: { price: 5 } }, {
 // { price: 10 }
 ```
 
-Only an explicit `false` turns freezing off. The bindings themselves stay read-only, so
-`item = {}` still throws a `TypeError`. This does not widen the sandbox:
+```ts
+maple.run(
+  'if (item.item) { item = item.item; } return item.price;',
+  { item: { item: { price: 5 } } },
+  { freeze: false }
+).value;
+// 5
+```
+
+Only an explicit `false` turns freezing off. This does not widen the sandbox:
 
 - The script changes a copy made for this run. The host's objects are never touched, and the next
   run starts from the host's value again.
-- Instance globals stay frozen, since every run of the instance shares them; otherwise one run could
-  leave values for the next.
+- A reassigned binding lives in this run's scope only, so it changes which value the name points to
+  for the rest of the run and nothing else.
+- Instance globals and the standard globals such as `Math` or `JSON` stay frozen and read-only,
+  since every run of the instance shares them; otherwise one run could leave values for the next.
 - The script can already create mutable objects of every kind, and `__proto__`, `constructor` and
   `prototype` are refused on every write, frozen or not.
 

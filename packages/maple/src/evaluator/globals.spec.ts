@@ -71,6 +71,16 @@ describe('globals', () => {
     expect(value).toEqual([[1, 2], { a: 3 }, 5, 2, 2]);
   });
 
+  it('lets the script reassign data and run globals with freeze: false', () => {
+    const { value } = new Maple().run(
+      'item = item.inner; count += 1; return [item, count];',
+      { item: { inner: 'value' } },
+      { freeze: false, globals: { count: 1 } }
+    );
+
+    expect(value).toEqual(['value', 2]);
+  });
+
   it('keeps data frozen unless freeze is exactly false', () => {
     expect(assignInData({})).toBe('TypeError');
     expect(assignInData({ freeze: true })).toBe('TypeError');

@@ -5,7 +5,7 @@ import { NestingLimitError, toHost } from './boundary/to-host.ts';
 import { STANDARD_GLOBALS } from './builtins/standard-globals.ts';
 import { Budget, type MapleRunStats } from './evaluator/budget.ts';
 import { Evaluator } from './evaluator/evaluator.ts';
-import { Scope } from './evaluator/scope.ts';
+import { Scope, type BindingKind } from './evaluator/scope.ts';
 import { parse } from './parse.ts';
 import { isPlainObject } from './support/is-plain-object.ts';
 import { SandboxError, SandboxThrow } from './values/sandbox-error.ts';
@@ -23,8 +23,8 @@ export interface RunOptions {
   /** Bindings for this run only; they shadow the instance globals and are shadowed by `data`. */
   globals?: Record<string, unknown>;
   /**
-   * Whether `data` and the run's `globals` arrive frozen (default `true`).
-   * Instance globals are frozen regardless.
+   * Whether `data` and the run's `globals` arrive frozen and bound read-only (default `true`).
+   * Instance globals are frozen and read-only regardless.
    */
   freeze?: boolean;
 }
@@ -77,7 +77,13 @@ export class Maple {
     const freeze = options.freeze !== false;
     const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals', freeze);
     const dataGlobals = asGlobalsOrThrow(asDataObjectOrThrow(data), 'data', freeze);
-    const globals = createGlobalScope([STANDARD_GLOBALS, this.#globals, runGlobals, dataGlobals]);
+    const runKind: BindingKind = freeze ? 'global' : 'var';
+    const globals = createGlobalScope([
+      { bindings: STANDARD_GLOBALS, kind: 'global' },
+      { bindings: this.#globals, kind: 'global' },
+      { bindings: runGlobals, kind: runKind },
+      { bindings: dataGlobals, kind: runKind }
+    ]);
     return { program, globals };
   }
 
@@ -116,12 +122,18 @@ interface Prepared {
   globals: Scope;
 }
 
+interface GlobalLayer {
+  bindings: Readonly<Record<string, unknown>>;
+  /** `global` bindings are read-only; a `var` binding lives in this run's scope only. */
+  kind: BindingKind;
+}
+
 /** Later layers win, which gives data precedence over run globals over instance globals. */
-function createGlobalScope(layers: ReadonlyArray<Readonly<Record<string, unknown>>>): Scope {
+function createGlobalScope(layers: ReadonlyArray<GlobalLayer>): Scope {
   const scope = new Scope();
-  for (const layer of layers) {
-    for (const [name, value] of Object.entries(layer)) {
-      scope.define(name, 'global', value);
+  for (const { bindings, kind } of layers) {
+    for (const [name, value] of Object.entries(bindings)) {
+      scope.define(name, kind, value);
     }
   }
   return scope;
