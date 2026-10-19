@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Maple } from '../../maple.ts';
-import { runAndCatch } from '../../spec-helpers.ts';
+import { errorMessage, runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 
@@ -267,6 +267,35 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     expect(run('const o = Object.freeze({ a: [1] }); o.a.push(2); return o;')).toEqual({
       a: [1, 2]
     });
+  });
+
+  it('refuses deleting what freeze locked, naming the object as JavaScript does', () => {
+    expect(errorMessage(maple, 'delete Object.freeze({ a: 1 }).a;')).toBe(
+      "Cannot delete property 'a' of #<Object>"
+    );
+    expect(errorMessage(maple, 'delete Object.freeze([1])[0];')).toBe(
+      "Cannot delete property '0' of [object Array]"
+    );
+    expect(errorMessage(maple, 'const f = Object.freeze(() => 1); delete f.name;')).toBe(
+      "Cannot delete property 'name' of [function]"
+    );
+    expect(errorMessage(maple, 'delete Object.freeze(new Error("m")).message;')).toBe(
+      "Cannot delete property 'message' of Error: m"
+    );
+    expect(errorMessage(maple, 'const m = new Map(); m.x = 1; Object.freeze(m); delete m.x;')).toBe(
+      "Cannot delete property 'x' of #<Map>"
+    );
+    expect(
+      errorMessage(maple, 'function f() { Object.freeze(arguments); delete arguments[0]; } f(1);')
+    ).toBe("Cannot delete property '0' of #<Object>");
+  });
+
+  it('still lets a delete of a fixed property that freeze did not lock change nothing', () => {
+    expect(run('const f = () => 1; return delete f.name;')).toBe(true);
+    expect(run('return [delete Object.freeze(new Map()).size, delete /a/.source];')).toEqual([
+      true,
+      true
+    ]);
   });
 });
 

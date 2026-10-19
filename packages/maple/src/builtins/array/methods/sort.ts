@@ -1,7 +1,7 @@
+import { guardIntegrityErrors } from '../../../values/guard-integrity-errors.ts';
 import { method, type Method } from '../../../values/native.ts';
 import { comparator } from '../utils/comparator.ts';
 import { presentEntries } from '../utils/entries.ts';
-import { guardIntegrityErrors } from '../utils/guard-integrity-errors.ts';
 
 export const ARRAY_METHOD_SORT: Method<Array<unknown>> = method(
   Array.prototype.sort.length,

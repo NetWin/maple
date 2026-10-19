@@ -1,7 +1,8 @@
 import { ARRAY_MAX_LENGTH } from '../builtins/array/array.ts';
 import { isPlainObject } from '../support/is-plain-object.ts';
 import { isArgumentsObject } from './arguments-object.ts';
-import { toNumber, toString, typeOf } from './coercion.ts';
+import { describeObject, toNumber, toString, typeOf } from './coercion.ts';
+import { guardIntegrityErrors } from './guard-integrity-errors.ts';
 import type { OwnProperties } from './own-properties.ts';
 import type { RunState } from './run-state.ts';
 import { SandboxObject } from './sandbox-object.ts';
@@ -120,7 +121,10 @@ export function setMember(
         return fail('RangeError', 'Invalid array length');
       }
       charge(Math.max(0, length - target.length));
-      target.length = length;
+      // Shrinking a sealed array deletes elements it may not delete
+      guardIntegrityErrors(fail, target, () => {
+        target.length = length;
+      });
       return;
     }
     const index = toArrayIndex(key);
@@ -174,7 +178,7 @@ export function deleteMember(target: unknown, key: string, context: MemberContex
   }
 
   if (!Reflect.deleteProperty(target, key)) {
-    return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
+    return fail('TypeError', `Cannot delete property '${key}' of ${describeObject(target)}`);
   }
   return true;
 }
