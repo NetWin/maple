@@ -1,3 +1,9 @@
+## [0.1.3](https://github.com/NetWin/maple/compare/0.1.2...0.1.3) (2026-10-19)
+
+### 🩹 Bug Fixes
+
+* **boundary:** drop functions in host function arguments instead of throwing ([1585178](https://github.com/NetWin/maple/commit/15851781bc10ee53d83d69dfd3c232913ba5ac3f))
+
 ## [0.1.2](https://github.com/NetWin/maple/compare/0.1.1...0.1.2) (2026-10-19)
 
 ### 🛠️ Code Refactoring
