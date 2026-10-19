@@ -1,5 +1,4 @@
 import { defineOwn } from '../../../support/own-property.ts';
-import { Closure } from '../../../values/closure.ts';
 import { describeValue } from '../../../values/coercion.ts';
 import { iterate } from '../../../values/iteration.ts';
 import { toPropertyKey } from '../../../values/members.ts';
@@ -20,7 +19,7 @@ export const OBJECT_STATIC_FROM_ENTRIES: NativeFunction = new NativeFunction(
     const result: Record<string, unknown> = {};
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
       const entry: unknown = step.value;
-      if (typeof entry !== 'object' || entry === null || entry instanceof Closure) {
+      if (typeof entry !== 'object' || entry === null) {
         return fail('TypeError', `Iterator value ${describeValue(entry)} is not an entry object`);
       }
       defineOwn(

@@ -35,6 +35,14 @@ describe('Object statics', () => {
     expect(run('return Object.fromEntries([[1, "n"]]);')).toEqual({ 1: 'n' });
     expect(run('const o = Object.fromEntries([]); o.x = 1; return o;')).toEqual({ x: 1 });
     expect(run('try { Object.fromEntries([1]); } catch (e) { return e.name; }')).toBe('TypeError');
+    expect(
+      run(
+        'const f = () => 1; f[0] = "k"; f[1] = "v"; return Object.entries(Object.fromEntries([f, Math.max]));'
+      )
+    ).toEqual([
+      ['k', 'v'],
+      ['undefined', undefined]
+    ]);
     expect(run('try { Object.fromEntries(5); } catch (e) { return e.message; }')).toBe(
       '5 is not iterable'
     );
