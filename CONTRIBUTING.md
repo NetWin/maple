@@ -34,16 +34,17 @@ It runs `test` on Node 22, 24 and 26: the minimum from the library's `engines` f
 ## Commits & releases
 
 Commits must follow [Conventional Commits](https://www.conventionalcommits.org), which commitlint enforces in the `commit-msg` hook.
+Every commit needs a scope: the package it changes, such as `maple`, `playground` or `parity`, or `*` when it spans the repository.
 On every push to `master`, [semantic-release](https://semantic-release.gitbook.io) derives the version and changelog of `@netwin/maple` from them, so never edit its `version` or `CHANGELOG.md` by hand.
 Tags are plain versions (`1.2.3`).
 While Maple is on 0.x, breaking changes bump the minor version:
 
-| Commit                                 | 0.x   | ≥ 1.0 |
-| -------------------------------------- | ----- | ----- |
-| `fix: …` / `perf: …` / `refactor: …`   | patch | patch |
-| `build(deps): …`                       | patch | patch |
-| `feat: …`                              | minor | minor |
-| `feat!: …` / `BREAKING CHANGE:` footer | minor | major |
+| Commit                                        | 0.x   | ≥ 1.0 |
+| --------------------------------------------- | ----- | ----- |
+| `fix(…): …` / `perf(…): …` / `refactor(…): …` | patch | patch |
+| `build(deps): …`                              | patch | patch |
+| `feat(…): …`                                  | minor | minor |
+| `feat(…)!: …` / `BREAKING CHANGE:` footer     | minor | major |
 
 Every other type, such as `docs`, `test`, `ci` or `build` without the `deps` scope, releases nothing and waits for the next release.
 

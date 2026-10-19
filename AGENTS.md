@@ -62,7 +62,8 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 
 - Use kebab-case for file names.
 - Use `#private` for state fields only, and spell out `public` / `protected` / `private` on all other members.
-- Use [Conventional Commits](https://www.conventionalcommits.org). The version and changelog come from them, so never
-  edit `version` in `packages/maple/package.json` or `CHANGELOG.md` by hand.
+- Use [Conventional Commits](https://www.conventionalcommits.org) with a scope: the package, such as `maple`, or `*` for
+  the whole repository. The version and changelog come from them, so never edit `version` in
+  `packages/maple/package.json` or `CHANGELOG.md` by hand.
 - Don't add attribution to commits or pull requests: no `Co-Authored-By:` or other trailers, no "Generated with" lines
   and no session links.
