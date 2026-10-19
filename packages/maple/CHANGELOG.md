@@ -1,3 +1,9 @@
+## [0.2.1](https://github.com/NetWin/maple/compare/0.2.0...0.2.1) (2026-10-19)
+
+### 🩹 Bug Fixes
+
+* **run:** let scripts reassign data and run global bindings with freeze: false ([42aefbe](https://github.com/NetWin/maple/commit/42aefbe728c7f3e6f28a5b6d164655edc298074f))
+
 ## [0.2.0](https://github.com/NetWin/maple/compare/0.1.3...0.2.0) (2026-10-19)
 
 ### 🚀 Features
