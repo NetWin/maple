@@ -299,6 +299,102 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
   });
 });
 
+describe('Object.seal and isSealed', () => {
+  it('keep existing properties writable but take no new one and delete none', () => {
+    expect(run('const o = Object.seal({ a: 1 }); o.a = 2; return o;')).toEqual({ a: 2 });
+    expect(errorMessage(maple, 'Object.seal({ a: 1 }).b = 2;')).toBe(
+      'Cannot add property b, object is not extensible'
+    );
+    expect(errorMessage(maple, 'delete Object.seal({ a: 1 }).a;')).toBe(
+      "Cannot delete property 'a' of #<Object>"
+    );
+    expect(run('return Object.assign(Object.seal({ a: 1 }), { a: 2 });')).toEqual({ a: 2 });
+    expect(
+      runAndCatch(maple, 'Object.assign(Object.seal({ a: 1 }), { b: 2 });').sandboxError?.name
+    ).toBe('TypeError');
+  });
+
+  it('let the array methods reorder and overwrite but neither add nor remove', () => {
+    const sealed = 'const a = Object.seal([1, 2, 3]);';
+
+    expect(
+      run(
+        'const a = Object.seal([3, 1, 2]); a[0] = 9; a.sort(); a.reverse(); a.copyWithin(0, 2); return a;'
+      )
+    ).toEqual([1, 2, 1]);
+    expect(run('const a = Object.seal([1, 2]); a.fill(0); a.length = 4; return a.length;')).toBe(4);
+    expect(errorMessage(maple, `${sealed} a.push(4);`)).toBe(
+      'Cannot add property 3, object is not extensible'
+    );
+    expect(errorMessage(maple, `${sealed} a.pop();`)).toBe(
+      "Cannot delete property '2' of [object Array]"
+    );
+    expect(errorMessage(maple, `${sealed} a.shift();`)).toBe(
+      "Cannot delete property '2' of [object Array]"
+    );
+    expect(errorMessage(maple, `${sealed} a.splice(0, 1);`)).toBe(
+      "Cannot delete property '2' of [object Array]"
+    );
+    expect(errorMessage(maple, `${sealed} a.length = 0;`)).toBe(
+      "Cannot delete property '2' of [object Array]"
+    );
+    expect(errorMessage(maple, `${sealed} delete a[0];`)).toBe(
+      "Cannot delete property '0' of [object Array]"
+    );
+  });
+
+  it('seal Maple own values, which keep working', () => {
+    expect(
+      run(
+        'const m = Object.seal(new Map()); m.set(1, 2); const r = Object.seal(/a/g); r.lastIndex = 3; const d = Object.seal(new Date(0)); d.setTime(5); return [m.size, r.lastIndex, d.getTime()];'
+      )
+    ).toEqual([1, 3, 5]);
+    expect(
+      run(
+        'const e = Object.seal(new Error("m")); e.message = "x"; return [e.message, Object.isSealed(e)];'
+      )
+    ).toEqual(['x', true]);
+    expect(errorMessage(maple, 'delete Object.seal(new Error("m")).message;')).toBe(
+      "Cannot delete property 'message' of Error: m"
+    );
+    expect(errorMessage(maple, 'Object.seal(() => 1).x = 1;')).toBe(
+      'Cannot add property x, object is not extensible'
+    );
+    expect(
+      run(
+        'function f() { Object.seal(arguments); arguments[0] = 5; return arguments[0]; } return f(1);'
+      )
+    ).toBe(5);
+  });
+
+  it('report it, true for primitives and for anything frozen', () => {
+    expect(
+      run(
+        'return [Object.isSealed(1), Object.isSealed(null), Object.isSealed({}), Object.isSealed(Object.preventExtensions({})), Object.isSealed(Object.preventExtensions({ a: 1 })), Object.isSealed(Object.freeze({ a: 1 })), Object.isSealed(obj)];',
+        { obj: { a: 1 } }
+      )
+    ).toEqual([true, true, false, true, false, true, true]);
+    expect(
+      run('return [Object.isFrozen(Object.seal({ a: 1 })), Object.isFrozen(Object.seal({}))];')
+    ).toEqual([false, true]);
+    expect(
+      run('const f = Object.seal(() => 1); return [Object.isSealed(f), Object.isFrozen(f)];')
+    ).toEqual([true, true]);
+    expect(run('return [Object.seal(1), Object.seal(null), Object.seal(undefined)];')).toEqual([
+      1,
+      null,
+      undefined
+    ]);
+    expect(run('const o = {}; return Object.seal(o) === o;')).toBe(true);
+    expect(run('return [Object.seal.length, Object.isSealed.length];')).toEqual([1, 1]);
+  });
+
+  it('keep a built-in sealed only for the run that sealed it', () => {
+    expect(run('Object.seal(Math); return Object.isSealed(Math);')).toBe(true);
+    expect(run('Math.x = 1; return [Object.isSealed(Math), Math.x];')).toEqual([false, 1]);
+  });
+});
+
 describe('Object.preventExtensions and isExtensible', () => {
   it('take no new property, with the message JavaScript gives', () => {
     for (const value of [
