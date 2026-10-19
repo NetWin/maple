@@ -18,5 +18,5 @@ export function iteratorCallback(
     closeIterator(wrapper);
     return context.fail('TypeError', `${describeValue(fn)} is not a function`);
   }
-  return (...args) => context.call(fn, args);
+  return (...args) => context.call(undefined, fn, args);
 }

@@ -6,9 +6,11 @@ included. Exceeding either throws `LIMIT_EXCEEDED`.
 - **Operations** (`maxOps`). A run is charged for each statement, each evaluated expression, each
   loop iteration and each callback a built-in or an intrinsic invokes. Copying or growing an array
   or object element by element, as spread, rest, `for...in`, `Array.from`, `flat` or a larger
-  `length` do, costs one operation per element.
-- **Depth** (`maxDepth`). Each closure call, each callback invoked by a built-in and each nested
-  `sandbox.run` adds one level.
+  `length` do, costs one operation per element. So does each argument `apply` takes from its
+  array-like, before any is read, and each bound argument a bound function passes on a call.
+- **Depth** (`maxDepth`). Each closure call and each nested `sandbox.run` adds one level. So does
+  each call a built-in or an intrinsic makes to a function that is not a closure, as `apply` or a
+  bound function can, so built-ins calling one another stay under the limit too.
 
 A limit error aborts the run outright: it skips the script's `catch` and `finally` blocks, and the
 script executes nothing after it.

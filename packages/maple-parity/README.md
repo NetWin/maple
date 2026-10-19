@@ -62,6 +62,8 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `new Error('m', { cause: 1 }).cause`: Maple gives `1`, js-interpreter `undefined`                     | The `cause` option is ES2022; js-interpreter follows ES5 and ignores the second argument.                                 |
 | `'abc'.split(undefined, 0)`: Maple gives `[]`, js-interpreter `['abc']`                               | A limit of 0 gives no parts, as in JavaScript (and ES5); js-interpreter checks the separator first.                       |
 | An error with `name` set to `''` or `undefined`: Maple prints `oops` and `Error: x`                   | As in JavaScript (and ES5); js-interpreter joins `name` and `message` with `: ` regardless.                               |
+| `f.bind(null, 1)`: Maple names it `bound f` with the rest of `f`'s length, js-interpreter `fBound`, 0 | A bound function's `name` and `length` are ES2015; js-interpreter follows ES5.                                            |
+| `f.apply(null, 1)`, `f.apply(null, 'ab')`                                                             | A primitive is no list of arguments, so it is a `TypeError`. js-interpreter ignores a number and spreads a string.        |
 
 ### Maple departs from JavaScript
 
@@ -70,6 +72,8 @@ On purpose: these are what the sandbox leaves out.
 | Divergence                                                                                                         | Why                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `this`, `new` on a script function, `F.prototype`, `.constructor`, `instanceof F`                                  | Maple has no script-visible prototypes or receivers. An object's behaviour comes from its type.                 |
+| `new` on a bound function: `new (Error.bind(null, 'x'))()`                                                         | Only the listed built-in constructors can be constructed, and a bound function is not one of them.              |
+| A built-in method called on a receiver of another type: `''.trim.call({})`                                         | A method's behaviour comes from its receiver's type, so it refuses another type with a `TypeError`.             |
 | `Object.create`, `Object.getPrototypeOf`, `isPrototypeOf`                                                          | The same object model: there is no prototype chain to create or inspect.                                        |
 | Getters and setters                                                                                                | They would run script code on a plain property read or write, host conversion included.                         |
 | `new String`, `new Number`, `new Boolean`, `Object(primitive)`, `instanceof String` / `Number` / `Boolean`         | There are no primitive wrapper objects. They are a well-known trap and would add a value kind.                  |
@@ -82,5 +86,4 @@ Planned; each entry goes once Maple supports it.
 
 | Divergence                                                                               | Why                                                                                                                       |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `call`, `apply`, `bind`                                                                  | Every built-in method checks its receiver now, so they can come. Spread arguments and closures cover the uses until then. |
 | `defineProperty`, `defineProperties`, `getOwnPropertyDescriptor`, `propertyIsEnumerable` | Data descriptors need per-property attributes on Maple's own values first. Accessors stay out, as getters and setters do. |

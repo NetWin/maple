@@ -18,7 +18,7 @@ export const OBJECT_STATIC_GROUP_BY: NativeFunction = new NativeFunction(
 
     // Converting the key here keeps the host from running its own conversion on a script object
     return Object.groupBy(iterable, (item, index) =>
-      toPropertyKey(context.call(callback, [item, index]))
+      toPropertyKey(context.call(undefined, callback, [item, index]))
     );
   }
 );

@@ -13,8 +13,11 @@ import {
  * covers work proportional to the size of a value, such as copied elements.
  */
 export interface CallContext extends MemberContext {
-  /** Calls a script function under the budget, for callbacks such as a replace function. */
-  call(callee: unknown, args: ReadonlyArray<unknown>): unknown;
+  /**
+   * Calls a function under the budget, for callbacks such as a replace function. `receiver` is
+   * `undefined` for a callback; `call`, `apply` and bound functions pass theirs.
+   */
+  call(receiver: unknown, callee: unknown, args: ReadonlyArray<unknown>): unknown;
   /** The script call stack at this point, formatted for `Error.stack`. */
   stackTrace(): string;
   /** Calls a host function: arguments copied out, result copied in, exceptions made catchable. */
@@ -38,7 +41,7 @@ export type NativeImplementation = (
  * function from `globals`. A built-in shows its `name` and `length` to the script; a host
  * function has an `undefined` length and shows no properties at all, since its name and arity
  * are the host's business. Built-in and host functions are shared between runs, so what a script
- * adds to one is kept by the run.
+ * adds to one is kept by the run; a bound function belongs to the run that made it.
  */
 export class NativeFunction extends SandboxObject {
   public readonly name: string;
@@ -54,8 +57,13 @@ export class NativeFunction extends SandboxObject {
 
   protected readonly fixed: FixedProperties<NativeFunction>;
 
-  constructor(name: string, length: number | undefined, invoke: NativeImplementation) {
-    super(true);
+  constructor(
+    name: string,
+    length: number | undefined,
+    invoke: NativeImplementation,
+    isShared: boolean = true
+  ) {
+    super(isShared);
     this.name = name;
     this.length = length;
     this.invoke = invoke;

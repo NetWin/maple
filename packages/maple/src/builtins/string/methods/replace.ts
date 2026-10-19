@@ -13,7 +13,7 @@ export const STRING_METHOD_REPLACE: Method<string> = method(
       return s.replace(search, toString(replacement));
     }
     return s.replace(search, (...hostArgs: Array<unknown>): string =>
-      toString(context.call(replacement, hostArgs))
+      toString(context.call(undefined, replacement, hostArgs))
     );
   }
 );

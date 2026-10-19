@@ -16,7 +16,7 @@ export const MAP_STATIC_GROUP_BY: NativeFunction = new NativeFunction(
       return context.fail('TypeError', `${describeValue(callback)} is not a function`);
     }
     return new MapWrapper(
-      Map.groupBy(iterable, (item, index) => context.call(callback, [item, index]))
+      Map.groupBy(iterable, (item, index) => context.call(undefined, callback, [item, index]))
     );
   }
 );

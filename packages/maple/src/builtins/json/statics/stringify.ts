@@ -75,7 +75,7 @@ function replacerOf(
   context: CallContext
 ): ((key: string, current: unknown) => unknown) | undefined {
   return isCallable(replacer)
-    ? (key, current) => context.call(replacer, [key, current])
+    ? (key, current) => context.call(undefined, replacer, [key, current])
     : undefined;
 }
 
