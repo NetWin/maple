@@ -29,7 +29,7 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 - Put tests next to the code as `*.spec.ts` (Vitest). Every interpreter feature and every rejected escape needs a test.
   Specs that exercise a whole language chapter through `Maple.run` live in the directory whose behaviour they cover.
 - `docs/` is the contract, indexed in `docs/README.md`; change it in the same commit as the behaviour. Contributor
-  notes such as adding a built-in are in `CONTRIBUTING.md`.
+  notes such as adding a built-in are in the root `CONTRIBUTING.md`.
 
 ## Playground (`apps/maple-playground`)
 
@@ -62,7 +62,8 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 
 - Use kebab-case for file names.
 - Use `#private` for state fields only, and spell out `public` / `protected` / `private` on all other members.
-- Use [Conventional Commits](https://www.conventionalcommits.org). The version and changelog come from them, so never
-  edit `version` in `packages/maple/package.json` or `CHANGELOG.md` by hand.
+- Use [Conventional Commits](https://www.conventionalcommits.org) with a scope: the package, such as `maple`, or `*` for
+  the whole repository. The version and changelog come from them, so never edit `version` in
+  `packages/maple/package.json` or `CHANGELOG.md` by hand.
 - Don't add attribution to commits or pull requests: no `Co-Authored-By:` or other trailers, no "Generated with" lines
   and no session links.

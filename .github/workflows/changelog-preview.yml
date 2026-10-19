@@ -45,6 +45,8 @@ jobs:
             conventional-changelog-conventionalcommits@9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Leaves out the plugins that publish (release.config.js)
+          RELEASE_PREVIEW: 'true'
 
       - name: Comment PR with release preview
         if: steps.semantic.outputs.new_release_published == 'true'
