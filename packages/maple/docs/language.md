@@ -59,19 +59,22 @@ name. `typeof` never throws for a name that is not bound, so `typeof window !== 
 
 `new` is allowed for `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`,
 `URIError`, `EvalError`, `Date`, `RegExp`, `Map`, `Set`, `Array` and `Object`. Any other `new`
-target, including a script function, is `DISALLOWED_SYNTAX`. There are no primitive wrapper
-objects: `String`, `Number` and `Boolean` are conversion functions only, so `new String('a')` is
-rejected, and `Object('a')` is a `TypeError`.
+target, including a script function or a bound function, is `DISALLOWED_SYNTAX`. There are no
+primitive wrapper objects: `String`, `Number` and `Boolean` are conversion functions only, so
+`new String('a')` is rejected, and `Object('a')` is a `TypeError`.
 
 `instanceof` accepts those thirteen plus `Iterator` on the right-hand side. Any other right-hand
-side, a script function or `String` included, throws a `TypeError`.
+side, a script function, a bound function or `String` included, throws a `TypeError`.
 
 ## Functions
 
 Script functions and built-in functions have JavaScript's read-only `length` and `name`, names
-inferred from bindings included. Host functions have no properties at all. Every function answers
-to `toString`, which gives `[function]`, and `valueOf`. There is no `call`, `apply` or `bind`, since
-there is no `this` for them to set.
+inferred from bindings included. Host functions, and functions bound from them, have no properties
+at all. Every function answers to `toString`, which gives `[function]`, `valueOf`, `call`, `apply`
+and `bind` ([Functions](builtins.md#functions)). The receiver these pass on reaches a built-in
+method, which checks it as for any method call, so `''.trim.call('  b ')` is `'b'`. A script
+function never sees it, since there is no `this`, which is how JavaScript behaves for a strict
+function that does not use `this`.
 
 Inside a function that is not an arrow, `arguments` is the strict-mode arguments object.
 
@@ -106,7 +109,9 @@ A method such as `s.trim` is resolved by the receiver's type, never through a ho
 method is one function shared by every value of the type, so `'x'.trim === 'y'.trim`. The receiver
 comes from the call as in JavaScript, so `const p = a.push; p(1)` has none and is a `TypeError`.
 Unlike JavaScript, a receiver of another type is refused too: `({ t: 'x'.trim }).t()` is a
-`TypeError`. Own data properties win, so `obj.toString()` calls an own `toString` key.
+`TypeError`, and so is `''.trim.call({})`. Array methods take arrays only, so
+`[].slice.call(arguments)` is a `TypeError` as well. Own data properties win, so `obj.toString()`
+calls an own `toString` key.
 
 Plain objects have four methods: `hasOwnProperty`, `toString`, `toLocaleString` and `valueOf`. An
 object without a prototype, such as `Object.groupBy` returns or a match gives as `groups`, has none

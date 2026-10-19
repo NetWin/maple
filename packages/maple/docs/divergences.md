@@ -23,21 +23,21 @@ one that does; the linked section has the detail.
 - `in` sees own properties and the methods of the value's type, so `'valueOf' in []` is `false`
   ([Methods](language.md#methods)).
 - Plain objects have only `hasOwnProperty`, `toString`, `toLocaleString` and `valueOf`.
-- `defineProperty`, `getPrototypeOf`, `create`, `seal` and the other descriptor and prototype
-  functions are not available ([Object](builtins.md#object)).
+- `defineProperty`, `getPrototypeOf`, `create` and the other descriptor and prototype functions
+  are not available ([Object](builtins.md#object)).
 - Input data is frozen unless the host passes `freeze: false` ([Boundary](boundary.md#into-the-run)).
 
 ## Functions and constructors
 
 - `new` works only for the [listed constructors](language.md#constructors); script functions
-  cannot be constructed, and `instanceof` accepts only those constructors and `Iterator`.
+  and bound functions cannot be constructed, so `new (Error.bind(null, 'x'))()` is rejected, and
+  `instanceof` accepts only those constructors and `Iterator`.
 - There are no primitive wrapper objects: `new String('a')` is rejected and `Object('a')` is a
   `TypeError`.
-- There is no `call`, `apply` or `bind`.
 - A function converts to `[function]`, not to its source.
-- Host functions have no `length` or `name`.
-- A method refuses a receiver of another type, so `({ t: 'x'.trim }).t()` is a `TypeError`
-  ([Methods](language.md#methods)).
+- Host functions, and functions bound from them, have no `length` or `name`.
+- A method refuses a receiver of another type, so `({ t: 'x'.trim }).t()`, `''.trim.call({})` and
+  `[].slice.call(arguments)` are `TypeError`s ([Methods](language.md#methods)).
 
 ## Conversion
 

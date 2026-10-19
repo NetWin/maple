@@ -35,6 +35,11 @@ It runs `test` on Node 22, 24 and 26: the minimum from the library's `engines` f
 
 Commits must follow [Conventional Commits](https://www.conventionalcommits.org), which commitlint enforces in the `commit-msg` hook.
 Every commit needs a scope: the package it changes, such as `maple`, `playground` or `parity`, or `*` when it spans the repository.
+
+Pull requests target `increment`, the default branch, and are merged with a merge commit or rebased, never squashed, so their commits reach `master` as they are.
+A release is a merge of `increment` into `master`, with a merge commit as well.
+After it, the `sync` job in `.github/workflows/push.yml` merges `master` back into `increment`, so the release commit and its tag are there for the next pull requests.
+
 On every push to `master`, [semantic-release](https://semantic-release.gitbook.io) derives the version and changelog of `@netwin/maple` from them, so never edit its `version` or `CHANGELOG.md` by hand.
 Tags are plain versions (`1.2.3`).
 While Maple is on 0.x, breaking changes bump the minor version:
@@ -71,6 +76,7 @@ The declared exceptions are the guarded `performance.now()` behind `durationMs`,
    If the method takes a callback, invoke it through `context.call` so it runs under the budget.
    Never hand a script closure to a host implementation.
 3. If the method needs no callback and cannot observe prototypes, it may delegate to the host implementation on a Maple-owned value (for example `Array.prototype.with`).
+   Call it through the prototype, as `Array.prototype.with.call(a, …)`, never as `a.with(…)`: a script can give its array an own property of that name.
    Wrap it in `guardHostErrors` when the spec requires a `RangeError`, `URIError` or `SyntaxError` for it, or when it can build a string or array longer than the host allows.
 4. Return only sandbox values: primitives, Maple-created objects and arrays, or wrappers.
    Never return a native `Date`, `RegExp`, `Map`, `Set` or function.

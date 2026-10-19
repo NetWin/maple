@@ -61,5 +61,5 @@ function revive(
       }
     }
   }
-  return context.call(reviver, [key, value, holder]);
+  return context.call(undefined, reviver, [key, value, holder]);
 }

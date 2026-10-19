@@ -8,7 +8,7 @@ export const ARRAY_METHOD_TO_LOCALE_STRING: Method<Array<unknown>> = method(
   (a, [locales, options], { fail }) => {
     const tags = localesArgument(locales);
     const intlOptions = intlOptionsArgument(options);
-    const mapped = a.map((element) => {
+    const mapped = Array.prototype.map.call(a, (element) => {
       if (element === null || element === undefined) {
         return '';
       }

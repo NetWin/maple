@@ -1,4 +1,4 @@
-import type { Primitive, PrimitiveHint } from './coercion.ts';
+import { type Conversion, describeObject, type Primitive, type PrimitiveHint } from './coercion.ts';
 import type { MemberContext, MethodLookup } from './members.ts';
 import {
   type Attributes,
@@ -16,7 +16,7 @@ export interface FixedProperty<T> {
   get(target: T): unknown;
   /** Absent for a read-only property. */
   set?(target: T, value: unknown): void;
-  /** Whether `delete` may remove it and `seal` has something to take. */
+  /** Its `configurable` attribute in JavaScript, until `seal` or `freeze` turns it off. */
   readonly configurable: boolean;
 }
 
@@ -81,8 +81,11 @@ export abstract class SandboxObject {
     return this.isShared ? runState.getOwnPropertiesOf(this) : this.properties;
   }
 
-  /** ToPrimitive without hooks, so a script cannot influence a conversion: `[object Map]`. */
-  public toPrimitive(_hint: PrimitiveHint): Primitive {
+  /**
+   * ToPrimitive without hooks, so a script cannot influence a conversion: `[object Map]`. A value
+   * whose conversion converts others, as an error does, hands them `conversion`.
+   */
+  public toPrimitive(_hint: PrimitiveHint, _conversion?: Conversion): Primitive {
     return `[object ${this.tag}]`;
   }
 
@@ -130,13 +133,25 @@ export abstract class SandboxObject {
     }
   }
 
-  /** A fixed property stays: deleting it changes nothing. */
+  /**
+   * A fixed property stays: deleting it changes nothing, unless `seal` or `freeze` locked it, which
+   * makes the delete fail as in JavaScript.
+   */
   public deleteProperty(key: string, { fail, runState }: MemberContext): boolean {
     const properties = this.getOwnProperties(runState);
-    const added = this.fixed.has(key) ? undefined : properties.getAdded(key);
-    if (added && !added.configurable) {
-      return fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
+    const fixed = this.fixed.get(key);
+
+    let locked: boolean;
+    if (fixed) {
+      locked = fixed.configurable && !fixedAttributes(key, fixed, properties).configurable;
+    } else {
+      locked = properties.getAdded(key)?.configurable === false;
     }
+
+    if (locked) {
+      return fail('TypeError', `Cannot delete property '${key}' of ${describeObject(this)}`);
+    }
+
     properties.deleteAdded(key);
     return true;
   }

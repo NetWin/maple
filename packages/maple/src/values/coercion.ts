@@ -22,10 +22,60 @@ export const ARGUMENTS_PLACEHOLDER = '[object Arguments]';
 export type PrimitiveHint = 'default' | 'number' | 'string';
 
 /**
+ * What one conversion is in the middle of, handed down to the conversions nested in it: the
+ * arrays it is joining, so a cycle through one is cut as JavaScript cuts it, and how deep it
+ * converts errors inside one another. A conversion started from outside makes a new one.
+ */
+export class Conversion {
+  readonly #joining = new Set<ReadonlyArray<unknown>>();
+
+  #errorDepth = 0;
+
+  /** Joins `array` with `run`, or gives `''` for an array this conversion is already joining. */
+  public join(array: ReadonlyArray<unknown>, run: () => string): string {
+    if (this.#joining.has(array)) {
+      return '';
+    }
+    if (this.#joining.size >= MAX_NESTING) {
+      throw new UnplacedError(
+        'RangeError',
+        `An array nested deeper than ${MAX_NESTING} levels cannot be converted to a string`
+      );
+    }
+    this.#joining.add(array);
+    try {
+      return run();
+    } finally {
+      this.#joining.delete(array);
+    }
+  }
+
+  /**
+   * Converts an error with `run`. Nothing cuts a cycle through an error's `name` or `message`, so
+   * one runs into the limit and fails as JavaScript fails when it runs out of stack.
+   */
+  public convertError<T>(run: () => T): T {
+    if (this.#errorDepth >= MAX_NESTING) {
+      throw new UnplacedError('RangeError', 'Maximum call stack size exceeded');
+    }
+    this.#errorDepth++;
+    try {
+      return run();
+    } finally {
+      this.#errorDepth--;
+    }
+  }
+}
+
+/**
  * ToPrimitive without `toString` / `valueOf` hooks: a plain object is always `[object Object]`,
  * an array always its joined elements, so a script cannot influence a conversion.
  */
-export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Primitive {
+export function toPrimitive(
+  value: unknown,
+  hint: PrimitiveHint = 'default',
+  conversion?: Conversion
+): Primitive {
   if (
     value === undefined ||
     value === null ||
@@ -42,10 +92,10 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
     throw new Error(`A ${typeof value} reached the sandbox`);
   }
   if (value instanceof SandboxObject) {
-    return value.toPrimitive(hint);
+    return value.toPrimitive(hint, conversion);
   }
   if (Array.isArray(value)) {
-    return joinArray(value, new Set());
+    return joinArray(value, conversion ?? new Conversion());
   }
   if (isArgumentsObject(value)) {
     return ARGUMENTS_PLACEHOLDER;
@@ -56,8 +106,8 @@ export function toPrimitive(value: unknown, hint: PrimitiveHint = 'default'): Pr
   return OBJECT_PLACEHOLDER;
 }
 
-export function toString(value: unknown): string {
-  const primitive = toPrimitive(value, 'string');
+export function toString(value: unknown, conversion?: Conversion): string {
+  const primitive = toPrimitive(value, 'string', conversion);
   return typeof primitive === 'string' ? primitive : String(primitive);
 }
 
@@ -84,6 +134,22 @@ export function describeValue(value: unknown): string {
 
     return OBJECT_PLACEHOLDER;
   }
+}
+
+/**
+ * An object as a failed `delete` names it in JavaScript: `#<Object>`, `[object Array]`, `#<Map>`,
+ * and a function or an error by its string.
+ */
+export function describeObject(value: object): string {
+  if (Array.isArray(value)) {
+    return ARRAY_PLACEHOLDER;
+  }
+  if (value instanceof SandboxObject) {
+    return value.tag === 'Function' || value.tag === 'Error'
+      ? describeValue(value)
+      : `#<${value.tag}>`;
+  }
+  return '#<Object>';
 }
 
 export function toNumber(value: unknown): number {
@@ -166,31 +232,21 @@ function kindOf(value: unknown): string {
 
 /** `Array.prototype.join` with the hook-free element conversion; nested arrays join with commas. */
 export function joinValues(array: ReadonlyArray<unknown>, separator: string): string {
-  return joinArray(array, new Set(), separator);
+  return joinArray(array, new Conversion(), separator);
 }
 
-/** Nullish elements are empty and a cycle is cut with an empty string, as the host does it. */
-function joinArray(array: ReadonlyArray<unknown>, seen: Set<object>, separator = ','): string {
-  if (seen.has(array)) {
-    return '';
-  }
-  if (seen.size >= MAX_NESTING) {
-    throw new UnplacedError(
-      'RangeError',
-      `An array nested deeper than ${MAX_NESTING} levels cannot be converted to a string`
-    );
-  }
-  seen.add(array);
-  const parts: Array<string> = [];
-  for (const element of array) {
-    if (element === null || element === undefined) {
-      parts.push('');
-    } else if (Array.isArray(element)) {
-      parts.push(joinArray(element, seen));
-    } else {
-      parts.push(toString(element));
+/**
+ * Nullish elements are empty, and an array the conversion is already joining is empty too, as the
+ * host does it, even when the cycle runs through an error's `name` or `message`.
+ */
+function joinArray(array: ReadonlyArray<unknown>, conversion: Conversion, separator = ','): string {
+  return conversion.join(array, () => {
+    // By index, since a script can give its array an own `map` that would shadow the host's
+    const parts: Array<string> = [];
+    for (let index = 0; index < array.length; index++) {
+      const element = array[index];
+      parts.push(element === null || element === undefined ? '' : toString(element, conversion));
     }
-  }
-  seen.delete(array);
-  return parts.join(separator);
+    return parts.join(separator);
+  });
 }

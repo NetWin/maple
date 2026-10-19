@@ -33,7 +33,7 @@ export function localesArgument(value: unknown): string | Array<string> | undefi
   if (value === undefined) {
     return undefined;
   }
-  return Array.isArray(value) ? value.map(toString) : toString(value);
+  return Array.isArray(value) ? value.map((item) => toString(item)) : toString(value);
 }
 
 type IntlOptions = Intl.CollatorOptions & Intl.DateTimeFormatOptions & Intl.NumberFormatOptions;

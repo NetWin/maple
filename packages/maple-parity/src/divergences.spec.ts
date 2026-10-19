@@ -172,6 +172,22 @@ describe('Error.prototype.toString', () => {
       )
     ).toEqual({ maple: ['oops', 'Error: x'], jsInterpreter: [': oops', 'undefined: x'] });
   });
+
+  it('throws a RangeError for an error that names itself', () => {
+    expect(
+      followsJavaScript(
+        "var e = new Error('m'); e.name = e; try { String(e); } catch (t) { return t.name; }"
+      )
+    ).toEqual({ maple: 'RangeError', jsInterpreter: undefined });
+  });
+
+  // join cuts a cycle through an array, nested conversions included; js-interpreter cuts it as '...'
+  it('converts an error named by an array that holds it', () => {
+    expect(followsJavaScript("var e = new Error('m'); e.name = [e]; return String(e);")).toEqual({
+      maple: 'm: m',
+      jsInterpreter: '...: m'
+    });
+  });
 });
 
 describe('Error:cause', () => {
@@ -180,6 +196,36 @@ describe('Error:cause', () => {
     expect(
       followsJavaScript('var e = new Error("m", { cause: 1 }); return [e.cause, "cause" in e];')
     ).toEqual({ maple: [1, true], jsInterpreter: [undefined, false] });
+  });
+});
+
+describe('Function.prototype.bind', () => {
+  // A bound function's name and length are ES2015; js-interpreter follows ES5 and gives neither
+  it('names a bound function after its target', () => {
+    expect(followsJavaScript('function f(a, b, c) {} return f.bind(null, 1).name;')).toEqual({
+      maple: 'bound f',
+      jsInterpreter: 'fBound'
+    });
+  });
+
+  it('leaves a bound function the rest of its length', () => {
+    expect(followsJavaScript('function f(a, b, c) {} return f.bind(null, 1).length;')).toEqual({
+      maple: 2,
+      jsInterpreter: 0
+    });
+  });
+});
+
+describe('Function.prototype.apply', () => {
+  // A primitive is no array-like of arguments; js-interpreter takes a string's characters
+  it('refuses a primitive as the arguments', () => {
+    expect(followsJavaScript('function f() {} return f.apply(null, 1);')).toEqual({
+      maple: MapleErrorCode.RUNTIME_ERROR,
+      jsInterpreter: undefined
+    });
+    expect(
+      followsJavaScript('function f() { return arguments.length; } return f.apply(null, "ab");')
+    ).toEqual({ maple: MapleErrorCode.RUNTIME_ERROR, jsInterpreter: 2 });
   });
 });
 
@@ -220,6 +266,19 @@ describe('syntax:NewExpression', () => {
     expect(rejected('function Point(x) { this.x = x; } return new Point(1).x;')).toBe(
       MapleErrorCode.DISALLOWED_SYNTAX
     );
+  });
+
+  it('rejects new on a bound function', () => {
+    expect(rejected("var B = Error.bind(null, 'x'); return new B().message;")).toBe(
+      MapleErrorCode.DISALLOWED_SYNTAX
+    );
+  });
+});
+
+describe('Function.prototype.call', () => {
+  // A method's behaviour comes from its type, so it refuses a receiver of another type
+  it('refuses a receiver of another type for a built-in method', () => {
+    expect(rejected("return ''.trim.call({ a: 1 });")).toBe(MapleErrorCode.RUNTIME_ERROR);
   });
 });
 
@@ -374,33 +433,6 @@ describe('constructor', () => {
 });
 
 // Not supported yet: each entry goes once Maple supports it.
-
-// Every built-in method checks its receiver now, so these can come; spread arguments and closures
-// cover the uses until then.
-
-describe('Function.prototype.call', () => {
-  it('has no call', () => {
-    expect(rejected('function f(a) { return a; } return f.call(null, 1);')).toBe(
-      MapleErrorCode.RUNTIME_ERROR
-    );
-  });
-});
-
-describe('Function.prototype.apply', () => {
-  it('has no apply', () => {
-    expect(rejected('function f(a, b) { return a + b; } return f.apply(null, [1, 2]);')).toBe(
-      MapleErrorCode.RUNTIME_ERROR
-    );
-  });
-});
-
-describe('Function.prototype.bind', () => {
-  it('has no bind', () => {
-    expect(rejected('function f(a, b) { return a + b; } return f.bind(null, 1)(2);')).toBe(
-      MapleErrorCode.RUNTIME_ERROR
-    );
-  });
-});
 
 // Data descriptors need per-property attributes on Maple's own values first. Accessors stay out, as
 // getters and setters do.

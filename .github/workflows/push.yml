@@ -77,3 +77,27 @@ jobs:
             conventional-changelog-conventionalcommits@9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Brings the release commit and tag back to increment, where pull requests branch off, so their
+  # changelog preview starts from the latest release
+  sync:
+    name: Sync increment
+    needs: [release]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push to increment
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: increment
+
+      # Fast-forwards when increment has nothing new; otherwise the merge commit is not a Conventional
+      # Commit, so it stays out of the next changelog. A conflict fails the job and leaves increment
+      # as it was.
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git merge --no-edit origin/master
+          git push origin increment

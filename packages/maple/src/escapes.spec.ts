@@ -52,6 +52,12 @@ describe('escape attempts', () => {
       expect(errorName('host.constructor;')).toBe('TypeError');
       expect(errorName('[].map.constructor;')).toBe('TypeError');
       expect(errorName('Object.keys.constructor;')).toBe('TypeError');
+      expect(errorName('(() => {}).call.constructor;')).toBe('TypeError');
+      expect(errorName('(() => {}).bind().constructor;')).toBe('TypeError');
+      expect(errorName('host.bind().constructor;')).toBe('TypeError');
+      expect(errorName('(() => {}).call.call((() => {}).bind, null).constructor;')).toBe(
+        'TypeError'
+      );
     });
 
     it('through __proto__ and prototype, static or computed', () => {
@@ -64,6 +70,9 @@ describe('escape attempts', () => {
       expect(errorName('({}).__proto__ = { polluted: true };')).toBe('TypeError');
       expect(errorName('({})["constructor"] = 1;')).toBe('TypeError');
       expect(errorName('delete ({}).__proto__;')).toBe('TypeError');
+      expect(errorName('(() => 1).bind().prototype;')).toBe('TypeError');
+      expect(errorName('(() => 1).bind().__proto__;')).toBe('TypeError');
+      expect(errorName('(() => 1).apply.__proto__;')).toBe('TypeError');
     });
 
     it('through the host-only globals', () => {
@@ -137,6 +146,8 @@ describe('escape attempts', () => {
       expect(errorCode('new Array(1e9);')).toBe('LIMIT_EXCEEDED');
       expect(errorCode('new host();')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('new (Math.max)();')).toBe('DISALLOWED_SYNTAX');
+      expect(errorCode('const B = Error.bind(null, "x"); new B();')).toBe('DISALLOWED_SYNTAX');
+      expect(errorCode('const H = host.bind(); new H();')).toBe('DISALLOWED_SYNTAX');
     });
   });
 
@@ -315,18 +326,42 @@ describe('escape attempts', () => {
         h: undefined
       });
       expect(run('return [host, [].values()];')).toEqual([undefined, undefined]);
+      expect(run('return [(() => 1).bind(), host.bind(), Math.max.call];')).toEqual([
+        undefined,
+        undefined,
+        undefined
+      ]);
 
       const received: Array<unknown> = [];
       const spy = new Maple({
         globals: { host: (value: unknown): number => received.push(value) }
       });
-      spy.run('host(() => 1); host({ deep: { fn: () => 1 } }); host(host); host(Math.max);');
+      spy.run(
+        'host(() => 1); host({ deep: { fn: () => 1 } }); host(host); host(Math.max); host(host.bind());'
+      );
       expect(received).toStrictEqual([
         undefined,
         { deep: { fn: undefined } },
         undefined,
+        undefined,
         undefined
       ]);
+    });
+
+    it('nor into a host function called through call, apply or bind', () => {
+      const received: Array<unknown> = [];
+      const spy = new Maple({
+        globals: { host: (value: unknown): number => received.push(value) }
+      });
+      spy.run(
+        'const o = { fn: () => 1, n: 1 }; host.call(null, o); host.apply(null, [o]); host.bind(null, o)();'
+      );
+      expect(received).toStrictEqual([
+        { fn: undefined, n: 1 },
+        { fn: undefined, n: 1 },
+        { fn: undefined, n: 1 }
+      ]);
+      expect(new Set(received).size).toBe(3);
     });
 
     it('cannot be inspected', () => {
@@ -337,7 +372,7 @@ describe('escape attempts', () => {
         '[function]',
         '[function]'
       ]);
-      expect(run('return Math.max.call;')).toBeUndefined();
+      expect(run('return [host.bind().name, host.bind().length];')).toEqual([undefined, undefined]);
       expect(run('return Object.keys(() => 1);')).toEqual([]);
       expect(run('return Object.keys(host);')).toEqual([]);
       expect(run('return Object.keys(Math);')).toEqual([]);
@@ -507,6 +542,19 @@ describe('escape attempts', () => {
       expect(runAndCatch(bounded, 'exec("while (true) {}"); return 1;').code).toBe(
         'LIMIT_EXCEEDED'
       );
+      expect(
+        runAndCatch(bounded, 'function f() { try { f.call(); } catch {} } f.apply();').code
+      ).toBe('LIMIT_EXCEEDED');
+      expect(
+        runAndCatch(
+          bounded,
+          'const ap = (() => 1).apply; const a = [ap, null]; a[1] = a; ap.apply(ap, a);'
+        ).code
+      ).toBe('LIMIT_EXCEEDED');
+      expect(
+        runAndCatch(bounded, 'const c = (() => 1).call; let b = c; while (true) { b = b.bind(); }')
+          .code
+      ).toBe('LIMIT_EXCEEDED');
     });
 
     it('by growing an array or copying a large value in one operation', () => {
@@ -527,6 +575,12 @@ describe('escape attempts', () => {
       expect(runAndCatch(bounded, `const [...rest] = ${huge};`).code).toBe('LIMIT_EXCEEDED');
       expect(runAndCatch(bounded, `const { ...rest } = ${huge};`).code).toBe('LIMIT_EXCEEDED');
       expect(runAndCatch(bounded, `for (const k in ${huge}) {}`).code).toBe('LIMIT_EXCEEDED');
+      expect(runAndCatch(bounded, '(() => 1).apply(null, { length: 4294967295 });').code).toBe(
+        'LIMIT_EXCEEDED'
+      );
+      expect(runAndCatch(bounded, `Math.max.apply(null, [...${huge}]);`).code).toBe(
+        'LIMIT_EXCEEDED'
+      );
     });
 
     it('bound recursion through nested runs even when the intrinsic swallows the error', () => {

@@ -56,12 +56,14 @@ Boolean instance: `toString`, `valueOf`.
 
 Static: `Object.keys`, `Object.values`, `Object.entries`, `Object.fromEntries`, `Object.assign`,
 `Object.hasOwn`, `Object.groupBy`, `Object.is`, `Object.getOwnPropertyNames`, `Object.freeze`,
-`Object.isFrozen`, `Object.preventExtensions`, `Object.isExtensible`.
+`Object.isFrozen`, `Object.seal`, `Object.isSealed`, `Object.preventExtensions`,
+`Object.isExtensible`.
 
-- The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`, `create`, …) and
-  `seal` are not available.
-- `freeze`, `preventExtensions` and their checks work on Maple's own values (functions, errors,
-  wrappers) as well. For a built-in function or a namespace, they last for the current run only.
+- The descriptor and prototype functions (`defineProperty`, `getPrototypeOf`, `create`, …) are not
+  available.
+- `freeze`, `seal`, `preventExtensions` and their checks work on Maple's own values (functions,
+  errors, wrappers) as well. For a built-in function or a namespace, they last for the current run
+  only.
 - `Object.groupBy` converts each key hook-free, so a script object always groups as
   `[object Object]`.
 
@@ -136,6 +138,19 @@ method is refused with a `TypeError`.
 Arrays, strings, Maps, Sets and iterators are the iterables, in `for...of`, spread, destructuring
 and wherever a built-in takes an iterable. Plain objects are not iterable. An iterator never leaves
 the sandbox (see [Boundary](boundary.md)).
+
+## Functions
+
+Every function, script, built-in or host, answers to `call`, `apply`, `bind`, `toString` and
+`valueOf`.
+
+`apply` takes `null` or `undefined` for no arguments, or an array-like: an array, `arguments` or
+any object with a `length`. A primitive is a `TypeError`.
+
+A bound function is named `bound ` followed by the name of the function it calls, and its `length`
+is what is left of that function's after the bound arguments. One bound from a host function has no
+properties, as host functions have none. A bound function cannot be constructed with `new` or used
+on the right-hand side of `instanceof`, and it adds no frame to `stack`.
 
 ## Errors
 
