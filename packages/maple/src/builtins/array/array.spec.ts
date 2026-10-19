@@ -278,6 +278,63 @@ describe('array methods', () => {
       ).toEqual(['1-2', '1,2', '1,2', '1,2']);
     });
 
+    it('call the host implementation even where the array has an own property of that name', () => {
+      expect(run('const a = [1, 2, 3]; a.at = 1; return [].at.call(a, -1);')).toBe(3);
+      expect(run('const a = [1]; a.concat = 1; return [].concat.call(a, [2], 3);')).toEqual([
+        1, 2, 3
+      ]);
+      expect(
+        run('const a = [1, 2, 3]; a.copyWithin = 1; [].copyWithin.call(a, 0, 1); return [...a];')
+      ).toEqual([2, 3, 3]);
+      expect(run('const a = ["x"]; a.entries = 1; return [...[].entries.call(a)];')).toEqual([
+        [0, 'x']
+      ]);
+      expect(run('const a = [1, 2]; a.fill = 1; [].fill.call(a, 0); return [...a];')).toEqual([
+        0, 0
+      ]);
+      expect(run('const a = [1, 2]; a.includes = 1; return [].includes.call(a, 2);')).toBe(true);
+      expect(run('const a = [1, 2]; a.indexOf = 1; return [].indexOf.call(a, 2);')).toBe(1);
+      expect(run('const a = ["x", "y"]; a.keys = 1; return [...[].keys.call(a)];')).toEqual([0, 1]);
+      expect(
+        run(
+          'const a = [1, 2, 1]; a.lastIndexOf = 1; return [[].lastIndexOf.call(a, 1), [].lastIndexOf.call(a, 1, 1)];'
+        )
+      ).toEqual([2, 0]);
+      expect(run('const a = [1, 2]; a.pop = 1; return [[].pop.call(a), [...a]];')).toEqual([
+        2,
+        [1]
+      ]);
+      expect(run('const a = [1]; a.push = 1; [].push.call(a, 2); return [...a];')).toEqual([1, 2]);
+      expect(run('const a = [1, 2]; a.reverse = 1; [].reverse.call(a); return [...a];')).toEqual([
+        2, 1
+      ]);
+      expect(run('const a = [1, 2]; a.shift = 1; return [[].shift.call(a), [...a]];')).toEqual([
+        1,
+        [2]
+      ]);
+      expect(run('const a = [3, 1, 2]; a.slice = 1; return [].slice.call(a, 1);')).toEqual([1, 2]);
+      expect(
+        run(
+          'const a = [1, 2, 3]; a.splice = 1; return [[].splice.call(a, 1), [].splice.call(a, 0, 1, 9), [...a]];'
+        )
+      ).toEqual([[2, 3], [1], [9]]);
+      expect(run('const a = [1, 2]; a.map = 1; return [].toLocaleString.call(a);')).toBe('1,2');
+      expect(run('const a = [1, 2]; a.toReversed = 1; return [].toReversed.call(a);')).toEqual([
+        2, 1
+      ]);
+      expect(run('const a = [2, 1]; a.toSorted = 1; return [].toSorted.call(a);')).toEqual([1, 2]);
+      expect(
+        run(
+          'const a = [1, 2, 3]; a.toSpliced = 1; return [[].toSpliced.call(a, 1), [].toSpliced.call(a, 0, 1, 9)];'
+        )
+      ).toEqual([[1], [9, 2, 3]]);
+      expect(run('const a = [1]; a.unshift = 1; [].unshift.call(a, 0); return [...a];')).toEqual([
+        0, 1
+      ]);
+      expect(run('const a = ["x"]; a.values = 1; return [...[].values.call(a)];')).toEqual(['x']);
+      expect(run('const a = [1, 2]; a.with = 1; return [].with.call(a, 0, 9);')).toEqual([9, 2]);
+    });
+
     it('mutate script arrays', () => {
       expect(run('const l = [1]; const n = l.push(2, 3); return [n, l];')).toEqual([3, [1, 2, 3]]);
       expect(run('const l = [1, 2]; return [l.pop(), l];')).toEqual([2, [1]]);

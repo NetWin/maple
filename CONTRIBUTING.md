@@ -76,6 +76,7 @@ The declared exceptions are the guarded `performance.now()` behind `durationMs`,
    If the method takes a callback, invoke it through `context.call` so it runs under the budget.
    Never hand a script closure to a host implementation.
 3. If the method needs no callback and cannot observe prototypes, it may delegate to the host implementation on a Maple-owned value (for example `Array.prototype.with`).
+   Call it through the prototype, as `Array.prototype.with.call(a, …)`, never as `a.with(…)`: a script can give its array an own property of that name.
    Wrap it in `guardHostErrors` when the spec requires a `RangeError`, `URIError` or `SyntaxError` for it, or when it can build a string or array longer than the host allows.
 4. Return only sandbox values: primitives, Maple-created objects and arrays, or wrappers.
    Never return a native `Date`, `RegExp`, `Map`, `Set` or function.

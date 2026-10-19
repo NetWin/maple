@@ -9,6 +9,8 @@ export const ARRAY_METHOD_COPY_WITHIN: Method<Array<unknown>> = method(
     const to = toNumber(target);
     const from = toNumber(start);
     const until = optionalNumberArgument(end);
-    return guardIntegrityErrors(context.fail, a, () => a.copyWithin(to, from, until));
+    return guardIntegrityErrors(context.fail, a, () =>
+      Array.prototype.copyWithin.call(a, to, from, until)
+    );
   }
 );
