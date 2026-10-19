@@ -40,7 +40,9 @@ import { ARRAY_METHOD_WITH } from './methods/with.ts';
 
 /**
  * Callbacks always run through the interpreter, so they stay under the budget and the host never
- * holds a script function. Methods that mutate refuse read-only input arrays.
+ * holds a script function. Methods that mutate refuse read-only input arrays. A method that runs
+ * the host's implementation calls it through `Array.prototype`, never as `a.slice()`, since a
+ * script can give its array an own property of that name.
  */
 export const ARRAY_PROTOTYPE: Prototype<Array<unknown>> = new Prototype(
   'Array',

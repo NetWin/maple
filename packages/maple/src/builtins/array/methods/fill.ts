@@ -7,6 +7,8 @@ export const ARRAY_METHOD_FILL: Method<Array<unknown>> = method(
   (a, [value, start, end], context) => {
     const from = optionalNumberArgument(start);
     const to = optionalNumberArgument(end);
-    return guardIntegrityErrors(context.fail, a, () => a.fill(value, from, to));
+    return guardIntegrityErrors(context.fail, a, () =>
+      Array.prototype.fill.call(a, value, from, to)
+    );
   }
 );
