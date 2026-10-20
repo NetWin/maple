@@ -34,7 +34,8 @@ It runs `test` on Node 22, 24 and 26: the minimum from the library's `engines` f
 ## Commits & releases
 
 Commits must follow [Conventional Commits](https://www.conventionalcommits.org), which commitlint enforces in the `commit-msg` hook.
-Every commit needs a scope: the package it changes, such as `maple`, `playground` or `parity`, or `*` when it spans the repository.
+Every commit needs a scope: the area it changes, such as `evaluator`, `boundary`, `builtins` or `json` in the library, `playground` or `parity`, or `*` when it spans the repository.
+Older commits name the library's package, `maple`, instead; new ones name the area, so the changelog says what changed.
 
 Pull requests target `increment`, the default branch, and are merged with a merge commit or rebased, never squashed, so their commits reach `master` as they are.
 A release is a merge of `increment` into `master`, with a merge commit as well.
