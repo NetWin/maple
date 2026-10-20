@@ -84,8 +84,8 @@ All functions and constants of ES2023 `Math`: `abs`, `acos`, `acosh`, `asin`, `a
 
 `JSON.parse(text, reviver?)` and `JSON.stringify(value, replacer?, space?)`, implemented by Maple
 so that wrappers serialize the way their native counterparts would (a Date as its ISO string, a Map
-as `{}`). A reviver receives the holder as a third argument, `(key, value, holder)`, with `this`
-undefined. A replacer, too, has `this` undefined rather than the holder.
+as `{}`). A reviver receives the holder as `this`, as in JavaScript, but not the third `context`
+argument with the `source` text. A replacer has `this` undefined rather than the holder.
 
 ## RegExp
 

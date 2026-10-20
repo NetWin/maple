@@ -264,6 +264,17 @@ describe('syntax:ThisExpression', () => {
   });
 });
 
+describe('JSON.parse', () => {
+  // js-interpreter ignores the reviver; Maple calls it with the holder as this
+  it('applies a reviver with the holder as this', () => {
+    expect(
+      followsJavaScript(
+        'return JSON.parse(\'{"a":1}\', function (k, v) { return k === "a" ? Object.keys(this) : v; });'
+      )
+    ).toEqual({ maple: { a: ['a'] }, jsInterpreter: { a: 1 } });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes. An object's behaviour comes from its

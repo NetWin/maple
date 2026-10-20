@@ -36,7 +36,7 @@ describe('JSON.parse', () => {
     expect(run('try { JSON.parse(); } catch (e) { return e.name; }')).toBe('SyntaxError');
   });
 
-  it('applies a reviver bottom-up, with the holder as third argument', () => {
+  it('applies a reviver bottom-up, with the holder as this', () => {
     const text = '{"a":{"b":1},"c":[2,3]}';
 
     expect(
@@ -60,9 +60,14 @@ describe('JSON.parse', () => {
     expect(run('return JSON.parse("{}", (k, v) => (k === "" ? 42 : v));')).toBe(42);
     expect(
       run(
-        'return JSON.parse(\'{"a":1}\', (k, v, holder) => (k === "a" ? Object.keys(holder) : v));'
+        'return JSON.parse(\'{"a":1}\', function (k, v) { return k === "a" ? Object.keys(this) : v; });'
       )
     ).toEqual({ a: ['a'] });
+    expect(
+      run('return JSON.parse("[1]", function (k, v) { return k === "0" ? this.length : v; });')
+    ).toEqual([1]);
+    expect(run('return JSON.parse("1", function () { return Object.keys(this); });')).toEqual(['']);
+    expect(run('return JSON.parse(\'{"a":1}\', (k, v, holder) => holder);')).toBeUndefined();
     expect(
       run(
         'return JSON.parse(\'{"when":"1970-01-01T00:00:00.000Z"}\', (k, v) => (k === "when" ? new Date(v) : v)).when.getTime();'
@@ -72,6 +77,14 @@ describe('JSON.parse', () => {
   });
 
   it('keeps a reviver inside the sandbox rules', () => {
+    expect(
+      runAndCatch(maple, 'JSON.parse("{}", function () { return this.constructor; });').sandboxError
+        ?.name
+    ).toBe('TypeError');
+    expect(
+      runAndCatch(maple, 'JSON.parse("{}", function () { return this.__proto__; });').sandboxError
+        ?.name
+    ).toBe('TypeError');
     expect(run('return Object.keys(JSON.parse(\'{"__proto__": 1}\', (k, v) => v));')).toEqual([
       '__proto__'
     ]);

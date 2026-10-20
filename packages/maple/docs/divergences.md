@@ -49,8 +49,8 @@ one that does; the linked section has the detail.
 
 - Set algebra refuses set-like objects other than Sets and Maps, and `Iterator.from` refuses an
   object with a script `next` ([Built-ins](builtins.md#map-and-set)).
-- A JSON reviver receives the holder as a third argument instead of `this`, and a JSON replacer
-  has `undefined` as `this` instead of the holder ([JSON](builtins.md#json)).
+- A JSON reviver receives no third `context` argument, and a JSON replacer has `undefined` as
+  `this` instead of the holder ([JSON](builtins.md#json)).
 - The legacy `RegExp.$1` statics, the String HTML methods and `Intl` are not available.
 
 ## Errors and limits
