@@ -5,7 +5,9 @@
 A host function is any function found in the globals or in `data` that is not marked as an
 intrinsic. A script can call it, store it and pass it around, but never reach the native function.
 It has no properties, not even `length` or `name`: those are the host's business. Its arguments and
-its return value are copied (see [Boundary](boundary.md#host-function-calls)).
+its return value are copied (see [Boundary](boundary.md#host-function-calls)). It never receives a
+`this`: called as a method, as in `obj.fn()`, or through `call`, `apply` or `bind`, it runs with
+`this` undefined.
 
 A host call costs what any call costs; the work and the time inside the host function are not
 measured (see [Limits](limits.md)).
@@ -55,6 +57,8 @@ interface Sandbox {
   program is one more call level and appears as `<nested>` in stack traces. Like any run, it neither
   sees nor leaves properties the calling run added to shared built-ins. Data that is not an object
   throws a plain `TypeError` to the intrinsic.
+- An intrinsic receives no `this`, as a host function does, and `sandbox.call` calls a script
+  function with `this` undefined.
 - An exception the intrinsic throws is treated like a host function's.
 - The handle is usable only while the intrinsic runs. Once it has returned, every method throws a
   plain `Error`, so a handle or closure an intrinsic keeps cannot run script code outside the call.

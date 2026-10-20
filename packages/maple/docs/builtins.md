@@ -41,6 +41,11 @@ Instance: `length`, `at`, `concat`, `copyWithin`, `entries`, `every`, `fill`, `f
 
 Static: `Array.isArray`, `Array.from`, `Array.of`.
 
+`every`, `filter`, `find`, `findIndex`, `findLast`, `findLastIndex`, `flatMap`, `forEach`, `map`,
+`some` and `Array.from` take a `thisArg` after the callback, which the callback sees as `this`.
+The comparator of `sort` and `toSorted` and the reducer of `reduce` and `reduceRight` take none
+and have `this` undefined, as in JavaScript.
+
 ## Number and Boolean
 
 Number instance: `toFixed`, `toPrecision`, `toExponential`, `toLocaleString`, `toString`, `valueOf`.
@@ -79,8 +84,8 @@ All functions and constants of ES2023 `Math`: `abs`, `acos`, `acosh`, `asin`, `a
 
 `JSON.parse(text, reviver?)` and `JSON.stringify(value, replacer?, space?)`, implemented by Maple
 so that wrappers serialize the way their native counterparts would (a Date as its ISO string, a Map
-as `{}`). Since there is no `this`, a reviver receives the holder as a third argument,
-`(key, value, holder)`.
+as `{}`). A reviver and a function replacer receive the holder as `this`, as in JavaScript; a
+reviver does not receive the third `context` argument with the `source` text.
 
 ## RegExp
 
@@ -122,6 +127,9 @@ Map static: `Map.groupBy`.
 Set: `add`, `has`, `delete`, `clear`, `forEach`, `size`, `keys`, `values`, `entries`, `union`,
 `intersection`, `difference`, `symmetricDifference`, `isSubsetOf`, `isSupersetOf`,
 `isDisjointFrom`.
+
+`forEach` of a Map and of a Set takes a `thisArg` after the callback, which the callback sees as
+`this`.
 
 The set algebra takes a Set or a Map as the other operand. JavaScript's other set-like objects are
 refused with a `TypeError`, so the host never calls a script `has` or `keys`.

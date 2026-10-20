@@ -96,4 +96,41 @@ describe('Scope', () => {
       expect(create).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('receiver', () => {
+    it('comes from the nearest scope that binds one', () => {
+      const outer = new Scope();
+      const middle = new Scope(outer);
+      const inner = new Scope(middle);
+      outer.bindReceiver(1);
+
+      expect(inner.receiver()).toBe(1);
+
+      middle.bindReceiver(undefined);
+
+      expect(inner.receiver()).toBeUndefined();
+      expect(outer.receiver()).toBe(1);
+    });
+
+    it('is not a binding named this', () => {
+      const scope = new Scope();
+      scope.bindReceiver(1);
+
+      expect(scope.lookup('this')).toBeUndefined();
+      expect(scope.hasOwn('this')).toBe(false);
+    });
+
+    it('is carried along by a copy', () => {
+      const outer = new Scope();
+      outer.bindReceiver(1);
+      const scope = new Scope(outer);
+      scope.bindReceiver(2);
+
+      expect(scope.copy().receiver()).toBe(2);
+    });
+
+    it('fails when no scope binds one', () => {
+      expect(() => new Scope().receiver()).toThrow('No scope binds a receiver');
+    });
+  });
 });

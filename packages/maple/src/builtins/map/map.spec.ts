@@ -56,6 +56,25 @@ describe('Map', () => {
     expect(run(`${setup} const [[k]] = m; return k;`)).toBe('b');
   });
 
+  it('forEach calls its callback with the thisArg as this', () => {
+    expect(
+      run(
+        'const seen = []; new Map([[1, 2]]).forEach(function () { seen.push(this); }, 5); return seen;'
+      )
+    ).toEqual([5]);
+    expect(
+      run(
+        'const seen = []; new Map([[1, 2]]).forEach(function () { seen.push(this); }); return seen;'
+      )
+    ).toEqual([undefined]);
+    expect(
+      run(
+        'const o = { f() { let s; new Map([[1, 2]]).forEach(() => { s = this; }, 5); return s === o; } }; return o.f();'
+      )
+    ).toBe(true);
+    expect(run('return new Map().forEach.length;')).toBe(1);
+  });
+
   it('has no own properties besides size but takes the ones a script adds', () => {
     expect(run('return ["size" in new Map(), "get" in new Map()];')).toEqual([true, true]);
     expect(run('return new Map().foo;')).toBeUndefined();
