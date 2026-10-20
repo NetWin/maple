@@ -1,5 +1,6 @@
 import { isPlainObject } from '../../../support/is-plain-object.ts';
 import { MAX_NESTING } from '../../../support/nesting-limit.ts';
+import { defineOwn } from '../../../support/own-property.ts';
 import { getOwnPropertiesOf } from '../../../values/members.ts';
 import { type CallContext, isCallable, NativeFunction } from '../../../values/native.ts';
 import { SandboxObject } from '../../../values/sandbox-object.ts';
@@ -16,7 +17,7 @@ interface PropertyView {
 interface Serialization {
   readonly gap: string;
   readonly allowed: ReadonlySet<string> | undefined;
-  readonly replace: ((key: string, current: unknown) => unknown) | undefined;
+  readonly replace: ((holder: object, key: string, current: unknown) => unknown) | undefined;
   readonly ancestors: Array<object>;
   readonly context: CallContext;
 }
@@ -28,14 +29,18 @@ interface Serialization {
 export const JSON_STATIC_STRINGIFY: NativeFunction = new NativeFunction(
   'stringify',
   JSON.stringify.length,
-  (_, [value, replacer, space], context) =>
-    serialize('', value, '', {
+  (_, [value, replacer, space], context) => {
+    // The value is serialized as the property '' of a fresh object, which a replacer sees as this
+    const root: Record<string, unknown> = {};
+    defineOwn(root, '', value);
+    return serialize(root, '', value, '', {
       gap: gapOf(space),
       allowed: allowedKeys(replacer),
       replace: replacerOf(replacer, context),
       ancestors: [],
       context
-    })
+    });
+  }
 );
 
 /**
@@ -69,17 +74,19 @@ function allowedKeys(replacer: unknown): ReadonlySet<string> | undefined {
   return keys;
 }
 
-/** A function replacer, which runs as a script callback. */
+/** A function replacer, which runs as a script callback with the holder as `this`. */
 function replacerOf(
   replacer: unknown,
   context: CallContext
-): ((key: string, current: unknown) => unknown) | undefined {
+): ((holder: object, key: string, current: unknown) => unknown) | undefined {
   return isCallable(replacer)
-    ? (key, current) => context.call(undefined, replacer, [key, current])
+    ? (holder, key, current) => context.call(holder, replacer, [key, current])
     : undefined;
 }
 
+/** `holder` is the object or array whose property `key` is, as the replacer sees it. */
 function serialize(
+  holder: object,
   key: string,
   raw: unknown,
   indent: string,
@@ -94,7 +101,7 @@ function serialize(
         ? null
         : raw.date.toISOString()
       : raw;
-  const current = replace ? replace(key, json) : json;
+  const current = replace ? replace(holder, key, json) : json;
 
   if (current === null) {
     return 'null';
@@ -143,7 +150,7 @@ function serialize(
     const parts: Array<string> = [];
     const length = current.length;
     for (let index = 0; index < length; index++) {
-      parts.push(serialize(String(index), current[index], inner, serialization) ?? 'null');
+      parts.push(serialize(current, String(index), current[index], inner, serialization) ?? 'null');
     }
     result = wrap('[', ']', parts, gap, indent, inner);
   } else {
@@ -176,7 +183,13 @@ function serialize(
       ? [...allowed].filter((propertyKey) => properties.has(propertyKey))
       : properties.keys();
     for (const propertyKey of keys) {
-      const serialized = serialize(propertyKey, properties.get(propertyKey), inner, serialization);
+      const serialized = serialize(
+        current,
+        propertyKey,
+        properties.get(propertyKey),
+        inner,
+        serialization
+      );
       if (serialized !== undefined) {
         parts.push(`${JSON.stringify(propertyKey)}:${gap ? ' ' : ''}${serialized}`);
       }

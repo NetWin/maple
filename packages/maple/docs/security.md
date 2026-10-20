@@ -43,9 +43,9 @@ it can terminate.
   set algebra and `Iterator.from` refuse objects whose methods the script wrote.
 - **No new reach through `this`.** A receiver is only ever a value the script already holds: the
   object of a method call, what it passes to `call`, `apply`, `bind` or as a callback's `thisArg`,
-  the holder a JSON reviver visits (part of the script's own value, or a fresh object around it), or
-  `undefined`. There is no global object, built-ins never pass an internal value as `this`, and host
-  functions and intrinsics receive none.
+  the holder a JSON reviver or replacer visits (part of the script's own value, or a fresh object
+  around it), or `undefined`. There is no global object, built-ins never pass an internal value as
+  `this`, and host functions and intrinsics receive none.
 - **Copied input.** Everything the host passes in is a copy (see
   [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified. The copy is
   frozen unless the host asks for a changeable one for a single run; instance globals are frozen

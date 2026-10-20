@@ -427,7 +427,6 @@ describe('escape attempts', () => {
         '"aa".replaceAll("a", cb)',
         'Object.groupBy([1], cb)',
         'Map.groupBy([1], cb)',
-        'JSON.stringify({ a: 1 }, function (key, value) { seen.push(this); return value; })',
         'Array.from([1], cb)',
         'Array.from({ length: 1 }, cb)',
         '[1].map(cb)',

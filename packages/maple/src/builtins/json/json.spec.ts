@@ -182,6 +182,46 @@ describe('JSON.stringify', () => {
     );
   });
 
+  it('calls a function replacer with the holder as this', () => {
+    expect(
+      run(
+        'return JSON.stringify({ a: 1 }, function (k, v) { return k === "" ? Object.keys(this) : v; });'
+      )
+    ).toBe('[""]');
+    expect(
+      run(
+        'const o = { a: 1 }; return JSON.stringify(o, function (k, v) { return k === "a" ? this === o : v; });'
+      )
+    ).toBe('{"a":true}');
+    expect(
+      run('return JSON.stringify([1, 2], function (k, v) { return k === "" ? v : this.length; });')
+    ).toBe('[2,2]');
+    expect(
+      run(
+        'return JSON.stringify({ a: 1 }, function (k, v) { return k === "" ? { b: 2 } : this.b; });'
+      )
+    ).toBe('{"b":2}');
+    expect(
+      run(
+        'return JSON.stringify({ when: new Date(0) }, function (k, v) { return this[k] instanceof Date ? this[k].getTime() : v; });'
+      )
+    ).toBe('{"when":0}');
+    expect(
+      run('const o = { f() { return JSON.stringify([1], () => this === o); } }; return o.f();')
+    ).toBe('true');
+  });
+
+  it('keeps a replacer inside the sandbox rules', () => {
+    expect(
+      runAndCatch(maple, 'JSON.stringify({}, function () { return this.constructor; });')
+        .sandboxError?.name
+    ).toBe('TypeError');
+    expect(
+      runAndCatch(maple, 'JSON.stringify({}, function () { return this.__proto__; });').sandboxError
+        ?.name
+    ).toBe('TypeError');
+  });
+
   it("writes an array replacer's keys in its order, own properties only", () => {
     expect(run('return JSON.stringify({ a: 1, b: 2 }, ["b", "a", "b"]);')).toBe('{"b":2,"a":1}');
     expect(run('return JSON.stringify({ a: 1 }, ["a", "missing", "toString"]);')).toBe('{"a":1}');
