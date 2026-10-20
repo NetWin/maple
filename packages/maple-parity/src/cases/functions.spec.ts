@@ -511,6 +511,24 @@ describe('syntax:ThisExpression', () => {
   });
 });
 
+describe('thisArg of array callbacks', () => {
+  it('is this in the callback', () => {
+    expect(
+      parity(
+        'var t = { k: 10 }; var seen = []; var f = function (x) { seen.push(this.k + x); return true; }; [1].every(f, t); [1].filter(f, t); [1].forEach(f, t); [1].map(f, t); [1].some(f, t); return seen;'
+      )
+    ).toEqual([11, 11, 11, 11, 11]);
+  });
+
+  it('passes a primitive unboxed', () => {
+    expect(parity('return [1].map(function () { return typeof this; }, 5);')).toEqual(['number']);
+  });
+
+  it('leaves this undefined when omitted', () => {
+    expect(parity('return [1].map(function () { return typeof this; });')).toEqual(['undefined']);
+  });
+});
+
 describe('assign:function property', () => {
   it('adds a property to a script function', () => {
     expect(

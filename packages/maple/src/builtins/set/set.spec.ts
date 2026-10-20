@@ -31,6 +31,23 @@ describe('Set', () => {
     ).toBe('[object Object] is not iterable');
   });
 
+  it('forEach calls its callback with the thisArg as this', () => {
+    expect(
+      run(
+        'const seen = []; new Set([1]).forEach(function () { seen.push(this); }, 5); return seen;'
+      )
+    ).toEqual([5]);
+    expect(
+      run('const seen = []; new Set([1]).forEach(function () { seen.push(this); }); return seen;')
+    ).toEqual([undefined]);
+    expect(
+      run(
+        'const o = { f() { let s; new Set([1]).forEach(() => { s = this; }, 5); return s === o; } }; return o.f();'
+      )
+    ).toBe(true);
+    expect(run('return new Set().forEach.length;')).toBe(1);
+  });
+
   it('is read-only from the input and crosses the boundary as a native Set', () => {
     const data = { tags: new Set(['a']) };
 

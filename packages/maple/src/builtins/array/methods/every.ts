@@ -5,6 +5,6 @@ import { findEntryBy } from '../utils/find-entry-by.ts';
 
 export const ARRAY_METHOD_EVERY: Method<Array<unknown>> = method(
   Array.prototype.every.length,
-  (a, [fn], context) =>
-    findEntryBy(a, presentEntries(a), arrayCallback(fn, context), false) === undefined
+  (a, [fn, thisArg], context) =>
+    findEntryBy(a, presentEntries(a), arrayCallback(fn, context, thisArg), false) === undefined
 );
