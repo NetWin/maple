@@ -34,6 +34,16 @@ function assertHostUntouched(): void {
   expect(Array.prototype).not.toHaveProperty('polluted');
 }
 
+/** Whether `call` invoked `cb` at all, and whether every invocation had `this` undefined. */
+function receiversIn(call: string): unknown {
+  return run(`
+    const seen = [];
+    const cb = function (x) { seen.push(this); return x; };
+    ${call};
+    return [seen.length > 0, seen.every((receiver) => receiver === undefined)];
+  `);
+}
+
 describe('escape attempts', () => {
   afterEach(assertHostUntouched);
 
@@ -79,7 +89,7 @@ describe('escape attempts', () => {
       expect(errorCode('Function("return this")();')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('eval("1");')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('globalThis;')).toBe('DISALLOWED_SYNTAX');
-      expect(errorCode('return this;')).toBe('DISALLOWED_SYNTAX');
+      expect(run('return this;')).toBeUndefined();
       expect(errorCode('return arguments;')).toBe('DISALLOWED_SYNTAX');
       expect(errorName('function f() { return arguments.callee; } f();')).toBe('TypeError');
       expect(errorCode('Reflect.get({}, "a");')).toBe('DISALLOWED_SYNTAX');
@@ -314,6 +324,126 @@ describe('escape attempts', () => {
         ['__proto__', 'x'],
         undefined
       ]);
+    });
+  });
+
+  describe('this', () => {
+    it('is never a global object', () => {
+      expect(run('return this;')).toBeUndefined();
+      expect(run('return (function () { return this; })();')).toBeUndefined();
+      expect(run('return (() => this)();')).toBeUndefined();
+      expect(run('function f() { return this; } return [f(), [1].map(f)[0]];')).toEqual([
+        undefined,
+        undefined
+      ]);
+    });
+
+    it('guards its prototype keys like any other object', () => {
+      const method = (body: string): string | undefined =>
+        errorName(`const o = { f() { return ${body}; } }; o.f();`);
+
+      expect(method('this.constructor')).toBe('TypeError');
+      expect(method('this.__proto__')).toBe('TypeError');
+      expect(method('this["prototype"]')).toBe('TypeError');
+      expect(method('this["__proto__"]')).toBe('TypeError');
+      expect(
+        errorName('const f = () => 1; f.g = function () { return this.constructor; }; f.g();')
+      ).toBe('TypeError');
+      expect(errorName('const o = { f() { this.__proto__ = { polluted: true }; } }; o.f();')).toBe(
+        'TypeError'
+      );
+    });
+
+    it('writes to a shared built-in for the current run only', () => {
+      const shared = new Maple();
+
+      expect(
+        shared.run('Math.f = function () { this.x = 1; return this; }; return Math.f() === Math;')
+          .value
+      ).toBe(true);
+      expect(shared.run('return [typeof Math.f, typeof Math.x];').value).toEqual([
+        'undefined',
+        'undefined'
+      ]);
+    });
+
+    it('cannot change frozen input, and changes only the copy of unfrozen input', () => {
+      const data = { obj: { n: 1 } };
+      const code = 'const o = { f() { this.x = 1; return this.x; } }; return o.f.call(obj);';
+
+      expect(errorName(code, data)).toBe('TypeError');
+      expect(
+        runUnfrozen('obj.f = function () { this.x = 1; return this.x; }; return obj.f();', data)
+      ).toBe(1);
+      expect(runUnfrozen(code, data)).toBe(1);
+      expect(data).toEqual({ obj: { n: 1 } });
+    });
+
+    it('is never passed to a host function or an intrinsic', () => {
+      const receivers: Array<unknown> = [];
+      const probes = new Maple({
+        globals: {
+          probe(this: unknown): void {
+            receivers.push(this);
+          },
+          intrinsicProbe: intrinsic(function (this: unknown): void {
+            receivers.push(this);
+          })
+        }
+      });
+
+      probes.run(
+        'const o = { probe, intrinsicProbe }; o.probe(); o.intrinsicProbe(); probe.call(o); intrinsicProbe.apply(o, []); probe.bind(o)(); obj.probe();',
+        {
+          obj: {
+            probe(this: unknown): void {
+              receivers.push(this);
+            }
+          }
+        }
+      );
+
+      expect(receivers).toEqual(Array.from({ length: 6 }, () => undefined));
+    });
+
+    it('is undefined for every built-in callback that is given no thisArg', () => {
+      const cases: ReadonlyArray<string> = [
+        '[2, 1, 3].sort(cb)',
+        '[2, 1, 3].toSorted(cb)',
+        '[1, 2].reduce(cb)',
+        '[1, 2].reduce(cb, 0)',
+        '[1, 2].reduceRight(cb)',
+        '[1].values().map(cb).toArray()',
+        '[1].values().filter(cb).toArray()',
+        '[1].values().flatMap((x) => [x]).map(cb).toArray()',
+        '[1].values().flatMap(function (x) { seen.push(this); return [x]; }).toArray()',
+        '[1].values().forEach(cb)',
+        '[1].values().some(cb)',
+        '[1].values().every(cb)',
+        '[1].values().find(cb)',
+        '[1, 2].values().reduce(cb)',
+        '"ab".replace("a", cb)',
+        '"ab".replace(/a/g, cb)',
+        '"aa".replaceAll("a", cb)',
+        'Object.groupBy([1], cb)',
+        'Map.groupBy([1], cb)',
+        'JSON.stringify({ a: 1 }, function (key, value) { seen.push(this); return value; })',
+        'Array.from([1], cb)',
+        'Array.from({ length: 1 }, cb)',
+        '[1].map(cb)',
+        'new Map([[1, 1]]).forEach(cb)',
+        'new Set([1]).forEach(cb)'
+      ];
+      for (const call of cases) {
+        expect([call, receiversIn(call)]).toEqual([call, [true, true]]);
+      }
+    });
+
+    it('returns to the host as a plain copy, without its functions', () => {
+      expect(run('return { n: 1, f() { return this; } }.f();')).toStrictEqual({
+        n: 1,
+        f: undefined
+      });
     });
   });
 

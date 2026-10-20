@@ -248,18 +248,26 @@ describe('Array.prototype.sort', () => {
   });
 });
 
-// Maple departs from JavaScript on purpose.
-
-// The object model: Maple has no script-visible prototypes or receivers. An object's behaviour
-// comes from its type, so `this`, constructors and prototype chains are left out, not sandboxed.
-
 describe('syntax:ThisExpression', () => {
-  it('rejects this in a function', () => {
-    expect(rejected('function f() { return this; } return f();')).toBe(
-      MapleErrorCode.DISALLOWED_SYNTAX
-    );
+  // As in strict mode, there is no global object to stand in; sloppy js-interpreter passes its own
+  it('has no global this', () => {
+    expect(followsJavaScript('return typeof this;', { sloppy: true })).toEqual({
+      maple: 'undefined',
+      jsInterpreter: 'object'
+    });
+  });
+
+  it('is undefined in a plain call', () => {
+    expect(
+      followsJavaScript('function f() { return typeof this; } return f();', { sloppy: true })
+    ).toEqual({ maple: 'undefined', jsInterpreter: 'object' });
   });
 });
+
+// Maple departs from JavaScript on purpose.
+
+// The object model: Maple has no script-visible prototypes. An object's behaviour comes from its
+// type, so constructors and prototype chains are left out, not sandboxed.
 
 describe('syntax:NewExpression', () => {
   it('rejects new on a script function', () => {
@@ -416,14 +424,6 @@ describe('Function.prototype.length', () => {
 });
 
 // There is no global object: globals are read-only bindings, and the host decides what exists.
-
-describe('this', () => {
-  it('has no global this', () => {
-    expect(rejected('return typeof this;', { sloppy: true })).toBe(
-      MapleErrorCode.DISALLOWED_SYNTAX
-    );
-  });
-});
 
 describe('constructor', () => {
   // js-interpreter's global object inherits from Object.prototype, so `constructor` is a global

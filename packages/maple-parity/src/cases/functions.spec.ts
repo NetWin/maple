@@ -455,6 +455,62 @@ describe('method calls', () => {
   });
 });
 
+describe('syntax:ThisExpression', () => {
+  it('is the object a function is called on', () => {
+    expect(parity('var o = { n: 1, f: function () { return this.n; } }; return o.f();')).toBe(1);
+    expect(parity('var o = { n: 1, f: function () { return this.n; } }; return o["f"]();')).toBe(1);
+    expect(parity('var o = { n: 1, f: function () { return this.n; } }; return (o.f)();')).toBe(1);
+  });
+
+  it('is undefined for a plain call', () => {
+    expect(parity('function f() { return typeof this; } return f();')).toBe('undefined');
+    expect(parity('var o = { f: function () { return typeof this; } }; return (0, o.f)();')).toBe(
+      'undefined'
+    );
+    expect(
+      parity('var o = { f: function () { return typeof this; } }; var g = o.f; return g();')
+    ).toBe('undefined');
+    expect(parity('return typeof this;')).toBe('undefined');
+  });
+
+  it('is what call, apply and bind pass, unboxed', () => {
+    expect(
+      parity(
+        'function f() { return this; } return [f.call(5), f.apply("s", []), f.bind(true)(), f.call(null)];'
+      )
+    ).toEqual([5, 's', true, null]);
+    expect(parity('function f() { return typeof this; } return f.call(5);')).toBe('number');
+  });
+
+  it('keeps the bound receiver', () => {
+    expect(parity('function f() { return this; } return f.bind(1).call(2);')).toBe(1);
+    expect(parity('function f() { return this; } var o = { g: f.bind(1) }; return o.g();')).toBe(1);
+  });
+
+  it('is undefined again in a nested function', () => {
+    expect(
+      parity(
+        'var o = { f: function () { function g() { return typeof this; } return g(); } }; return o.f();'
+      )
+    ).toBe('undefined');
+  });
+
+  it('lets a method return its object for chaining', () => {
+    expect(
+      parity(
+        'var o = { n: 0, add: function (k) { this.n += k; return this; } }; return o.add(1).add(2).n;'
+      )
+    ).toBe(3);
+  });
+
+  it('is read and written like any object', () => {
+    expect(
+      parity('var o = { f: function () { this.x = 1; return this.x; } }; return [o.f(), o.x];')
+    ).toEqual([1, 1]);
+    expect(allThrow('function f() { return this.x; } return f();')).toBe('TypeError');
+  });
+});
+
 describe('assign:function property', () => {
   it('adds a property to a script function', () => {
     expect(
