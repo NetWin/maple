@@ -4,7 +4,7 @@ import { runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 
-function run(code: string, data?: unknown): unknown {
+function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 

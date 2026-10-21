@@ -9,7 +9,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "typecheck": "ngc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
-    "measure-memory": "node scripts/measure-memory.ts"
+    "measure-run": "node scripts/measure-run.ts"
   },
   "dependencies": {
     "@angular/common": "^22.2.2",

@@ -29,14 +29,14 @@ export class Scope {
   }
 
   /**
-   * A `var` binding whose value `create` makes on the first read, so a value that is costly to
-   * build and rarely needed is only built when it is. An assignment replaces it unread.
+   * A binding whose value `create` makes on the first read, so a value that is costly to build and
+   * rarely needed is only built when it is. An assignment replaces it unread.
    */
-  public defineLazy(name: string, create: () => unknown): void {
+  public defineLazy(name: string, kind: 'var' | 'global', create: () => unknown): void {
     let created = false;
     let value: unknown;
     this.#bindings.set(name, {
-      kind: 'var',
+      kind,
       initialized: true,
       get value(): unknown {
         if (!created) {
@@ -89,7 +89,8 @@ export class Scope {
 
   /**
    * A sibling scope with copies of the own bindings, which gives a loop fresh per-iteration
-   * bindings.
+   * bindings. Copying reads a lazy binding's value, which is why only loop scopes are copied,
+   * never a global or function scope that holds one.
    */
   public copy(): Scope {
     const scope = new Scope(this.#parent);

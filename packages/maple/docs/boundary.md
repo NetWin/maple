@@ -20,7 +20,11 @@ globals), the arguments of a host function, its return value, and the result of 
 - "Anything else" is a class instance, a typed array, a boxed primitive, a symbol, a promise or a
   host `Error`. Nothing is flattened silently.
 - "`TypeError` before" is a plain `TypeError` thrown by `run` or `new Maple` before the run starts,
-  naming the path to the value, such as `Unsupported value at data.a.b: Thing`.
+  naming the path to the value, such as `Unsupported value at globals.a.b: Thing`. Inside a
+  top-level key of `data` it is an `INTERNAL_ERROR` instead, raised when the script first reads
+  that key, at the position of the read, with the same message and the `TypeError` as its `cause`.
+  The script cannot catch it, and a key the script never reads goes unnoticed. A symbol or bigint
+  directly under `data`, and a `data` that is not a plain object, still fail before the run.
 - A `TypeError` or `RangeError` on the way to a host function is thrown in the script at the call,
   so the script can catch it. The host function is not called.
 - `INTERNAL_ERROR` from a host function's return value means the host function has a bug, so the
@@ -36,7 +40,12 @@ The global scope is composed from three layers, a later one shadowing an earlier
 
 1. Instance globals (`new Maple({ globals })`), converted once at construction
 2. Run globals (`run(code, data, { globals })`), converted once per run
-3. The top-level keys of `data`, converted once per run
+3. The top-level keys of `data`, each converted on first read and at most once per run
+
+Which keys `data` has, and what each one holds, is taken when the run starts: a key the host adds
+later, or a value it puts under a key, is not seen. A key holding an object, array or function is
+copied when the script first reads it, so what the host changes inside that value before then is seen.
+All keys of a run share one conversion, so a value reached under two keys is still one value.
 
 One instance can serve many runs: what every run needs goes into the instance globals, what
 belongs to one run into its run globals or `data`:

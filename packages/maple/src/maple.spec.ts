@@ -144,34 +144,38 @@ describe('Maple.run', () => {
   });
 
   describe('data argument', () => {
-    it('accepts undefined, a plain object and a JSON string of a plain object', () => {
+    it('accepts undefined and a plain object', () => {
       expect(() => maple.run('return 1;')).not.toThrow();
       expect(() => maple.run('return 1;', {})).not.toThrow();
       expect(() => maple.run('return 1;', Object.create(null))).not.toThrow();
-      expect(() => maple.run('return 1;', '{"a":1}')).not.toThrow();
     });
 
     it('rejects anything else with a plain TypeError before running', () => {
-      expect(() => maple.run('return 1;', 42)).toThrow(TypeError);
-      expect(() => maple.run('return 1;', [])).toThrow(TypeError);
-      expect(() => maple.run('return 1;', null)).toThrow(TypeError);
-      expect(() => maple.run('return 1;', new Date())).toThrow(TypeError);
-      expect(() => maple.run('return 1;', '[1]')).toThrow(TypeError);
-      expect(() => maple.run('return 1;', 'not json')).toThrow(TypeError);
+      const untyped: UntypedRunner = maple;
+      const error = new TypeError('data must be a plain object');
+
+      expect(() => untyped.run('return 1;', 42)).toThrow(error);
+      expect(() => untyped.run('return 1;', [])).toThrow(error);
+      expect(() => untyped.run('return 1;', null)).toThrow(error);
+      expect(() => untyped.run('return 1;', new Date())).toThrow(error);
+      expect(() => untyped.run('return 1;', '{"a":1}')).toThrow(error);
     });
 
-    it('rejects data nested deeper than 1000 levels with a plain TypeError', () => {
+    it('rejects data nested deeper than 1000 levels when the script reads it', () => {
       const levels = 20_000;
       let deep: unknown = [];
       for (let i = 0; i < levels; i++) {
         deep = [deep];
       }
-      // Built by hand, since the host's own JSON.stringify overflows at this depth
-      const json = `{"v":${'['.repeat(levels + 1)}${']'.repeat(levels + 1)}}`;
-
-      expect(() => maple.run('return 1;', { v: deep })).toThrow(/nested deeper than 1000 levels$/);
-      expect(() => maple.run('return 1;', json)).toThrow(/nested deeper than 1000 levels$/);
-      expect(() => maple.run('return 1;', json)).toThrow(TypeError);
+      expect(maple.run('return 1;', { v: deep }).value).toBe(1);
+      const error = runAndCatch(maple, 'const unused = 1;\nreturn v;', { v: deep });
+      expect(error).toMatchObject({
+        code: 'INTERNAL_ERROR',
+        message: 'Unsupported value at data: nested deeper than 1000 levels',
+        line: 2,
+        column: 7
+      });
+      expect(error.cause).toBeInstanceOf(TypeError);
       expect(() => new Maple({ globals: { v: deep } })).toThrow(
         new TypeError('Unsupported value at globals: nested deeper than 1000 levels')
       );

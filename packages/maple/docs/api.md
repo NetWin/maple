@@ -21,11 +21,25 @@ const result = maple.run('return "Hello " + upper(name);', { name: 'Steve' });
 | `globals`  | `{}`        | Bindings visible to every run of this instance            |
 | `maxOps`   | `1_000_000` | Operations a single run may perform, nested runs included |
 | `maxDepth` | `100`       | Nesting of function calls, callbacks and nested runs      |
+| `astCache` | `false`     | Keeps the syntax trees of scripts this instance ran       |
 
 Instance globals are converted once at construction (see [Boundary](boundary.md)). An instance
-holds no state between runs.
+holds no state between runs, except, with `astCache`, the syntax trees of scripts it ran.
 
-## `maple.run(code: string, data?: unknown, options?: RunOptions): MapleRunResult`
+`astCache: true` keeps up to 200 scripts, and `astCache: { maxEntries }` sets another limit.
+A script that runs again is then not parsed again, nested runs included; when the cache is full,
+the least recently used script is dropped. Entries are keyed by the source text itself and their
+trees are deep-frozen, so a run can neither hit another script's tree nor change one. Code that
+does not parse is not kept. Hosts that create a new `Maple` for every run get no hits. A
+`maxEntries` that is not a positive integer, or an `astCache` that is neither a boolean nor a
+plain object, throws a plain `TypeError`.
+
+## `maple.clearAstCache(): void`
+
+Drops every cached syntax tree, so each script is parsed again on its next run. Does nothing when
+the cache is off.
+
+## `maple.run(code: string, data?: object, options?: RunOptions): MapleRunResult`
 
 Runs `code` against `data` and returns the copied result with the run's statistics:
 
@@ -46,13 +60,14 @@ interface MapleRunStats {
 }
 ```
 
-`data` is `undefined`, a plain object, or a JSON string encoding a plain object; its top-level keys
-become globals. `options.globals` adds bindings for this run only. `options.freeze: false` lets the
+`data` is `undefined` or a plain object; its top-level keys become globals. `options.globals` adds
+bindings for this run only. `options.freeze: false` lets the
 script change and reassign its copy of `data` and of the run globals (see
 [Boundary](boundary.md#changeable-input)).
-A `code` that is not a string, or
-a `data` value Maple cannot copy, throws a plain `TypeError` before the run starts, because that is
-a host programming error, not a script error.
+A `code` that is not a string, a `data` that is not a plain object, or a symbol or bigint directly
+under `data` throws a plain `TypeError` before the run starts, because that is a host programming
+error, not a script error. A value Maple cannot copy deeper in `data` ends the run with
+`INTERNAL_ERROR` when the script first reads its key (see [Boundary](boundary.md)).
 
 `run` is synchronous. It throws a `MapleError` for every failure that originates in the script, the
 budget or a host function.
@@ -103,13 +118,13 @@ class MapleError extends Error {
 `MapleErrorCode` is exported as a const object, so a consumer compares with
 `MapleErrorCode.LIMIT_EXCEEDED`:
 
-| Code                | Raised when                                                                      |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `PARSE_ERROR`       | Acorn cannot parse the source                                                    |
-| `DISALLOWED_SYNTAX` | The evaluator reaches an unsupported construct or a `new` target not on the list |
-| `RUNTIME_ERROR`     | A sandbox error was not caught (`TypeError`, `ReferenceError`, a script `throw`) |
-| `LIMIT_EXCEEDED`    | The operation budget or the depth limit was hit                                  |
-| `INTERNAL_ERROR`    | A host function returned an unsupported value, or Maple itself failed            |
+| Code                | Raised when                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `PARSE_ERROR`       | Acorn cannot parse the source                                                                        |
+| `DISALLOWED_SYNTAX` | The evaluator reaches an unsupported construct or a `new` target not on the list                     |
+| `RUNTIME_ERROR`     | A sandbox error was not caught (`TypeError`, `ReferenceError`, a script `throw`)                     |
+| `LIMIT_EXCEEDED`    | The operation budget or the depth limit was hit                                                      |
+| `INTERNAL_ERROR`    | A host function returned an unsupported value, the script read one in `data`, or Maple itself failed |
 
 `line` and `column` point into the source of the program that was executing, which for a nested run
 is the nested source. `sandboxError` has the shape of an error in a result (see

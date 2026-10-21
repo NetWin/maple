@@ -6,7 +6,7 @@ import { runAndCatch } from './spec-helpers.ts';
 function sandboxError(
   maple: Maple,
   code: string,
-  data?: unknown
+  data?: object
 ): { name: string; message: string } | undefined {
   return runAndCatch(maple, code, data).sandboxError;
 }

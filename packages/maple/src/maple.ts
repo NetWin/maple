@@ -1,5 +1,6 @@
 import type { Program } from 'acorn';
-import { fromHost } from './boundary/from-host.ts';
+import { AstCache, DEFAULT_AST_CACHE_ENTRIES } from './ast-cache.ts';
+import { fromHost, HostConversion, UnsupportedInputError } from './boundary/from-host.ts';
 import { asMapleError } from './boundary/maple-error.ts';
 import { NestingLimitError, toHost } from './boundary/to-host.ts';
 import { STANDARD_GLOBALS } from './builtins/standard-globals.ts';
@@ -17,6 +18,11 @@ export interface MapleOptions {
   maxOps?: number;
   /** Nesting of function calls, callbacks and nested runs. */
   maxDepth?: number;
+  /**
+   * Keeps the syntax trees of scripts this instance ran, so one that runs again is not parsed
+   * again (default off). `true` keeps up to 200 scripts, dropping the least recently used.
+   */
+  astCache?: boolean | { maxEntries?: number };
 }
 
 export interface RunOptions {
@@ -43,18 +49,25 @@ export class Maple {
   readonly #globals: Record<string, unknown>;
   readonly #maxOps: number;
   readonly #maxDepth: number;
+  readonly #astCache: AstCache | undefined;
 
   constructor(options: MapleOptions = {}) {
     this.#globals = asGlobalsOrThrow(options.globals ?? {}, 'globals');
     this.#maxOps = asPositiveIntegerOrThrow('maxOps', options.maxOps ?? DEFAULT_MAX_OPS);
     this.#maxDepth = asPositiveIntegerOrThrow('maxDepth', options.maxDepth ?? DEFAULT_MAX_DEPTH);
+    this.#astCache = asAstCacheOrThrow(options.astCache);
+  }
+
+  /** Drops every cached syntax tree, so each script is parsed again on its next run. */
+  public clearAstCache(): void {
+    this.#astCache?.clear();
   }
 
   /**
    * Runs `code` against `data`. Everything that goes wrong inside the run throws a `MapleError`;
    * a misuse of this method itself throws a plain `TypeError` before anything runs.
    */
-  public run(code: string, data?: unknown, options: RunOptions = {}): MapleRunResult {
+  public run(code: string, data?: object, options: RunOptions = {}): MapleRunResult {
     const budget = new Budget(this.#maxOps, this.#maxDepth);
     const evaluator: Evaluator = new Evaluator(budget, (nestedCode, nestedData, nestedOptions) => {
       const before = budget.stats();
@@ -72,18 +85,21 @@ export class Maple {
 
   /** Everything a program needs before its first statement: its syntax and its global scope. */
   private prepare(code: string, data: unknown, options: RunOptions): Prepared {
-    const program = parse(asCodeOrThrow(code));
+    const source = asCodeOrThrow(code);
+    const program = this.#astCache?.get(source) ?? parse(source);
+    // Code that does not parse has thrown already, so it never enters the cache
+    this.#astCache?.set(source, program);
     // Only an explicit `false` unfreezes, so a JavaScript caller's typo keeps the safe default
     const freeze = options.freeze !== false;
     const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals', freeze);
-    const dataGlobals = asGlobalsOrThrow(asDataObjectOrThrow(data), 'data', freeze);
-    const runKind: BindingKind = freeze ? 'global' : 'var';
+    const dataObject = asDataObjectOrThrow(data);
+    const runKind = freeze ? 'global' : 'var';
     const globals = createGlobalScope([
       { bindings: STANDARD_GLOBALS, kind: 'global' },
       { bindings: this.#globals, kind: 'global' },
-      { bindings: runGlobals, kind: runKind },
-      { bindings: dataGlobals, kind: runKind }
+      { bindings: runGlobals, kind: runKind }
     ]);
+    defineDataBindings(globals, dataObject, runKind, freeze);
     return { program, globals };
   }
 
@@ -139,6 +155,39 @@ function createGlobalScope(layers: ReadonlyArray<GlobalLayer>): Scope {
   return scope;
 }
 
+/**
+ * Binds the top-level keys of `data` as they are now; a later change to which keys the host's
+ * object has, or to what one of them holds, is not seen. A primitive is bound at once, so a symbol
+ * or bigint fails before the run. Anything else is copied when the script first reads it, all keys
+ * sharing one conversion, so a value reached under two keys stays one value.
+ */
+function defineDataBindings(
+  scope: Scope,
+  data: Record<string, unknown>,
+  kind: 'var' | 'global',
+  freeze: boolean
+): void {
+  const conversion = new HostConversion('data', { freeze });
+  for (const key of Object.keys(data)) {
+    const value = data[key];
+    const path = `data.${key}`;
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
+      scope.define(key, kind, conversion.convert(value, path, 1));
+      continue;
+    }
+    scope.defineLazy(key, kind, () => {
+      try {
+        return conversion.convert(value, path, 1);
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw new UnsupportedInputError(error);
+        }
+        throw error;
+      }
+    });
+  }
+}
+
 // Typed as a string, but a JavaScript caller may pass anything, and the evaluator must only ever
 // see what `parse` produced
 function asCodeOrThrow(code: unknown): string {
@@ -160,26 +209,35 @@ function asGlobalsOrThrow(
   return converted;
 }
 
-function asPositiveIntegerOrThrow(name: string, value: number): number {
-  if (!Number.isSafeInteger(value) || value < 1) {
+function asPositiveIntegerOrThrow(name: string, value: unknown): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
     throw new TypeError(`${name} must be a positive integer, got ${String(value)}`);
   }
   return value;
 }
 
-function asDataObjectOrThrow(data: unknown): Record<string, unknown> {
-  const candidate =
-    typeof data === 'string' ? asParsedJsonOrThrow(data) : data === undefined ? {} : data;
-  if (!isPlainObject(candidate)) {
-    throw new TypeError('data must be a plain object, or a JSON string of one');
+// Typed, but a JavaScript caller may pass anything
+function asAstCacheOrThrow(option: unknown): AstCache | undefined {
+  if (option === undefined || option === false) {
+    return undefined;
   }
-  return candidate;
+  if (option === true) {
+    return new AstCache(DEFAULT_AST_CACHE_ENTRIES);
+  }
+  if (!isPlainObject(option)) {
+    throw new TypeError('astCache must be a boolean or a plain object');
+  }
+  const maxEntries = option['maxEntries'];
+  if (maxEntries === undefined) {
+    return new AstCache(DEFAULT_AST_CACHE_ENTRIES);
+  }
+  return new AstCache(asPositiveIntegerOrThrow('astCache.maxEntries', maxEntries));
 }
 
-function asParsedJsonOrThrow(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new TypeError('data is not valid JSON', { cause: error });
+function asDataObjectOrThrow(data: unknown): Record<string, unknown> {
+  const candidate = data === undefined ? {} : data;
+  if (!isPlainObject(candidate)) {
+    throw new TypeError('data must be a plain object');
   }
+  return candidate;
 }

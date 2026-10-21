@@ -11,19 +11,19 @@ import { runAndCatch, type UntypedRunner } from './spec-helpers.ts';
  */
 const maple = new Maple({ globals: { host: (): number => 1 } });
 
-function run(code: string, data?: unknown): unknown {
+function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 
-function errorCode(source: string, data?: unknown): string | undefined {
+function errorCode(source: string, data?: object): string | undefined {
   return runAndCatch(maple, source, data).code;
 }
 
-function errorName(source: string, data?: unknown): string | undefined {
+function errorName(source: string, data?: object): string | undefined {
   return runAndCatch(maple, source, data).sandboxError?.name;
 }
 
-function runUnfrozen(code: string, data?: unknown, globals?: Record<string, unknown>): unknown {
+function runUnfrozen(code: string, data?: object, globals?: Record<string, unknown>): unknown {
   return maple.run(code, data, { freeze: false, globals }).value;
 }
 
@@ -166,9 +166,10 @@ describe('escape attempts', () => {
       expect(run('return Object.keys(JSON.parse(\'{"__proto__": {"polluted": true}}\'));')).toEqual(
         ['__proto__']
       );
-      expect(run('return Object.keys(own);', '{"own": {"__proto__": {"polluted": true}}}')).toEqual(
-        ['__proto__']
-      );
+      expect(
+        // A computed key makes `__proto__` an own property instead of setting the prototype
+        run('return Object.keys(own);', { own: { ['__proto__']: { polluted: true } } })
+      ).toEqual(['__proto__']);
       expect(run('return ({}).polluted;')).toBeUndefined();
       expect(errorName('({ __proto__: { polluted: true } });')).toBe('TypeError');
       expect(
@@ -254,9 +255,9 @@ describe('escape attempts', () => {
       const regexp = /a/g;
       // @ts-expect-error - assigning a host object to lastIndex is normally not allowed in TypeScript
       regexp.lastIndex = host;
-      expect(() => run('r.lastIndex.n = 1;', { r: regexp })).toThrow(TypeError);
-      expect(() => maple.run('r.lastIndex.n = 1;', { r: regexp }, { freeze: false })).toThrow(
-        TypeError
+      expect(errorCode('r.lastIndex.n = 1;', { r: regexp })).toBe('INTERNAL_ERROR');
+      expect(() => runUnfrozen('r.lastIndex.n = 1;', { r: regexp })).toThrow(
+        'Unsupported value at data.r.lastIndex: Object'
       );
       expect(host.n).toBe(0);
     });
@@ -311,7 +312,8 @@ describe('escape attempts', () => {
     });
 
     it('so prototype keys stay out of reach', () => {
-      const data = '{"obj": {}, "own": {"__proto__": {"polluted": true}}}';
+      // A computed key makes `__proto__` an own property instead of setting the prototype
+      const data = { obj: {}, own: { ['__proto__']: { polluted: true } } };
       const errorOf = (code: string): unknown =>
         runUnfrozen(`try { ${code} } catch (e) { return e.name; }`, data);
 
