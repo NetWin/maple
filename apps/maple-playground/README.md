@@ -46,9 +46,10 @@ pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [-
 
 The context defaults to `scripts/contact-context.json`, a synthetic contact record of 46 flat fields, an `address`,
 450 `activities` and 300 `customFields` (about 75 KB as JSON). `contact-flat-key.js`, `contact-nested-key.js` and
-`contact-large-key.js` beside it read a flat key, a nested key and the large array; `contact-ten-lines.js` is a
-10-line script over several keys, written with `const` and arrow functions, which js-interpreter cannot run. The file
-is read and parsed once, before any run, so both engines receive a plain object, as a host's `run` call does.
+`contact-large-key.js` beside it read a flat key, a nested key and the large array. `contact-ten-lines.js` is a
+10-line script over several keys, written with `const` and arrow functions, which js-interpreter cannot run.
+`contact-summary.js` is a 120-line summary that reads every key, the large ones included. The file is read and parsed
+once, before any run, so both engines receive a plain object, as a host's `run` call does.
 
 ```
 ┌──────────────────┬───────────┬───────────┬────────────┬────────────┬─────────────┬──────┐
