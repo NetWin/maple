@@ -255,9 +255,9 @@ describe('escape attempts', () => {
       const regexp = /a/g;
       // @ts-expect-error - assigning a host object to lastIndex is normally not allowed in TypeScript
       regexp.lastIndex = host;
-      expect(() => run('r.lastIndex.n = 1;', { r: regexp })).toThrow(TypeError);
-      expect(() => maple.run('r.lastIndex.n = 1;', { r: regexp }, { freeze: false })).toThrow(
-        TypeError
+      expect(errorCode('r.lastIndex.n = 1;', { r: regexp })).toBe('INTERNAL_ERROR');
+      expect(() => runUnfrozen('r.lastIndex.n = 1;', { r: regexp })).toThrow(
+        'Unsupported value at data.r.lastIndex: Object'
       );
       expect(host.n).toBe(0);
     });

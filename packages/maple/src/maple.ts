@@ -1,5 +1,5 @@
 import type { Program } from 'acorn';
-import { fromHost } from './boundary/from-host.ts';
+import { fromHost, HostConversion, UnsupportedInputError } from './boundary/from-host.ts';
 import { asMapleError } from './boundary/maple-error.ts';
 import { NestingLimitError, toHost } from './boundary/to-host.ts';
 import { STANDARD_GLOBALS } from './builtins/standard-globals.ts';
@@ -76,14 +76,14 @@ export class Maple {
     // Only an explicit `false` unfreezes, so a JavaScript caller's typo keeps the safe default
     const freeze = options.freeze !== false;
     const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals', freeze);
-    const dataGlobals = asGlobalsOrThrow(asDataObjectOrThrow(data), 'data', freeze);
-    const runKind: BindingKind = freeze ? 'global' : 'var';
+    const dataObject = asDataObjectOrThrow(data);
+    const runKind = freeze ? 'global' : 'var';
     const globals = createGlobalScope([
       { bindings: STANDARD_GLOBALS, kind: 'global' },
       { bindings: this.#globals, kind: 'global' },
-      { bindings: runGlobals, kind: runKind },
-      { bindings: dataGlobals, kind: runKind }
+      { bindings: runGlobals, kind: runKind }
     ]);
+    defineDataBindings(globals, dataObject, runKind, freeze);
     return { program, globals };
   }
 
@@ -137,6 +137,39 @@ function createGlobalScope(layers: ReadonlyArray<GlobalLayer>): Scope {
     }
   }
   return scope;
+}
+
+/**
+ * Binds the top-level keys of `data` as they are now; a later change to which keys the host's
+ * object has, or to what one of them holds, is not seen. A primitive is bound at once, so a symbol
+ * or bigint fails before the run. Anything else is copied when the script first reads it, all keys
+ * sharing one conversion, so a value reached under two keys stays one value.
+ */
+function defineDataBindings(
+  scope: Scope,
+  data: Record<string, unknown>,
+  kind: 'var' | 'global',
+  freeze: boolean
+): void {
+  const conversion = new HostConversion('data', { freeze });
+  for (const key of Object.keys(data)) {
+    const value = data[key];
+    const path = `data.${key}`;
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
+      scope.define(key, kind, conversion.convert(value, path, 1));
+      continue;
+    }
+    scope.defineLazy(key, kind, () => {
+      try {
+        return conversion.convert(value, path, 1);
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw new UnsupportedInputError(error);
+        }
+        throw error;
+      }
+    });
+  }
 }
 
 // Typed as a string, but a JavaScript caller may pass anything, and the evaluator must only ever

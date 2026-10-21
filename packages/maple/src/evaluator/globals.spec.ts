@@ -116,12 +116,18 @@ describe('globals', () => {
     expect(Object.isFrozen(data.list)).toBe(false);
   });
 
-  it('rejects unsupported values in globals with a plain TypeError before the run', () => {
+  it('rejects unsupported values in globals and directly in data with a plain TypeError before the run', () => {
     expect(() => new Maple({ globals: { bad: Symbol('x') } })).toThrow(
       new TypeError('Unsupported value at globals.bad: symbol')
     );
-    expect(() => new Maple().run('return 1;', { bad: new Uint8Array() })).toThrow(
-      new TypeError('Unsupported value at data.bad: Uint8Array')
+    expect(() => new Maple({ globals: { bad: new Uint8Array() } })).toThrow(
+      new TypeError('Unsupported value at globals.bad: Uint8Array')
+    );
+    expect(() => new Maple().run('return 1;', { bad: Symbol('x') })).toThrow(
+      new TypeError('Unsupported value at data.bad: symbol')
+    );
+    expect(() => new Maple().run('return 1;', { bad: 1n })).toThrow(
+      new TypeError('Unsupported value at data.bad: bigint')
     );
     expect(() => new Maple().run('return 1;', {}, { globals: { bad: Symbol('x') } })).toThrow(
       new TypeError('Unsupported value at options.globals.bad: symbol')

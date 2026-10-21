@@ -161,16 +161,21 @@ describe('Maple.run', () => {
       expect(() => untyped.run('return 1;', '{"a":1}')).toThrow(error);
     });
 
-    it('rejects data nested deeper than 1000 levels with a plain TypeError', () => {
+    it('rejects data nested deeper than 1000 levels when the script reads it', () => {
       const levels = 20_000;
       let deep: unknown = [];
       for (let i = 0; i < levels; i++) {
         deep = [deep];
       }
-
-      expect(() => maple.run('return 1;', { v: deep })).toThrow(
-        new TypeError('Unsupported value at data: nested deeper than 1000 levels')
-      );
+      expect(maple.run('return 1;', { v: deep }).value).toBe(1);
+      const error = runAndCatch(maple, 'const unused = 1;\nreturn v;', { v: deep });
+      expect(error).toMatchObject({
+        code: 'INTERNAL_ERROR',
+        message: 'Unsupported value at data: nested deeper than 1000 levels',
+        line: 2,
+        column: 7
+      });
+      expect(error.cause).toBeInstanceOf(TypeError);
       expect(() => new Maple({ globals: { v: deep } })).toThrow(
         new TypeError('Unsupported value at globals: nested deeper than 1000 levels')
       );

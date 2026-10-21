@@ -29,7 +29,7 @@ import type {
   VariableDeclaration,
   WhileStatement
 } from 'acorn';
-import { fromHost } from '../boundary/from-host.ts';
+import { fromHost, UnsupportedInputError } from '../boundary/from-host.ts';
 import { type HostFunction, type Intrinsic, isExposed, type Sandbox } from '../boundary/host.ts';
 import {
   asMapleError,
@@ -1338,7 +1338,7 @@ export class Evaluator {
         // Strict mode: the receiver as it is, never boxed or replaced by a global object
         scope.bindReceiver(receiver);
         // Built on the first read only; copying the arguments costs one operation per argument
-        scope.defineLazy('arguments', () => {
+        scope.defineLazy('arguments', 'var', () => {
           this.charge(args.length, node);
           return createArgumentsObject(args);
         });
@@ -1397,7 +1397,14 @@ export class Evaluator {
         node
       );
     }
-    return binding.value;
+    try {
+      return binding.value;
+    } catch (error) {
+      if (error instanceof UnsupportedInputError) {
+        return this.fail(MapleErrorCode.INTERNAL_ERROR, error.message, node, error.cause);
+      }
+      throw error;
+    }
   }
 
   private assignIdentifier(node: Identifier, value: unknown, scope: Scope): void {
