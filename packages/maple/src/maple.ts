@@ -1,4 +1,5 @@
 import type { Program } from 'acorn';
+import { AstCache, DEFAULT_AST_CACHE_ENTRIES } from './ast-cache.ts';
 import { fromHost, HostConversion, UnsupportedInputError } from './boundary/from-host.ts';
 import { asMapleError } from './boundary/maple-error.ts';
 import { NestingLimitError, toHost } from './boundary/to-host.ts';
@@ -17,6 +18,11 @@ export interface MapleOptions {
   maxOps?: number;
   /** Nesting of function calls, callbacks and nested runs. */
   maxDepth?: number;
+  /**
+   * Keeps the syntax trees of scripts this instance ran, so one that runs again is not parsed
+   * again (default off). `true` keeps up to 200 scripts, dropping the least recently used.
+   */
+  astCache?: boolean | { maxEntries?: number };
 }
 
 export interface RunOptions {
@@ -43,11 +49,18 @@ export class Maple {
   readonly #globals: Record<string, unknown>;
   readonly #maxOps: number;
   readonly #maxDepth: number;
+  readonly #astCache: AstCache | undefined;
 
   constructor(options: MapleOptions = {}) {
     this.#globals = asGlobalsOrThrow(options.globals ?? {}, 'globals');
     this.#maxOps = asPositiveIntegerOrThrow('maxOps', options.maxOps ?? DEFAULT_MAX_OPS);
     this.#maxDepth = asPositiveIntegerOrThrow('maxDepth', options.maxDepth ?? DEFAULT_MAX_DEPTH);
+    this.#astCache = asAstCacheOrThrow(options.astCache);
+  }
+
+  /** Drops every cached syntax tree, so each script is parsed again on its next run. */
+  public clearAstCache(): void {
+    this.#astCache?.clear();
   }
 
   /**
@@ -72,7 +85,10 @@ export class Maple {
 
   /** Everything a program needs before its first statement: its syntax and its global scope. */
   private prepare(code: string, data: unknown, options: RunOptions): Prepared {
-    const program = parse(asCodeOrThrow(code));
+    const source = asCodeOrThrow(code);
+    const program = this.#astCache?.get(source) ?? parse(source);
+    // Code that does not parse has thrown already, so it never enters the cache
+    this.#astCache?.set(source, program);
     // Only an explicit `false` unfreezes, so a JavaScript caller's typo keeps the safe default
     const freeze = options.freeze !== false;
     const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals', freeze);
@@ -193,11 +209,26 @@ function asGlobalsOrThrow(
   return converted;
 }
 
-function asPositiveIntegerOrThrow(name: string, value: number): number {
-  if (!Number.isSafeInteger(value) || value < 1) {
+function asPositiveIntegerOrThrow(name: string, value: unknown): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
     throw new TypeError(`${name} must be a positive integer, got ${String(value)}`);
   }
   return value;
+}
+
+// Typed, but a JavaScript caller may pass anything
+function asAstCacheOrThrow(option: unknown): AstCache | undefined {
+  if (option === undefined || option === false) {
+    return undefined;
+  }
+  if (option === true) {
+    return new AstCache(DEFAULT_AST_CACHE_ENTRIES);
+  }
+  if (!isPlainObject(option)) {
+    throw new TypeError('astCache must be a boolean or a plain object');
+  }
+  const maxEntries = option['maxEntries'] ?? DEFAULT_AST_CACHE_ENTRIES;
+  return new AstCache(asPositiveIntegerOrThrow('astCache.maxEntries', maxEntries));
 }
 
 function asDataObjectOrThrow(data: unknown): Record<string, unknown> {

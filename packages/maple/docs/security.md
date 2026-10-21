@@ -50,10 +50,10 @@ it can terminate.
   [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified. A key of
   `data` is copied when the script first reads it. The copy is frozen unless the host asks for a
   changeable one for a single run; instance globals are frozen always.
-- **No state between runs.** An instance holds only its limits and its frozen globals. What a run
-  adds to a shared built-in, host function or namespace is gone when the next run starts. Host
-  functions are the one channel through which the host may share state between runs, and that is
-  the host's decision.
+- **No state between runs.** An instance holds only its limits, its frozen globals and, when
+  enabled, the frozen syntax trees of scripts it ran. What a run adds to a shared built-in, host
+  function or namespace is gone when the next run starts. Host functions are the one channel
+  through which the host may share state between runs, and that is the host's decision.
 - **Host secrets stay out.** An exception from a host function reaches the script as
   `A host function failed` unless the host marks it with `exposed` (see
   [Extending](extending.md#errors)).

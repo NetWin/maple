@@ -41,13 +41,14 @@ Browsers have no usable per-run memory measurement, so `measure-run` measures ti
 and a context from files:
 
 ```sh
-pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [--runs 5] [--time-runs 200]
+pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [--runs 5] [--time-runs 200] [--ast-cache]
 ```
 
 The context defaults to `scripts/contact-context.json`, a synthetic contact record of 46 flat fields, an `address`,
 450 `activities` and 300 `customFields` (about 75 KB as JSON). `contact-flat-key.js`, `contact-nested-key.js` and
-`contact-large-key.js` beside it read a flat key, a nested key and the large array. The file is read and parsed once,
-before any run, so both engines receive a plain object, as a host's `run` call does.
+`contact-large-key.js` beside it read a flat key, a nested key and the large array; `contact-ten-lines.js` is a
+10-line script over several keys, written with `const` and arrow functions, which js-interpreter cannot run. The file
+is read and parsed once, before any run, so both engines receive a plain object, as a host's `run` call does.
 
 ```
 ┌──────────────────┬───────────┬───────────┬────────────┬────────────┬─────────────┬──────┐
@@ -80,4 +81,6 @@ itself with a young generation large enough for that (`--expose-gc --min-semi-sp
 --max-semi-space-size=1024`) and watches V8's collection events. If one happened during a run anyway, the **note**
 column says so, and that engine's allocation figure is too low.
 
-Maple runs from its sources with no practical operation limit, so long scripts are not cut off.
+Maple runs from its sources with no practical operation limit, so long scripts are not cut off. Each run creates its
+own `Maple`, so every run parses the script; with `--ast-cache`, all runs share one instance with the AST cache
+on, so only the first one parses.

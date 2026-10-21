@@ -3,14 +3,16 @@
  * Maple and in js-interpreter. Usage:
  *
  * Pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [--runs 5]
- * [--time-runs 200]
+ * [--time-runs 200] [--ast-cache]
  *
  * The context file is read and parsed once, so both engines receive a plain object, as a host's
  * `run` call does. A run "allocates" what the heap grows by while it executes; that is only exact
  * when no garbage collection happens in between, so the script restarts itself with a young
  * generation large enough for that, and flags every run during which a collection happened
  * anyway. "Retained" is what is still alive after a forced collection. The forced collections
- * disturb timing, so runs are timed in a second loop without them.
+ * disturb timing, so runs are timed in a second loop without them. Each Maple run creates its own
+ * instance, as a host that creates one per run does; with `--ast-cache`, all runs share one
+ * instance with the AST cache on, so only the first run parses.
  */
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -22,6 +24,7 @@ import { runJsInterpreter } from '../src/app/data-access/js-interpreter-engine.t
 const V8_FLAGS = ['--expose-gc', '--min-semi-space-size=512', '--max-semi-space-size=1024'];
 const WARM_UP_RUNS = 3;
 const DEFAULT_CONTEXT = fileURLToPath(new URL('contact-context.json', import.meta.url));
+const LIMITS = { maxOps: Number.MAX_SAFE_INTEGER, maxDepth: 10_000 };
 
 declare const gc: (() => void) | undefined;
 
@@ -30,6 +33,7 @@ interface Options {
   context: Record<string, unknown>;
   runs: number;
   timeRuns: number;
+  astCache: boolean;
 }
 
 interface Sample {
@@ -63,8 +67,9 @@ async function main(options: Options): Promise<void> {
   const observer = new PerformanceObserver((list) => collections.push(...list.getEntries()));
   observer.observe({ entryTypes: ['gc'] });
 
+  const shared = options.astCache ? new Maple({ ...LIMITS, astCache: true }) : undefined;
   const engines: Array<[string, () => string]> = [
-    ['Maple', (): string => runMaple(options)],
+    ['Maple', (): string => runMaple(options, shared)],
     ['js-interpreter', (): string => runJsInterpreter(options.code, options.context)]
   ];
   const outcomes: Array<Outcome> = [];
@@ -75,8 +80,9 @@ async function main(options: Options): Promise<void> {
   print(options, outcomes);
 }
 
-function runMaple({ code, context }: Options): string {
-  const maple = new Maple({ maxOps: Number.MAX_SAFE_INTEGER, maxDepth: 10_000 });
+/** Runs on `shared` when given, otherwise on an instance of its own. */
+function runMaple({ code, context }: Options, shared: Maple | undefined): string {
+  const maple = shared ?? new Maple(LIMITS);
   return JSON.stringify(maple.run(code, context).value) ?? 'undefined';
 }
 
@@ -126,10 +132,18 @@ function collect(): void {
   gc?.();
 }
 
-function print({ code, runs, timeRuns }: Options, outcomes: ReadonlyArray<Outcome>): void {
+function print(
+  { code, runs, timeRuns, astCache }: Options,
+  outcomes: ReadonlyArray<Outcome>
+): void {
   console.log(
     `Memory: median of ${runs} runs. Time: median, min and max of ${timeRuns} runs without ` +
-      `forced collections. Both after ${WARM_UP_RUNS} warm-up runs.\n`
+      `forced collections. Both after ${WARM_UP_RUNS} warm-up runs.`
+  );
+  console.log(
+    astCache
+      ? 'Maple: one instance for all runs, AST cache on.\n'
+      : 'Maple: a new instance for every run, no AST cache.\n'
   );
   const rows = outcomes.map((outcome) => {
     if ('error' in outcome) {
@@ -205,19 +219,24 @@ function readOptions(args: ReadonlyArray<string>): Options {
   const positional: Array<string> = [];
   let runs = 5;
   let timeRuns = 200;
+  let astCache = false;
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
     if (arg === '--runs') {
       runs = Number(args[++index]);
     } else if (arg === '--time-runs') {
       timeRuns = Number(args[++index]);
+    } else if (arg === '--ast-cache') {
+      astCache = true;
     } else if (arg !== undefined) {
       positional.push(arg);
     }
   }
   const [scriptPath, contextPath = DEFAULT_CONTEXT] = positional;
   if (scriptPath === undefined || !isCount(runs) || !isCount(timeRuns)) {
-    console.error('Usage: measure-run <script.js> [context.json] [--runs 5] [--time-runs 200]');
+    console.error(
+      'Usage: measure-run <script.js> [context.json] [--runs 5] [--time-runs 200] [--ast-cache]'
+    );
     process.exit(1);
   }
   const context: unknown = JSON.parse(readFileSync(contextPath, 'utf8'));
@@ -229,7 +248,8 @@ function readOptions(args: ReadonlyArray<string>): Options {
     code: readFileSync(scriptPath, 'utf8'),
     context,
     runs,
-    timeRuns
+    timeRuns,
+    astCache
   };
 }
 

@@ -21,9 +21,23 @@ const result = maple.run('return "Hello " + upper(name);', { name: 'Steve' });
 | `globals`  | `{}`        | Bindings visible to every run of this instance            |
 | `maxOps`   | `1_000_000` | Operations a single run may perform, nested runs included |
 | `maxDepth` | `100`       | Nesting of function calls, callbacks and nested runs      |
+| `astCache` | `false`     | Keeps the syntax trees of scripts this instance ran       |
 
 Instance globals are converted once at construction (see [Boundary](boundary.md)). An instance
-holds no state between runs.
+holds no state between runs, except, with `astCache`, the syntax trees of scripts it ran.
+
+`astCache: true` keeps up to 200 scripts, and `astCache: { maxEntries }` sets another limit.
+A script that runs again is then not parsed again, nested runs included; when the cache is full,
+the least recently used script is dropped. Entries are keyed by the source text itself and their
+trees are deep-frozen, so a run can neither hit another script's tree nor change one. Code that
+does not parse is not kept. Hosts that create a new `Maple` for every run get no hits. A
+`maxEntries` that is not a positive integer, or an `astCache` that is neither a boolean nor a
+plain object, throws a plain `TypeError`.
+
+## `maple.clearAstCache(): void`
+
+Drops every cached syntax tree, so each script is parsed again on its next run. Does nothing when
+the cache is off.
 
 ## `maple.run(code: string, data?: object, options?: RunOptions): MapleRunResult`
 
