@@ -1,3 +1,32 @@
+## [0.4.0](https://github.com/NetWin/maple/compare/0.3.0...0.4.0) (2026-10-21)
+
+### 🚀 Features
+
+* **builtins:** pass thisArg to array, Map and Set callbacks ([80e5ccb](https://github.com/NetWin/maple/commit/80e5ccbe96c2951be38225741ff4581346d4eaa7))
+* **evaluator:** support this in script functions ([f90237d](https://github.com/NetWin/maple/commit/f90237d7fc75bfc6e459b1ee79c96274c0eb935c))
+* **input:** accept data only as a plain object ([88dfd69](https://github.com/NetWin/maple/commit/88dfd6946d3259f7ef674c9653f50dad3c5dba13))
+* **json:** give a JSON replacer its holder as this ([d1c1e20](https://github.com/NetWin/maple/commit/d1c1e202fea439b180f02630594efb91237a7a51))
+* **json:** give a JSON reviver its holder as this ([7ed2e5f](https://github.com/NetWin/maple/commit/7ed2e5f4492a81e4f262e130a499a1abeb0ef3c9))
+* **parse:** cache syntax trees per instance when enabled ([e53f816](https://github.com/NetWin/maple/commit/e53f816cf0392984171f4887fff2c306a78f3658))
+
+### 🩹 Bug Fixes
+
+* **playground:** reject an array context before either engine runs ([f037c65](https://github.com/NetWin/maple/commit/f037c6591105840ebbea87f588b6daa62ea14dbc))
+
+### ⚡ Performance Improvements
+
+* **boundary:** assign new own properties directly in defineOwn ([6728bff](https://github.com/NetWin/maple/commit/6728bfffcd95645efbaa8fcf950754423628b386))
+* **input:** convert data keys on first read ([ce33aa2](https://github.com/NetWin/maple/commit/ce33aa201dac20754906068171eae106a5ed422d))
+
+### 📖 Documentation
+
+* **contributing:** update conventional commit instructions ([8cc9c43](https://github.com/NetWin/maple/commit/8cc9c43fdca1bac36ef109b03942a279dccb2dde))
+
+### 🔧 Miscellaneous Chores
+
+* **playground:** add a contact summary script to measure-run ([ae94d6d](https://github.com/NetWin/maple/commit/ae94d6d483b9601ba57e8c6db71b33f1263ecc86))
+* **playground:** rename measure-memory to measure-run and add timing ([54e170e](https://github.com/NetWin/maple/commit/54e170e0e0f25adcd2a500febbed961b8e9a1129))
+
 ## [0.3.0](https://github.com/NetWin/maple/compare/0.2.1...0.3.0) (2026-10-19)
 
 ### 🚀 Features
