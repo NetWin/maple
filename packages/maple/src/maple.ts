@@ -227,7 +227,10 @@ function asAstCacheOrThrow(option: unknown): AstCache | undefined {
   if (!isPlainObject(option)) {
     throw new TypeError('astCache must be a boolean or a plain object');
   }
-  const maxEntries = option['maxEntries'] ?? DEFAULT_AST_CACHE_ENTRIES;
+  const maxEntries = option['maxEntries'];
+  if (maxEntries === undefined) {
+    return new AstCache(DEFAULT_AST_CACHE_ENTRIES);
+  }
   return new AstCache(asPositiveIntegerOrThrow('astCache.maxEntries', maxEntries));
 }
 

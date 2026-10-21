@@ -144,7 +144,7 @@ describe('Maple with astCache', () => {
     expect(parsed).toHaveBeenCalledTimes(2);
   });
 
-  it('rejects a astCache option that is not a boolean or a positive maxEntries', () => {
+  it('rejects an astCache option that is not a boolean or a positive maxEntries', () => {
     // A JavaScript caller's view: a method compares its parameters both ways, so no cast is needed
     const untyped: { create(options: { astCache?: unknown }): Maple } = {
       create(options: MapleOptions): Maple {
@@ -158,6 +158,7 @@ describe('Maple with astCache', () => {
     expect(() => new Maple({ astCache: { maxEntries: 1.5 } })).toThrow(notPositive(1.5));
     expect(() => new Maple({ astCache: { maxEntries: Number.NaN } })).toThrow(notPositive(NaN));
     expect(() => untyped.create({ astCache: { maxEntries: '5' } })).toThrow(notPositive('5'));
+    expect(() => untyped.create({ astCache: { maxEntries: null } })).toThrow(notPositive(null));
     expect(() => untyped.create({ astCache: 'yes' })).toThrow(notAnOption);
     expect(() => untyped.create({ astCache: 1 })).toThrow(notAnOption);
     expect(() => untyped.create({ astCache: null })).toThrow(notAnOption);

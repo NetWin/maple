@@ -13,12 +13,12 @@ export interface RunRequest {
 }
 
 /**
- * Turns the JSON `context` of a request back into the data a run takes. Maple rejects an array
- * itself, so only what is not an object at all is refused here.
+ * Turns the JSON `context` of a request back into the data a run takes. An array is refused here,
+ * as Maple would, so that both engines of the Benchmark tab see the same input error.
  */
 export function parseContext(context: string): object {
   const data: unknown = JSON.parse(context);
-  if (typeof data !== 'object' || data === null) {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     throw new TypeError('context must be a JSON object');
   }
   return data;

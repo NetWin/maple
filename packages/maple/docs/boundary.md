@@ -44,7 +44,7 @@ The global scope is composed from three layers, a later one shadowing an earlier
 
 Which keys `data` has, and what each one holds, is taken when the run starts: a key the host adds
 later, or a value it puts under a key, is not seen. A key holding an object, array or function is
-copied when the script first reads it, so what the host changes inside that value before then is.
+copied when the script first reads it, so what the host changes inside that value before then is seen.
 All keys of a run share one conversion, so a value reached under two keys is still one value.
 
 One instance can serve many runs: what every run needs goes into the instance globals, what

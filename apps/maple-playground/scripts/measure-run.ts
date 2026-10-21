@@ -2,8 +2,8 @@
  * Measures how long one run of a script takes and how much memory it allocates and retains, in
  * Maple and in js-interpreter. Usage:
  *
- * Pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [--runs 5]
- * [--time-runs 200] [--ast-cache]
+ *     pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [--runs 5]
+ *       [--time-runs 200] [--ast-cache]
  *
  * The context file is read and parsed once, so both engines receive a plain object, as a host's
  * `run` call does. A run "allocates" what the heap grows by while it executes; that is only exact
