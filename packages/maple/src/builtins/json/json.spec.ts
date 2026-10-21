@@ -4,7 +4,7 @@ import { runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 
-function run(code: string, data?: unknown): unknown {
+function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 
@@ -36,7 +36,7 @@ describe('JSON.parse', () => {
     expect(run('try { JSON.parse(); } catch (e) { return e.name; }')).toBe('SyntaxError');
   });
 
-  it('applies a reviver bottom-up, with the holder as third argument', () => {
+  it('applies a reviver bottom-up, with the holder as this', () => {
     const text = '{"a":{"b":1},"c":[2,3]}';
 
     expect(
@@ -60,9 +60,14 @@ describe('JSON.parse', () => {
     expect(run('return JSON.parse("{}", (k, v) => (k === "" ? 42 : v));')).toBe(42);
     expect(
       run(
-        'return JSON.parse(\'{"a":1}\', (k, v, holder) => (k === "a" ? Object.keys(holder) : v));'
+        'return JSON.parse(\'{"a":1}\', function (k, v) { return k === "a" ? Object.keys(this) : v; });'
       )
     ).toEqual({ a: ['a'] });
+    expect(
+      run('return JSON.parse("[1]", function (k, v) { return k === "0" ? this.length : v; });')
+    ).toEqual([1]);
+    expect(run('return JSON.parse("1", function () { return Object.keys(this); });')).toEqual(['']);
+    expect(run('return JSON.parse(\'{"a":1}\', (k, v, holder) => holder);')).toBeUndefined();
     expect(
       run(
         'return JSON.parse(\'{"when":"1970-01-01T00:00:00.000Z"}\', (k, v) => (k === "when" ? new Date(v) : v)).when.getTime();'
@@ -72,6 +77,14 @@ describe('JSON.parse', () => {
   });
 
   it('keeps a reviver inside the sandbox rules', () => {
+    expect(
+      runAndCatch(maple, 'JSON.parse("{}", function () { return this.constructor; });').sandboxError
+        ?.name
+    ).toBe('TypeError');
+    expect(
+      runAndCatch(maple, 'JSON.parse("{}", function () { return this.__proto__; });').sandboxError
+        ?.name
+    ).toBe('TypeError');
     expect(run('return Object.keys(JSON.parse(\'{"__proto__": 1}\', (k, v) => v));')).toEqual([
       '__proto__'
     ]);
@@ -167,6 +180,46 @@ describe('JSON.stringify', () => {
     expect(run('return JSON.stringify({ a: 1 }, (k, v) => (k === "" ? v : String(v)));')).toBe(
       '{"a":"1"}'
     );
+  });
+
+  it('calls a function replacer with the holder as this', () => {
+    expect(
+      run(
+        'return JSON.stringify({ a: 1 }, function (k, v) { return k === "" ? Object.keys(this) : v; });'
+      )
+    ).toBe('[""]');
+    expect(
+      run(
+        'const o = { a: 1 }; return JSON.stringify(o, function (k, v) { return k === "a" ? this === o : v; });'
+      )
+    ).toBe('{"a":true}');
+    expect(
+      run('return JSON.stringify([1, 2], function (k, v) { return k === "" ? v : this.length; });')
+    ).toBe('[2,2]');
+    expect(
+      run(
+        'return JSON.stringify({ a: 1 }, function (k, v) { return k === "" ? { b: 2 } : this.b; });'
+      )
+    ).toBe('{"b":2}');
+    expect(
+      run(
+        'return JSON.stringify({ when: new Date(0) }, function (k, v) { return this[k] instanceof Date ? this[k].getTime() : v; });'
+      )
+    ).toBe('{"when":0}');
+    expect(
+      run('const o = { f() { return JSON.stringify([1], () => this === o); } }; return o.f();')
+    ).toBe('true');
+  });
+
+  it('keeps a replacer inside the sandbox rules', () => {
+    expect(
+      runAndCatch(maple, 'JSON.stringify({}, function () { return this.constructor; });')
+        .sandboxError?.name
+    ).toBe('TypeError');
+    expect(
+      runAndCatch(maple, 'JSON.stringify({}, function () { return this.__proto__; });').sandboxError
+        ?.name
+    ).toBe('TypeError');
   });
 
   it("writes an array replacer's keys in its order, own properties only", () => {

@@ -41,14 +41,19 @@ it can terminate.
   ignored by `+`, templates, comparison and the built-ins (see [Coercion](language.md#coercion)).
   The host never holds a script function: callbacks of built-ins run through the interpreter, and
   set algebra and `Iterator.from` refuse objects whose methods the script wrote.
+- **No new reach through `this`.** A receiver is only ever a value the script already holds: the
+  object of a method call, what it passes to `call`, `apply`, `bind` or as a callback's `thisArg`,
+  the holder a JSON reviver or replacer visits (part of the script's own value, or a fresh object
+  around it), or `undefined`. There is no global object, built-ins never pass an internal value as
+  `this`, and host functions and intrinsics receive none.
 - **Copied input.** Everything the host passes in is a copy (see
-  [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified. The copy is
-  frozen unless the host asks for a changeable one for a single run; instance globals are frozen
-  always.
-- **No state between runs.** An instance holds only its limits and its frozen globals. What a run
-  adds to a shared built-in, host function or namespace is gone when the next run starts. Host
-  functions are the one channel through which the host may share state between runs, and that is
-  the host's decision.
+  [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified. A key of
+  `data` is copied when the script first reads it. The copy is frozen unless the host asks for a
+  changeable one for a single run; instance globals are frozen always.
+- **No state between runs.** An instance holds only its limits, its frozen globals and, when
+  enabled, the frozen syntax trees of scripts it ran. What a run adds to a shared built-in, host
+  function or namespace is gone when the next run starts. Host functions are the one channel
+  through which the host may share state between runs, and that is the host's decision.
 - **Host secrets stay out.** An exception from a host function reaches the script as
   `A host function failed` unless the host marks it with `exposed` (see
   [Extending](extending.md#errors)).

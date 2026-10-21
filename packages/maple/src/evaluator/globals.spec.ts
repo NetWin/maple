@@ -14,7 +14,6 @@ function assignInData(options: object): unknown {
 describe('globals', () => {
   it('exposes each top-level data key as a binding', () => {
     expect(new Maple().run('return name;', { name: 'maple' }).value).toBe('maple');
-    expect(new Maple().run('return name;', '{"name":"maple"}').value).toBe('maple');
   });
 
   it('exposes instance and run globals', () => {
@@ -97,7 +96,8 @@ describe('globals', () => {
   });
 
   it('treats a key named __proto__ as a plain binding', () => {
-    const { value } = new Maple().run('return __proto__;', '{"__proto__": 1}');
+    // A computed key makes `__proto__` an own property instead of setting the prototype
+    const { value } = new Maple().run('return __proto__;', { ['__proto__']: 1 });
 
     expect(value).toBe(1);
   });
@@ -116,12 +116,18 @@ describe('globals', () => {
     expect(Object.isFrozen(data.list)).toBe(false);
   });
 
-  it('rejects unsupported values in globals with a plain TypeError before the run', () => {
+  it('rejects unsupported values in globals and directly in data with a plain TypeError before the run', () => {
     expect(() => new Maple({ globals: { bad: Symbol('x') } })).toThrow(
       new TypeError('Unsupported value at globals.bad: symbol')
     );
-    expect(() => new Maple().run('return 1;', { bad: new Uint8Array() })).toThrow(
-      new TypeError('Unsupported value at data.bad: Uint8Array')
+    expect(() => new Maple({ globals: { bad: new Uint8Array() } })).toThrow(
+      new TypeError('Unsupported value at globals.bad: Uint8Array')
+    );
+    expect(() => new Maple().run('return 1;', { bad: Symbol('x') })).toThrow(
+      new TypeError('Unsupported value at data.bad: symbol')
+    );
+    expect(() => new Maple().run('return 1;', { bad: 1n })).toThrow(
+      new TypeError('Unsupported value at data.bad: bigint')
     );
     expect(() => new Maple().run('return 1;', {}, { globals: { bad: Symbol('x') } })).toThrow(
       new TypeError('Unsupported value at options.globals.bad: symbol')

@@ -4,13 +4,13 @@ import type { MapWrapper } from '../../../values/wrappers/map-wrapper.ts';
 
 export const MAP_METHOD_FOR_EACH: Method<MapWrapper> = method(
   Map.prototype.forEach.length,
-  (m, [fn], context) => {
+  (m, [fn, thisArg], context) => {
     if (!isCallable(fn)) {
       return context.fail('TypeError', `${describeValue(fn)} is not a function`);
     }
 
     for (const [key, value] of m.map) {
-      context.call(undefined, fn, [value, key, m]);
+      context.call(thisArg, fn, [value, key, m]);
     }
 
     return undefined;

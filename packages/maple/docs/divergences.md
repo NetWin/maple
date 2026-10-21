@@ -5,7 +5,7 @@ one that does; the linked section has the detail.
 
 ## Syntax and names
 
-- `this`, `class`, `super`, `async` / `await`, generators, getters and setters, tagged templates,
+- `class`, `super`, `async` / `await`, generators, getters and setters, tagged templates,
   `import` / `export`, `import.meta` and `new.target` throw `DISALLOWED_SYNTAX`
   ([Language](language.md#not-supported)).
 - An `async` or generator function throws when it is created, not when it is called.
@@ -49,8 +49,7 @@ one that does; the linked section has the detail.
 
 - Set algebra refuses set-like objects other than Sets and Maps, and `Iterator.from` refuses an
   object with a script `next` ([Built-ins](builtins.md#map-and-set)).
-- A JSON reviver receives the holder as a third argument instead of `this`
-  ([JSON](builtins.md#json)).
+- A JSON reviver receives no third `context` argument ([JSON](builtins.md#json)).
 - The legacy `RegExp.$1` statics, the String HTML methods and `Intl` are not available.
 
 ## Errors and limits

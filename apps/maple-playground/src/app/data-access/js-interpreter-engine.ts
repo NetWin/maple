@@ -7,13 +7,12 @@ interface InterpreterInternals {
 }
 
 /**
- * Runs `code` against the JSON `context` in js-interpreter and returns the result as JSON text.
- * The script is wrapped in a function to allow `return`, and each context key becomes a global;
+ * Runs `code` against the parsed `data` in js-interpreter and returns the result as JSON text.
+ * The script is wrapped in a function to allow `return`, and each data key becomes a global;
  * js-interpreter understands ES5 only and has no operation limit. The result is read and
- * serialized on the host, as Maple's is, so the context cannot shadow anything this relies on.
+ * serialized on the host, as Maple's is, so the data cannot shadow anything this relies on.
  */
-export function runJsInterpreter(code: string, context: string): string {
-  const data: unknown = JSON.parse(context);
+export function runJsInterpreter(code: string, data: unknown): string {
   const interpreter = new Interpreter(`(function () {\n${code}\n})();`, (instance, scope) => {
     if (typeof data === 'object' && data !== null) {
       for (const [key, value] of Object.entries(data)) {

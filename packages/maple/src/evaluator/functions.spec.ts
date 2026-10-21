@@ -400,6 +400,122 @@ describe('functions', () => {
     });
   });
 
+  describe('this', () => {
+    it('is the object of a member call', () => {
+      expect(run('const o = { n: 1, f() { return this.n; } }; return o.f();')).toBe(1);
+      expect(run('const o = { n: 2, f: function () { return this.n; } }; return o["f"]();')).toBe(
+        2
+      );
+      expect(run('const o = { f() { return this; } }; return o?.f() === o;')).toBe(true);
+      expect(run('const o = { f() { return this; } }; return o.f?.() === o;')).toBe(true);
+      expect(run('const o = { f() { return this; } }; return (o.f)() === o;')).toBe(true);
+      expect(run('const o = { f() { return this; } }; return (o?.f)() === o;')).toBe(true);
+    });
+
+    it('is undefined for a plain call', () => {
+      expect(run('function f() { return this; } return f();')).toBeUndefined();
+      expect(run('const o = { f() { return this; } }; return (0, o.f)();')).toBeUndefined();
+      expect(run('const o = { f() { return this; } }; const g = o.f; return g();')).toBeUndefined();
+      expect(run('return (function () { return typeof this; })();')).toBe('undefined');
+    });
+
+    it('is undefined at the top level and in arrows defined there', () => {
+      expect(run('return this;')).toBeUndefined();
+      expect(run('return typeof this;')).toBe('undefined');
+      expect(run('const f = () => this; return f();')).toBeUndefined();
+      expect(run('const o = { f: () => this }; return o.f();')).toBeUndefined();
+    });
+
+    it('is what call, apply and bind pass, never boxed', () => {
+      expect(
+        run(
+          'function f() { return this; } return [f.call(5), f.apply("s", []), f.bind(true)(), f.call(null), f.call()];'
+        )
+      ).toEqual([5, 's', true, null, undefined]);
+      expect(run('function f() { return typeof this; } return f.call(5);')).toBe('number');
+    });
+
+    it('keeps the bound receiver over a later one', () => {
+      expect(run('function f() { return this; } return f.bind(1).call(2);')).toBe(1);
+      expect(run('function f() { return this; } return { g: f.bind(1) }.g();')).toBe(1);
+    });
+
+    it('is lexical in an arrow, which ignores any receiver', () => {
+      expect(run('const o = { f() { return (() => this)(); } }; return o.f() === o;')).toBe(true);
+      expect(
+        run('const o = { f() { const g = () => this; return g.call(1); } }; return o.f() === o;')
+      ).toBe(true);
+      expect(run('const o = { f() { return [1].map(() => this)[0]; } }; return o.f() === o;')).toBe(
+        true
+      );
+    });
+
+    it('is a function of its own in a nested function', () => {
+      expect(
+        run('const o = { f() { function g() { return this; } return g(); } }; return o.f();')
+      ).toBeUndefined();
+      expect(
+        run(
+          'const o = { f() { function g() { return () => this; } return g()(); } }; return o.f();'
+        )
+      ).toBeUndefined();
+    });
+
+    it('chains methods that return it', () => {
+      expect(run('return { n: 0, add(k) { this.n += k; return this; } }.add(1).add(2).n;')).toBe(3);
+    });
+
+    it('is the receiver in default parameter values', () => {
+      expect(run('const o = { n: 1, f(a = this.n) { return a; } }; return o.f();')).toBe(1);
+      expect(run('const o = { f(a = () => this) { return a(); } }; return o.f() === o;')).toBe(
+        true
+      );
+    });
+
+    it('sits next to arguments and a named function expression calling itself', () => {
+      expect(
+        run('const o = { f() { return [this === o, arguments.length]; } }; return o.f(1, 2);')
+      ).toEqual([true, 2]);
+      expect(
+        run(
+          'const o = { n: 3, f: function g(k) { return k === 0 ? this.n : g.call(this, k - 1); } }; return o.f(2);'
+        )
+      ).toBe(3);
+      expect(
+        run('const o = { f: function g(k) { return k ? g(0) : this; } }; return o.f(1);')
+      ).toBeUndefined();
+    });
+
+    it('stays with each loop iteration', () => {
+      expect(
+        run(`
+          const o = {
+            f() {
+              const fs = [];
+              for (let i = 0; i < 2; i++) { fs.push(() => [this === o, i]); }
+              for (const k of [2]) { fs.push(() => [this === o, k]); }
+              return fs.map((g) => g());
+            }
+          };
+          return o.f();
+        `)
+      ).toEqual([
+        [true, 0],
+        [true, 1],
+        [true, 2]
+      ]);
+    });
+
+    it('fails like any undefined value when read from', () => {
+      expect(errorMessage('function f() { return this.x; } return f();')).toBe(
+        "Cannot read properties of undefined (reading 'x')"
+      );
+      expect(errorMessage('function f() { this.x = 1; } f();')).toBe(
+        "Cannot set properties of undefined (setting 'x')"
+      );
+    });
+  });
+
   describe('toString and valueOf', () => {
     it('convert any function to the placeholder and give it back itself', () => {
       expect(
@@ -430,9 +546,8 @@ describe('functions', () => {
       expect(runAndCatch(maple, 'function* g() {}').message).toBe('generators are not supported');
     });
 
-    it('throws for this and arguments only when reached', () => {
-      expect(maple.run('const f = () => this; return 1;').value).toBe(1);
-      expect(runAndCatch(maple, 'return (() => this)();').message).toBe("'this' is not supported");
+    it('throws for a script-level arguments only when reached', () => {
+      expect(maple.run('const f = () => arguments; return 1;').value).toBe(1);
       expect(runAndCatch(maple, 'return arguments;').message).toBe("'arguments' is not supported");
     });
 

@@ -32,9 +32,9 @@ Expressions:
 
 ## Not supported
 
-Reaching any of these throws `DISALLOWED_SYNTAX`: `this`, `class`, `super`, `async` / `await`,
-generators and `yield`, getters and setters, tagged templates, `import` / `export`, `import.meta`,
-`new.target`, and `arguments` at the script level, which is no function.
+Reaching any of these throws `DISALLOWED_SYNTAX`: `class`, `super`, `async` / `await`, generators
+and `yield`, getters and setters, tagged templates, `import` / `export`, `import.meta`, `new.target`,
+and `arguments` at the script level, which is no function.
 
 An `async` or generator function throws when the closure is created, not when it is called. For a
 function declaration that is hoisting time, so the script fails before its first statement runs.
@@ -72,11 +72,16 @@ Script functions and built-in functions have JavaScript's read-only `length` and
 inferred from bindings included. Host functions, and functions bound from them, have no properties
 at all. Every function answers to `toString`, which gives `[function]`, `valueOf`, `call`, `apply`
 and `bind` ([Functions](builtins.md#functions)). The receiver these pass on reaches a built-in
-method, which checks it as for any method call, so `''.trim.call('  b ')` is `'b'`. A script
-function never sees it, since there is no `this`, which is how JavaScript behaves for a strict
-function that does not use `this`.
+method, which checks it as for any method call, so `''.trim.call('  b ')` is `'b'`, and a script
+function as its `this`.
 
-Inside a function that is not an arrow, `arguments` is the strict-mode arguments object.
+Inside a function that is not an arrow, `this` and `arguments` are those of a strict-mode function.
+`this` is the object of a method call, so `obj.f()` and `obj[key]()` see `obj`, and `undefined` for
+a plain call such as `f()` or `(0, obj.f)()`. `call`, `apply` and `bind` pass their receiver as it is,
+never boxed, so `f.call(5)` sees `5`, and a bound function keeps its receiver whatever it is called
+on. An arrow function has no `this` of its own and sees the one of the function it is written in.
+At the top level of the script `this` is `undefined`, since there is no global object. A script
+function still cannot be constructed ([Constructors](#constructors)).
 
 Every function, and every namespace such as `Math`, takes the properties a script adds, as in
 `fn.cache = {}`. Built-ins, host functions and namespaces are shared by every run, so what a run

@@ -7,10 +7,16 @@ export interface Binding {
   value: unknown;
 }
 
+/** Marks a scope that has no receiver of its own, so `this` comes from a parent. */
+const NO_RECEIVER: unique symbol = Symbol('no-receiver');
+
 /** One lexical environment; a `Map` so that names like `__proto__` are ordinary keys. */
 export class Scope {
   readonly #bindings = new Map<string, Binding>();
   readonly #parent: Scope | undefined;
+
+  /** What `this` is in this scope; only the scope of a script or a non-arrow call has one. */
+  #receiver: unknown = NO_RECEIVER;
 
   constructor(parent?: Scope) {
     this.#parent = parent;
@@ -23,14 +29,14 @@ export class Scope {
   }
 
   /**
-   * A `var` binding whose value `create` makes on the first read, so a value that is costly to
-   * build and rarely needed is only built when it is. An assignment replaces it unread.
+   * A binding whose value `create` makes on the first read, so a value that is costly to build and
+   * rarely needed is only built when it is. An assignment replaces it unread.
    */
-  public defineLazy(name: string, create: () => unknown): void {
+  public defineLazy(name: string, kind: 'var' | 'global', create: () => unknown): void {
     let created = false;
     let value: unknown;
     this.#bindings.set(name, {
-      kind: 'var',
+      kind,
       initialized: true,
       get value(): unknown {
         if (!created) {
@@ -65,12 +71,30 @@ export class Scope {
     return this.#bindings.get(name) ?? this.#parent?.lookup(name);
   }
 
+  /** Makes `value` what `this` is here and in every scope below that has no receiver of its own. */
+  public bindReceiver(value: unknown): void {
+    this.#receiver = value;
+  }
+
+  /** The receiver of the nearest scope that has one; kept apart from the bindings, as a keyword. */
+  public receiver(): unknown {
+    if (this.#receiver !== NO_RECEIVER) {
+      return this.#receiver;
+    }
+    if (!this.#parent) {
+      throw new Error('No scope binds a receiver');
+    }
+    return this.#parent.receiver();
+  }
+
   /**
    * A sibling scope with copies of the own bindings, which gives a loop fresh per-iteration
-   * bindings.
+   * bindings. Copying reads a lazy binding's value, which is why only loop scopes are copied,
+   * never a global or function scope that holds one.
    */
   public copy(): Scope {
     const scope = new Scope(this.#parent);
+    scope.#receiver = this.#receiver;
     for (const [name, binding] of this.#bindings) {
       scope.#bindings.set(name, { ...binding });
     }

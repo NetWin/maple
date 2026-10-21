@@ -53,6 +53,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `with`, implicit globals, `arguments.callee`                                                          | Every script runs in strict mode, where these are errors. js-interpreter runs sloppy code and has no `callee`.            |
 | A method called without its receiver: `const p = [].push; p(1)`, `(0, a.push)(1)`, `arr.map("".trim)` | As in strict mode, a plain call has no receiver, so it is a `TypeError`. js-interpreter passes the global object instead. |
+| `this` at the top level and in a plain call: `typeof this` is `'undefined'`                           | As in strict mode, there is no global object to stand in. js-interpreter in sloppy mode passes its global object.         |
 | `window`, `self`, `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`                        | Host APIs, not part of JavaScript. A run is synchronous and ends with its result, so nothing can be scheduled either.     |
 | `String(Math)`, `"" + JSON`: Maple gives `[object Math]`, js-interpreter `[object Object]`            | A namespace converts with its own tag, as in JavaScript; js-interpreter tags every object as a plain one.                 |
 | `Object.isExtensible(5)`: Maple gives `false`, js-interpreter `true`                                  | A primitive is never extensible since ES2015; js-interpreter follows ES5.                                                 |
@@ -66,6 +67,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | An error named by an array that holds it: Maple gives `m: m`                                          | `join` cuts the cycle at the array, as in JavaScript; js-interpreter gives `...: m`.                                      |
 | `f.bind(null, 1)`: Maple names it `bound f` with the rest of `f`'s length, js-interpreter `fBound`, 0 | A bound function's `name` and `length` are ES2015; js-interpreter follows ES5.                                            |
 | `f.apply(null, 1)`, `f.apply(null, 'ab')`                                                             | A primitive is no list of arguments, so it is a `TypeError`. js-interpreter ignores a number and spreads a string.        |
+| `JSON.parse(text, reviver)`: Maple applies the reviver, with the holder as `this`                     | As in JavaScript; js-interpreter ignores the reviver and returns the parsed value as it is.                               |
 
 ### Maple departs from JavaScript
 
@@ -73,14 +75,14 @@ On purpose: these are what the sandbox leaves out.
 
 | Divergence                                                                                                         | Why                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `this`, `new` on a script function, `F.prototype`, `.constructor`, `instanceof F`                                  | Maple has no script-visible prototypes or receivers. An object's behaviour comes from its type.                 |
+| `new` on a script function, `F.prototype`, `.constructor`, `instanceof F`                                          | Maple has no script-visible prototypes. An object's behaviour comes from its type.                              |
 | `new` on a bound function: `new (Error.bind(null, 'x'))()`                                                         | Only the listed built-in constructors can be constructed, and a bound function is not one of them.              |
 | A built-in method called on a receiver of another type: `''.trim.call({})`                                         | A method's behaviour comes from its receiver's type, so it refuses another type with a `TypeError`.             |
 | `Object.create`, `Object.getPrototypeOf`, `isPrototypeOf`                                                          | The same object model: there is no prototype chain to create or inspect.                                        |
 | Getters and setters                                                                                                | They would run script code on a plain property read or write, host conversion included.                         |
 | `new String`, `new Number`, `new Boolean`, `Object(primitive)`, `instanceof String` / `Number` / `Boolean`         | There are no primitive wrapper objects. They are a well-known trap and would add a value kind.                  |
 | `eval`, the `Function` constructor and its members (`Function.toString`, `Function.valueOf`, `Function.prototype`) | Creating code from a string is the escape the sandbox exists to prevent, so the global is not reachable at all. |
-| The global `this`, the global `constructor`                                                                        | There is no global object: globals are read-only bindings, and the host decides what exists.                    |
+| The global `constructor`                                                                                           | There is no global object: globals are read-only bindings, and the host decides what exists.                    |
 
 ### Not supported yet
 

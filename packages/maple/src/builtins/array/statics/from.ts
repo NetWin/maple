@@ -6,16 +6,14 @@ import { getMember } from '../../method-dispatch.ts';
 export const ARRAY_STATIC_FROM: NativeFunction = new NativeFunction(
   'from',
   Array.from.length,
-  (_, [source, mapper], context) => {
+  (_, [source, mapper, thisArg], context) => {
     const { fail } = context;
     if (mapper !== undefined && !isCallable(mapper)) {
       return fail('TypeError', `${describeValue(mapper)} is not a function`);
     }
     const items: Array<unknown> = [];
     const add = (item: unknown): void => {
-      items.push(
-        mapper === undefined ? item : context.call(undefined, mapper, [item, items.length])
-      );
+      items.push(mapper === undefined ? item : context.call(thisArg, mapper, [item, items.length]));
     };
     const iterator = iterate(source);
     if (iterator) {

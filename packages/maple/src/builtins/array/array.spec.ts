@@ -4,7 +4,7 @@ import { runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 
-function run(code: string, data?: unknown): unknown {
+function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 
@@ -206,6 +206,127 @@ describe('array methods', () => {
     });
   });
 
+  describe('thisArg', () => {
+    it('every passes it to its callback as this', () => {
+      expect(run('return [1, 2].every(function (x) { return x < this.max; }, { max: 3 });')).toBe(
+        true
+      );
+      expect(run('return [1].every(function () { return this === undefined; });')).toBe(true);
+      expect(
+        run('const o = { f() { return [1].every(() => this === o, 5); } }; return o.f();')
+      ).toBe(true);
+    });
+
+    it('filter passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2, 3].filter(function (x) { return x > this.min; }, { min: 1 });')
+      ).toEqual([2, 3]);
+      expect(run('return [1].filter(function () { return this === undefined; });')).toEqual([1]);
+      expect(
+        run('const o = { f() { return [1].filter(() => this === o, 5); } }; return o.f();')
+      ).toEqual([1]);
+    });
+
+    it('find passes it to its callback as this', () => {
+      expect(run('return [1, 2, 3].find(function (x) { return x > this.min; }, { min: 1 });')).toBe(
+        2
+      );
+      expect(run('return [1].find(function () { return this === undefined; });')).toBe(1);
+      expect(
+        run('const o = { f() { return [1].find(() => this === o, 5); } }; return o.f();')
+      ).toBe(1);
+    });
+
+    it('findIndex passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2, 3].findIndex(function (x) { return x > this.min; }, { min: 1 });')
+      ).toBe(1);
+      expect(run('return [1].findIndex(function () { return this === undefined; });')).toBe(0);
+      expect(
+        run('const o = { f() { return [1].findIndex(() => this === o, 5); } }; return o.f();')
+      ).toBe(0);
+    });
+
+    it('findLast passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2, 3].findLast(function (x) { return x > this.min; }, { min: 1 });')
+      ).toBe(3);
+      expect(run('return [1].findLast(function () { return this === undefined; });')).toBe(1);
+      expect(
+        run('const o = { f() { return [1].findLast(() => this === o, 5); } }; return o.f();')
+      ).toBe(1);
+    });
+
+    it('findLastIndex passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2, 3].findLastIndex(function (x) { return x > this.min; }, { min: 1 });')
+      ).toBe(2);
+      expect(run('return [1].findLastIndex(function () { return this === undefined; });')).toBe(0);
+      expect(
+        run('const o = { f() { return [1].findLastIndex(() => this === o, 5); } }; return o.f();')
+      ).toBe(0);
+    });
+
+    it('flatMap passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2].flatMap(function (x) { return [x, x * this.factor]; }, { factor: 10 });')
+      ).toEqual([1, 10, 2, 20]);
+      expect(run('return [1].flatMap(function () { return [this]; });')).toEqual([undefined]);
+      expect(
+        run('const o = { f() { return [1].flatMap(() => [this === o], 5); } }; return o.f();')
+      ).toEqual([true]);
+    });
+
+    it('forEach passes it to its callback as this', () => {
+      expect(
+        run(
+          'let sum = 0; [1, 2].forEach(function (x) { sum += x * this.factor; }, { factor: 10 }); return sum;'
+        )
+      ).toBe(30);
+      expect(
+        run('let seen = 1; [1].forEach(function () { seen = this; }); return seen;')
+      ).toBeUndefined();
+      expect(
+        run(
+          'const o = { f() { let seen; [1].forEach(() => { seen = this; }, 5); return seen === o; } }; return o.f();'
+        )
+      ).toBe(true);
+    });
+
+    it('map passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2].map(function (x) { return x + this.offset; }, { offset: 10 });')
+      ).toEqual([11, 12]);
+      expect(run('return [1].map(function () { return this; });')).toEqual([undefined]);
+      expect(
+        run('const o = { f() { return [1].map(() => this === o, 5); } }; return o.f();')
+      ).toEqual([true]);
+    });
+
+    it('some passes it to its callback as this', () => {
+      expect(
+        run('return [1, 2].some(function (x) { return x === this.wanted; }, { wanted: 2 });')
+      ).toBe(true);
+      expect(run('return [1].some(function () { return this === undefined; });')).toBe(true);
+      expect(
+        run('const o = { f() { return [1].some(() => this === o, 5); } }; return o.f();')
+      ).toBe(true);
+    });
+
+    it('is passed as it is, never boxed', () => {
+      expect(run('return [1].map(function () { return typeof this; }, "s");')).toEqual(['string']);
+      expect(run('return [1].map(function () { return this; }, 5);')).toEqual([5]);
+    });
+
+    it('leaves the length of each method at 1', () => {
+      expect(
+        run(
+          'return [[].every.length, [].filter.length, [].find.length, [].findIndex.length, [].findLast.length, [].findLastIndex.length, [].flatMap.length, [].forEach.length, [].map.length, [].some.length];'
+        )
+      ).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    });
+  });
+
   describe('flat and flatMap', () => {
     it('charge one operation per element visited, nested arrays included', () => {
       expect(
@@ -401,6 +522,18 @@ describe('Array statics', () => {
       '5 is not a function'
     );
     expect(run('return Array.foo;')).toBeUndefined();
+  });
+
+  it('from calls the mapper with the thisArg as this', () => {
+    expect(run('return Array.from([1], function (x) { return [this, x]; }, 5);')).toEqual([[5, 1]]);
+    expect(run('return Array.from({ length: 1 }, function () { return this; }, "t");')).toEqual([
+      't'
+    ]);
+    expect(run('return Array.from([1], function () { return this; });')).toEqual([undefined]);
+    expect(
+      run('const o = { f() { return Array.from([1], () => this, 5)[0] === o; } }; return o.f();')
+    ).toBe(true);
+    expect(run('return Array.from.length;')).toBe(1);
   });
 
   it('from reads an array-like length as ToLength does', () => {

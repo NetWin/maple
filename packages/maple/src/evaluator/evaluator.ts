@@ -29,7 +29,7 @@ import type {
   VariableDeclaration,
   WhileStatement
 } from 'acorn';
-import { fromHost } from '../boundary/from-host.ts';
+import { fromHost, UnsupportedInputError } from '../boundary/from-host.ts';
 import { type HostFunction, type Intrinsic, isExposed, type Sandbox } from '../boundary/host.ts';
 import {
   asMapleError,
@@ -134,7 +134,6 @@ const HOST_FAILURE_MESSAGE = 'A host function failed';
 const NODE_NAMES: Partial<Record<Node['type'], string>> = {
   ClassDeclaration: 'class',
   ClassExpression: 'class',
-  ThisExpression: 'this',
   Super: 'super',
   AwaitExpression: 'await',
   YieldExpression: 'yield',
@@ -203,9 +202,13 @@ export class Evaluator {
     return this.#budget.stats();
   }
 
-  /** Evaluates the program as a function body below `globals` and returns what the script returned. */
+  /**
+   * Evaluates the program as a function body below `globals` and returns what the script returned.
+   * Like the body of a strict function called plainly, it has `undefined` as `this`.
+   */
   public run(program: Program, globals: Scope): unknown {
     const scope = new Scope(globals);
+    scope.bindReceiver(undefined);
     const completion = this.evaluateFunctionBody(program.body, scope);
     return completion.type === 'return' ? completion.value : undefined;
   }
@@ -684,6 +687,8 @@ export class Evaluator {
           return node.value;
         case 'Identifier':
           return this.readIdentifier(node, scope);
+        case 'ThisExpression':
+          return scope.receiver();
         case 'TemplateLiteral':
           return this.evaluateTemplate(node, scope);
         case 'ObjectExpression':
@@ -1039,6 +1044,15 @@ export class Evaluator {
         receiver = access.object;
         target = access.value;
       }
+    } else if (callee.type === 'ChainExpression' && callee.expression.type === 'MemberExpression') {
+      // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
+      this.tick(callee);
+      this.tick(callee.expression);
+      const access = this.accessMember(callee.expression, scope);
+      if (access !== SHORT_CIRCUIT) {
+        receiver = access.object;
+        target = access.value;
+      }
     } else {
       target = this.evaluateExpression(callee, scope);
     }
@@ -1138,7 +1152,7 @@ export class Evaluator {
   ): unknown {
     this.tick(node);
     if (callee instanceof Closure) {
-      return this.callClosure(callee, args, node);
+      return this.callClosure(receiver, callee, args, node);
     }
     this.enterCall(node);
     try {
@@ -1157,7 +1171,7 @@ export class Evaluator {
     description: string
   ): unknown {
     if (callee instanceof Closure) {
-      return this.callClosure(callee, args, node);
+      return this.callClosure(receiver, callee, args, node);
     }
     if (callee instanceof NativeFunction) {
       return callee.invoke(receiver, args, this.callContext(node));
@@ -1305,16 +1319,26 @@ export class Evaluator {
     }
   }
 
-  /** `node` is where the call happened, which is what a depth error points at. */
-  private callClosure(closure: Closure, args: ReadonlyArray<unknown>, node: Node): unknown {
+  /**
+   * `node` is where the call happened, which is what a depth error points at. An arrow ignores
+   * `receiver` and sees the `this` of the scope it closed over.
+   */
+  private callClosure(
+    receiver: unknown,
+    closure: Closure,
+    args: ReadonlyArray<unknown>,
+    node: Node
+  ): unknown {
     this.enterCall(node);
     const { node: fn } = closure;
     this.#frames.push({ name: closure.name || '<anonymous>', calledFrom: node });
     try {
       const scope = new Scope(this.scopeForNamedFunction(closure));
       if (fn.type !== 'ArrowFunctionExpression') {
+        // Strict mode: the receiver as it is, never boxed or replaced by a global object
+        scope.bindReceiver(receiver);
         // Built on the first read only; copying the arguments costs one operation per argument
-        scope.defineLazy('arguments', () => {
+        scope.defineLazy('arguments', 'var', () => {
           this.charge(args.length, node);
           return createArgumentsObject(args);
         });
@@ -1373,7 +1397,14 @@ export class Evaluator {
         node
       );
     }
-    return binding.value;
+    try {
+      return binding.value;
+    } catch (error) {
+      if (error instanceof UnsupportedInputError) {
+        return this.fail(MapleErrorCode.INTERNAL_ERROR, error.message, node, error.cause);
+      }
+      throw error;
+    }
   }
 
   private assignIdentifier(node: Identifier, value: unknown, scope: Scope): void {

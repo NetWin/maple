@@ -33,12 +33,42 @@ export function fromHost(
   path: string = 'value',
   options: FromHostOptions = {}
 ): unknown {
-  const settings: Settings = {
-    freeze: options.freeze ?? true,
-    functions: options.functions ?? true,
-    root: path
-  };
-  return convert(value, path, new Map(), settings, 0);
+  return new HostConversion(path, options).convert(value, path, 0);
+}
+
+/**
+ * One conversion whose values may be copied in several calls, such as the keys of `data` as a run
+ * reads them. The calls share their copies, so a value reached twice stays shared and a cycle is
+ * kept across them.
+ */
+export class HostConversion {
+  readonly #copies = new Map<object, object>();
+  readonly #settings: Settings;
+
+  /** `root` names a value nested too deep, as `fromHost`'s path does. */
+  constructor(root: string, options: FromHostOptions = {}) {
+    this.#settings = {
+      freeze: options.freeze ?? true,
+      functions: options.functions ?? true,
+      root
+    };
+  }
+
+  /** Copies `value`, found at `path`, `depth` levels below the root; throws as `fromHost` does. */
+  public convert(value: unknown, path: string, depth: number): unknown {
+    return convert(value, path, this.#copies, this.#settings, depth);
+  }
+}
+
+/**
+ * Thrown when the script first reads a `data` key that holds a value the model does not cover.
+ * The input is the host's bug, so the evaluator ends the run at the read, where the script cannot
+ * catch it.
+ */
+export class UnsupportedInputError extends Error {
+  constructor(cause: TypeError) {
+    super(cause.message, { cause });
+  }
 }
 
 function convert(

@@ -4,11 +4,11 @@ import { runAndCatch } from '../spec-helpers.ts';
 
 const maple = new Maple();
 
-function run(code: string, data?: unknown): unknown {
+function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 
-function sandboxError(code: string, data?: unknown): { name: string; message: string } | undefined {
+function sandboxError(code: string, data?: object): { name: string; message: string } | undefined {
   return runAndCatch(maple, code, data).sandboxError;
 }
 
@@ -132,9 +132,10 @@ describe('member access', () => {
     expect(sandboxError('return obj.__proto__;', data)?.name).toBe('TypeError');
     expect(sandboxError('return obj["__pro" + "to__"];', data)?.name).toBe('TypeError');
     expect(sandboxError('return (() => 1).prototype;')?.name).toBe('TypeError');
-    expect(sandboxError('return own.__proto__;', '{"own": {"__proto__": 1}}')?.name).toBe(
-      'TypeError'
-    );
+    expect(
+      // A computed key makes `__proto__` an own property instead of setting the prototype
+      sandboxError('return own.__proto__;', { own: { ['__proto__']: 1 } })?.name
+    ).toBe('TypeError');
   });
 
   it('throws when reading from null or undefined', () => {
@@ -230,7 +231,7 @@ describe('delete and in', () => {
     expect(run('return "toString" in (() => 1);')).toBe(true);
     expect(run('return "call" in (() => 1);')).toBe(true);
     expect(run('return "__proto__" in obj;', data)).toBe(false);
-    expect(run('return "__proto__" in own;', '{"own": {"__proto__": 1}}')).toBe(true);
+    expect(run('return "__proto__" in own;', { own: { ['__proto__']: 1 } })).toBe(true);
     expect(sandboxError('return "a" in 5;')).toMatchObject({
       name: 'TypeError',
       message: "Cannot use 'in' operator to search for 'a' in 5"
