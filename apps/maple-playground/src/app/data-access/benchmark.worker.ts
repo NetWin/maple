@@ -12,7 +12,7 @@ addEventListener('message', (event: MessageEvent<BenchmarkRequest>) => {
     runs,
     results: {
       maple: measure(runs, () => runMaple(code, context, limits)),
-      'js-interpreter': measure(runs, () => runJsInterpreter(code, context))
+      'js-interpreter': measure(runs, () => runJsInterpreter(code, JSON.parse(context)))
     }
   } satisfies BenchmarkResponse);
 });

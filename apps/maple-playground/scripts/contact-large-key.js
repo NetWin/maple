@@ -1,0 +1,1 @@
+return activities.length;

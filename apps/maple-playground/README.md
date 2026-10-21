@@ -35,30 +35,42 @@ context and converting the result.
 The benchmark has its own worker and a 60 s timeout. js-interpreter has no operation limit, so for an endless loop that
 timeout is the only stop.
 
-### Memory: `measure-memory`
+### Time and memory: `measure-run`
 
-Browsers have no usable per-run memory measurement, so memory is measured in Node, for a script and context from files:
+Browsers have no usable per-run memory measurement, so `measure-run` measures time and memory in Node, for a script
+and a context from files:
 
 ```sh
-pnpm --filter @netwin/maple-playground measure-memory <script.js> [context.json] [--runs 5]
+pnpm --filter @netwin/maple-playground measure-run <script.js> [context.json] [--runs 5] [--time-runs 200]
 ```
 
+The context defaults to `scripts/contact-context.json`, a synthetic contact record of 46 flat fields, an `address`,
+450 `activities` and 300 `customFields` (about 75 KB as JSON). `contact-flat-key.js`, `contact-nested-key.js` and
+`contact-large-key.js` beside it read a flat key, a nested key and the large array. The file is read and parsed once,
+before any run, so both engines receive a plain object, as a host's `run` call does.
+
 ```
-┌──────────────────┬────────────┬───────────┬─────────────┬──────┐
-│ engine           │ allocated  │ retained  │ time        │ note │
-├──────────────────┼────────────┼───────────┼─────────────┼──────┤
-│ 'Maple'          │ '64.84 MB' │ '0.02 MB' │ '78.15 ms'  │ ''   │
-│ 'js-interpreter' │ '83.86 MB' │ '0.02 MB' │ '825.29 ms' │ ''   │
-└──────────────────┴────────────┴───────────┴─────────────┴──────┘
+┌──────────────────┬───────────┬───────────┬────────────┬────────────┬─────────────┬──────┐
+│ engine           │ allocated │ retained  │ median     │ min        │ max         │ note │
+├──────────────────┼───────────┼───────────┼────────────┼────────────┼─────────────┼──────┤
+│ 'Maple'          │ '1.24 MB' │ '0.01 MB' │ '0.785 ms' │ '0.634 ms' │ '1.215 ms'  │ ''   │
+│ 'js-interpreter' │ '3.99 MB' │ '0.01 MB' │ '3.562 ms' │ '2.667 ms' │ '65.447 ms' │ ''   │
+└──────────────────┴───────────┴───────────┴────────────┴────────────┴─────────────┴──────┘
+
+Maple is 4.54× faster than js-interpreter (median).
 ```
 
-Each figure is the median of the measured runs, after 3 warm-up runs:
+Both loops start after 3 warm-up runs:
 
 - **allocated** is everything one run creates, short-lived garbage included: the heap growth between a forced garbage
-  collection before the run and the end of the run.
-- **retained** is what is still alive after another forced collection. It should be close to zero; anything more means
-  the engine keeps something from a run alive.
-- **time** is only a rough guide here because of the memory settings below; use the Benchmark tab for speed.
+  collection before the run and the end of the run. It is the median of `--runs` runs.
+- **retained** is what is still alive after another forced collection, again the median of `--runs` runs. It should
+  be close to zero; anything more means the engine keeps something from a run alive.
+- **median**, **min** and **max** time `--time-runs` runs in a second loop, without the forced collections that would
+  disturb them. Because of the memory settings below they are somewhat optimistic: compare them before and after a
+  change on one machine, not with production figures.
+
+Below the table, the medians give the factor by which Maple is faster or slower than js-interpreter.
 
 The figure that decides whether a large input runs out of memory is the peak during the run, which lies between
 retained and allocated. Node cannot measure it directly for synchronous code.

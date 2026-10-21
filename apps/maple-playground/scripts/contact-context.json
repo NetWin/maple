@@ -1,0 +1,4410 @@
+{
+  "id": "c-000123",
+  "salutation": "Ms",
+  "title": "",
+  "firstName": "Ada",
+  "lastName": "Example",
+  "middleName": "",
+  "company": "Example Corp",
+  "department": "Purchasing",
+  "jobTitle": "Buyer",
+  "email": "ada@example.com",
+  "email2": "",
+  "phone": "+49 30 0000000",
+  "mobile": "+49 170 0000000",
+  "fax": "",
+  "website": "https://example.com",
+  "language": "de",
+  "timezone": "Europe/Berlin",
+  "currency": "EUR",
+  "status": "active",
+  "source": "web",
+  "owner": "u-17",
+  "createdAt": "2024-03-02T09:14:00Z",
+  "updatedAt": "2026-10-01T16:40:00Z",
+  "birthday": null,
+  "notes": "",
+  "vip": false,
+  "newsletter": true,
+  "doNotCall": false,
+  "doNotEmail": false,
+  "score": 72,
+  "revenue": 18250.5,
+  "openDeals": 2,
+  "wonDeals": 5,
+  "lostDeals": 1,
+  "lastContactAt": "2026-09-28",
+  "nextFollowUpAt": "2026-10-25",
+  "industry": "Manufacturing",
+  "employees": 250,
+  "rating": "B",
+  "region": "North",
+  "segment": "SMB",
+  "tags": "customer, newsletter",
+  "referredBy": "",
+  "twitter": "",
+  "linkedin": "",
+  "vatId": "DE000000000",
+  "address": {
+    "street": "Examplestraße 1",
+    "street2": "",
+    "zip": "10115",
+    "city": "Berlin",
+    "state": "BE",
+    "country": "DE"
+  },
+  "activities": [
+    {
+      "id": "a-0001",
+      "type": "meeting",
+      "date": "2025-11-08",
+      "subject": "support demo contract demo",
+      "outcome": "invoice follow call",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0002",
+      "type": "task",
+      "date": "2026-03-03",
+      "subject": "demo meeting offer follow",
+      "outcome": "support support support",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0003",
+      "type": "task",
+      "date": "2025-01-28",
+      "subject": "contract update contract follow",
+      "outcome": "meeting question call",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0004",
+      "type": "note",
+      "date": "2025-06-12",
+      "subject": "invoice call invoice invoice",
+      "outcome": "question demo support",
+      "done": false,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0005",
+      "type": "task",
+      "date": "2025-09-14",
+      "subject": "update follow support offer",
+      "outcome": "call renewal call",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0006",
+      "type": "email",
+      "date": "2025-07-15",
+      "subject": "question demo question contract",
+      "outcome": "question question follow",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0007",
+      "type": "task",
+      "date": "2026-08-09",
+      "subject": "up contract up renewal",
+      "outcome": "call call follow",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0008",
+      "type": "task",
+      "date": "2025-09-12",
+      "subject": "meeting meeting question meeting",
+      "outcome": "call contract renewal",
+      "done": false,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0009",
+      "type": "note",
+      "date": "2025-11-14",
+      "subject": "contract question renewal renewal",
+      "outcome": "up call offer",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0010",
+      "type": "task",
+      "date": "2026-05-10",
+      "subject": "question follow update question",
+      "outcome": "question follow follow",
+      "done": false,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0011",
+      "type": "meeting",
+      "date": "2026-04-14",
+      "subject": "question support meeting follow",
+      "outcome": "renewal call support",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0012",
+      "type": "meeting",
+      "date": "2025-02-10",
+      "subject": "follow invoice renewal update",
+      "outcome": "call update update",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0013",
+      "type": "meeting",
+      "date": "2025-10-04",
+      "subject": "invoice up up follow",
+      "outcome": "offer update question",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0014",
+      "type": "email",
+      "date": "2026-03-01",
+      "subject": "support offer call invoice",
+      "outcome": "contract question up",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0015",
+      "type": "call",
+      "date": "2025-01-20",
+      "subject": "up up renewal up",
+      "outcome": "contract offer call",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0016",
+      "type": "call",
+      "date": "2026-05-06",
+      "subject": "call support call demo",
+      "outcome": "up contract offer",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0017",
+      "type": "meeting",
+      "date": "2026-02-20",
+      "subject": "demo demo meeting offer",
+      "outcome": "question contract support",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0018",
+      "type": "call",
+      "date": "2026-06-19",
+      "subject": "invoice invoice support contract",
+      "outcome": "support support call",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0019",
+      "type": "call",
+      "date": "2025-10-11",
+      "subject": "demo question support demo",
+      "outcome": "question call contract",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0020",
+      "type": "call",
+      "date": "2025-04-11",
+      "subject": "call up demo call",
+      "outcome": "follow demo follow",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0021",
+      "type": "call",
+      "date": "2026-05-22",
+      "subject": "demo meeting meeting demo",
+      "outcome": "meeting question contract",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0022",
+      "type": "call",
+      "date": "2025-01-27",
+      "subject": "call meeting invoice up",
+      "outcome": "demo demo meeting",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0023",
+      "type": "meeting",
+      "date": "2026-03-10",
+      "subject": "follow question support renewal",
+      "outcome": "support follow demo",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0024",
+      "type": "meeting",
+      "date": "2026-03-22",
+      "subject": "offer invoice demo update",
+      "outcome": "call call invoice",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0025",
+      "type": "call",
+      "date": "2026-01-09",
+      "subject": "up offer invoice renewal",
+      "outcome": "up renewal renewal",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0026",
+      "type": "note",
+      "date": "2026-05-09",
+      "subject": "call support support demo",
+      "outcome": "question meeting follow",
+      "done": false,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0027",
+      "type": "task",
+      "date": "2025-06-02",
+      "subject": "question renewal update contract",
+      "outcome": "question call question",
+      "done": false,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0028",
+      "type": "call",
+      "date": "2026-01-15",
+      "subject": "follow update offer question",
+      "outcome": "invoice demo invoice",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0029",
+      "type": "note",
+      "date": "2025-12-17",
+      "subject": "question demo demo support",
+      "outcome": "update follow update",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0030",
+      "type": "call",
+      "date": "2026-05-29",
+      "subject": "meeting offer call offer",
+      "outcome": "invoice update offer",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0031",
+      "type": "meeting",
+      "date": "2025-07-05",
+      "subject": "call meeting offer demo",
+      "outcome": "contract support up",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0032",
+      "type": "email",
+      "date": "2026-05-22",
+      "subject": "up offer update offer",
+      "outcome": "meeting support question",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0033",
+      "type": "task",
+      "date": "2025-05-27",
+      "subject": "demo follow contract invoice",
+      "outcome": "call contract follow",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0034",
+      "type": "task",
+      "date": "2025-02-27",
+      "subject": "update meeting question question",
+      "outcome": "meeting meeting renewal",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0035",
+      "type": "task",
+      "date": "2025-01-25",
+      "subject": "invoice offer up demo",
+      "outcome": "meeting question contract",
+      "done": false,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0036",
+      "type": "task",
+      "date": "2026-08-09",
+      "subject": "renewal support follow call",
+      "outcome": "offer offer meeting",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0037",
+      "type": "meeting",
+      "date": "2026-05-31",
+      "subject": "support contract support call",
+      "outcome": "meeting update contract",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0038",
+      "type": "meeting",
+      "date": "2025-10-02",
+      "subject": "renewal call question demo",
+      "outcome": "meeting demo contract",
+      "done": false,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0039",
+      "type": "meeting",
+      "date": "2025-12-10",
+      "subject": "support offer follow update",
+      "outcome": "update contract demo",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0040",
+      "type": "email",
+      "date": "2026-07-03",
+      "subject": "update update demo meeting",
+      "outcome": "up meeting follow",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0041",
+      "type": "task",
+      "date": "2025-08-26",
+      "subject": "call support contract offer",
+      "outcome": "update support invoice",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0042",
+      "type": "call",
+      "date": "2025-04-11",
+      "subject": "update offer renewal offer",
+      "outcome": "update update demo",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0043",
+      "type": "meeting",
+      "date": "2026-05-25",
+      "subject": "meeting up renewal call",
+      "outcome": "renewal renewal follow",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0044",
+      "type": "email",
+      "date": "2025-05-23",
+      "subject": "follow up support call",
+      "outcome": "up update renewal",
+      "done": false,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0045",
+      "type": "note",
+      "date": "2026-03-31",
+      "subject": "offer support contract contract",
+      "outcome": "invoice question invoice",
+      "done": false,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0046",
+      "type": "task",
+      "date": "2026-05-09",
+      "subject": "offer up offer follow",
+      "outcome": "update update up",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0047",
+      "type": "meeting",
+      "date": "2025-04-30",
+      "subject": "demo support contract demo",
+      "outcome": "call up call",
+      "done": false,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0048",
+      "type": "email",
+      "date": "2026-07-12",
+      "subject": "support invoice meeting support",
+      "outcome": "call support contract",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0049",
+      "type": "meeting",
+      "date": "2025-10-16",
+      "subject": "question demo question contract",
+      "outcome": "update contract contract",
+      "done": false,
+      "ownerId": "u-26"
+    },
+    {
+      "id": "a-0050",
+      "type": "call",
+      "date": "2026-01-18",
+      "subject": "meeting update invoice update",
+      "outcome": "follow meeting update",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0051",
+      "type": "call",
+      "date": "2025-05-01",
+      "subject": "support meeting update question",
+      "outcome": "up renewal offer",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0052",
+      "type": "call",
+      "date": "2025-09-16",
+      "subject": "up follow contract question",
+      "outcome": "question support invoice",
+      "done": false,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0053",
+      "type": "call",
+      "date": "2026-02-11",
+      "subject": "contract contract invoice invoice",
+      "outcome": "invoice question contract",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0054",
+      "type": "note",
+      "date": "2025-09-19",
+      "subject": "meeting offer demo renewal",
+      "outcome": "offer up renewal",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0055",
+      "type": "call",
+      "date": "2025-04-17",
+      "subject": "demo support renewal update",
+      "outcome": "call contract invoice",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0056",
+      "type": "note",
+      "date": "2025-07-17",
+      "subject": "invoice support meeting invoice",
+      "outcome": "demo question demo",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0057",
+      "type": "call",
+      "date": "2026-08-17",
+      "subject": "follow demo renewal contract",
+      "outcome": "demo call meeting",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0058",
+      "type": "meeting",
+      "date": "2026-06-19",
+      "subject": "renewal offer invoice call",
+      "outcome": "question contract up",
+      "done": false,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0059",
+      "type": "task",
+      "date": "2026-06-29",
+      "subject": "offer offer demo update",
+      "outcome": "call call demo",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0060",
+      "type": "note",
+      "date": "2025-01-17",
+      "subject": "call invoice offer follow",
+      "outcome": "renewal update demo",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0061",
+      "type": "task",
+      "date": "2025-10-12",
+      "subject": "offer demo renewal follow",
+      "outcome": "update up follow",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0062",
+      "type": "meeting",
+      "date": "2025-05-20",
+      "subject": "support offer invoice support",
+      "outcome": "update update follow",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0063",
+      "type": "meeting",
+      "date": "2025-01-17",
+      "subject": "demo renewal support contract",
+      "outcome": "offer question renewal",
+      "done": false,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0064",
+      "type": "call",
+      "date": "2025-08-25",
+      "subject": "up support update meeting",
+      "outcome": "update renewal support",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0065",
+      "type": "task",
+      "date": "2025-04-21",
+      "subject": "meeting follow contract renewal",
+      "outcome": "question demo follow",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0066",
+      "type": "call",
+      "date": "2025-02-13",
+      "subject": "follow meeting invoice invoice",
+      "outcome": "contract offer support",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0067",
+      "type": "call",
+      "date": "2025-11-03",
+      "subject": "meeting question call renewal",
+      "outcome": "call offer meeting",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0068",
+      "type": "task",
+      "date": "2025-11-04",
+      "subject": "demo offer follow contract",
+      "outcome": "up meeting meeting",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0069",
+      "type": "meeting",
+      "date": "2026-08-21",
+      "subject": "call call follow support",
+      "outcome": "contract demo meeting",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0070",
+      "type": "call",
+      "date": "2026-03-31",
+      "subject": "contract follow support call",
+      "outcome": "demo contract support",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0071",
+      "type": "note",
+      "date": "2025-09-01",
+      "subject": "update update question renewal",
+      "outcome": "invoice meeting question",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0072",
+      "type": "email",
+      "date": "2025-03-06",
+      "subject": "support offer up up",
+      "outcome": "invoice support demo",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0073",
+      "type": "call",
+      "date": "2025-09-16",
+      "subject": "contract follow update follow",
+      "outcome": "up question renewal",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0074",
+      "type": "task",
+      "date": "2025-01-16",
+      "subject": "demo follow meeting update",
+      "outcome": "contract invoice update",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0075",
+      "type": "meeting",
+      "date": "2026-04-03",
+      "subject": "contract update question update",
+      "outcome": "update follow contract",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0076",
+      "type": "task",
+      "date": "2025-08-12",
+      "subject": "offer call contract question",
+      "outcome": "update call renewal",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0077",
+      "type": "task",
+      "date": "2026-07-02",
+      "subject": "contract support invoice question",
+      "outcome": "up support update",
+      "done": false,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0078",
+      "type": "task",
+      "date": "2026-05-13",
+      "subject": "demo update contract call",
+      "outcome": "contract invoice follow",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0079",
+      "type": "note",
+      "date": "2026-03-04",
+      "subject": "renewal up offer support",
+      "outcome": "question up contract",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0080",
+      "type": "email",
+      "date": "2025-05-12",
+      "subject": "offer meeting follow call",
+      "outcome": "offer invoice support",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0081",
+      "type": "call",
+      "date": "2025-03-14",
+      "subject": "invoice offer renewal up",
+      "outcome": "offer update renewal",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0082",
+      "type": "call",
+      "date": "2025-05-04",
+      "subject": "follow follow renewal follow",
+      "outcome": "update follow question",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0083",
+      "type": "email",
+      "date": "2025-07-02",
+      "subject": "offer call question question",
+      "outcome": "up offer support",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0084",
+      "type": "meeting",
+      "date": "2025-01-28",
+      "subject": "question follow support update",
+      "outcome": "offer demo follow",
+      "done": true,
+      "ownerId": "u-26"
+    },
+    {
+      "id": "a-0085",
+      "type": "call",
+      "date": "2025-11-15",
+      "subject": "follow renewal contract up",
+      "outcome": "call contract support",
+      "done": false,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0086",
+      "type": "call",
+      "date": "2025-05-13",
+      "subject": "up up follow contract",
+      "outcome": "renewal up demo",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0087",
+      "type": "call",
+      "date": "2026-08-01",
+      "subject": "invoice support offer meeting",
+      "outcome": "contract up support",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0088",
+      "type": "email",
+      "date": "2026-03-25",
+      "subject": "invoice call update contract",
+      "outcome": "call follow invoice",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0089",
+      "type": "meeting",
+      "date": "2025-02-02",
+      "subject": "offer invoice contract renewal",
+      "outcome": "question offer question",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0090",
+      "type": "meeting",
+      "date": "2025-11-15",
+      "subject": "offer up invoice update",
+      "outcome": "question offer invoice",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0091",
+      "type": "call",
+      "date": "2026-03-14",
+      "subject": "up offer invoice call",
+      "outcome": "update up meeting",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0092",
+      "type": "note",
+      "date": "2026-03-06",
+      "subject": "support call follow follow",
+      "outcome": "question follow meeting",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0093",
+      "type": "call",
+      "date": "2026-03-15",
+      "subject": "question question demo demo",
+      "outcome": "question offer renewal",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0094",
+      "type": "call",
+      "date": "2025-08-14",
+      "subject": "up up invoice follow",
+      "outcome": "support support renewal",
+      "done": false,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0095",
+      "type": "meeting",
+      "date": "2026-04-27",
+      "subject": "update question contract up",
+      "outcome": "meeting meeting call",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0096",
+      "type": "note",
+      "date": "2026-01-17",
+      "subject": "invoice meeting contract follow",
+      "outcome": "contract renewal up",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0097",
+      "type": "note",
+      "date": "2025-09-17",
+      "subject": "renewal invoice contract call",
+      "outcome": "update question renewal",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0098",
+      "type": "call",
+      "date": "2026-01-13",
+      "subject": "contract follow renewal question",
+      "outcome": "demo call up",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0099",
+      "type": "call",
+      "date": "2026-04-19",
+      "subject": "contract invoice contract renewal",
+      "outcome": "demo renewal call",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0100",
+      "type": "email",
+      "date": "2026-05-01",
+      "subject": "contract invoice call meeting",
+      "outcome": "question follow up",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0101",
+      "type": "meeting",
+      "date": "2026-01-04",
+      "subject": "up demo follow up",
+      "outcome": "invoice invoice call",
+      "done": false,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0102",
+      "type": "note",
+      "date": "2025-06-16",
+      "subject": "contract offer offer invoice",
+      "outcome": "contract meeting update",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0103",
+      "type": "note",
+      "date": "2025-02-12",
+      "subject": "meeting offer meeting demo",
+      "outcome": "demo call contract",
+      "done": false,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0104",
+      "type": "call",
+      "date": "2025-09-03",
+      "subject": "contract update question support",
+      "outcome": "question up call",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0105",
+      "type": "call",
+      "date": "2025-03-28",
+      "subject": "question meeting call question",
+      "outcome": "offer offer update",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0106",
+      "type": "meeting",
+      "date": "2026-02-23",
+      "subject": "renewal offer update contract",
+      "outcome": "update support up",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0107",
+      "type": "email",
+      "date": "2026-05-09",
+      "subject": "support demo follow renewal",
+      "outcome": "up question up",
+      "done": false,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0108",
+      "type": "task",
+      "date": "2026-08-13",
+      "subject": "question support follow contract",
+      "outcome": "meeting up demo",
+      "done": false,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0109",
+      "type": "call",
+      "date": "2025-09-05",
+      "subject": "renewal invoice meeting demo",
+      "outcome": "renewal contract follow",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0110",
+      "type": "note",
+      "date": "2026-05-28",
+      "subject": "offer question offer call",
+      "outcome": "follow offer renewal",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0111",
+      "type": "email",
+      "date": "2025-09-30",
+      "subject": "update support renewal contract",
+      "outcome": "question up invoice",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0112",
+      "type": "note",
+      "date": "2025-04-23",
+      "subject": "update offer up call",
+      "outcome": "demo call update",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0113",
+      "type": "call",
+      "date": "2025-08-16",
+      "subject": "follow call question demo",
+      "outcome": "contract contract question",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0114",
+      "type": "call",
+      "date": "2025-08-30",
+      "subject": "update question meeting offer",
+      "outcome": "renewal call invoice",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0115",
+      "type": "note",
+      "date": "2025-05-17",
+      "subject": "update update support contract",
+      "outcome": "contract up follow",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0116",
+      "type": "note",
+      "date": "2026-01-18",
+      "subject": "meeting support renewal contract",
+      "outcome": "support offer follow",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0117",
+      "type": "email",
+      "date": "2025-03-07",
+      "subject": "call up support update",
+      "outcome": "offer up meeting",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0118",
+      "type": "meeting",
+      "date": "2026-02-04",
+      "subject": "up renewal question demo",
+      "outcome": "up question offer",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0119",
+      "type": "email",
+      "date": "2025-07-06",
+      "subject": "demo up follow up",
+      "outcome": "follow call contract",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0120",
+      "type": "note",
+      "date": "2026-05-31",
+      "subject": "call up up update",
+      "outcome": "contract up question",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0121",
+      "type": "note",
+      "date": "2025-07-11",
+      "subject": "follow follow renewal demo",
+      "outcome": "renewal up meeting",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0122",
+      "type": "task",
+      "date": "2025-07-22",
+      "subject": "support update question up",
+      "outcome": "demo contract question",
+      "done": false,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0123",
+      "type": "note",
+      "date": "2026-05-22",
+      "subject": "question demo up call",
+      "outcome": "update up invoice",
+      "done": false,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0124",
+      "type": "call",
+      "date": "2025-10-23",
+      "subject": "call call renewal meeting",
+      "outcome": "offer follow invoice",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0125",
+      "type": "meeting",
+      "date": "2026-03-28",
+      "subject": "question call renewal renewal",
+      "outcome": "renewal invoice call",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0126",
+      "type": "email",
+      "date": "2026-01-12",
+      "subject": "call invoice support invoice",
+      "outcome": "support meeting contract",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0127",
+      "type": "email",
+      "date": "2026-03-06",
+      "subject": "up renewal question update",
+      "outcome": "renewal demo offer",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0128",
+      "type": "note",
+      "date": "2025-06-12",
+      "subject": "invoice question call support",
+      "outcome": "follow call update",
+      "done": false,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0129",
+      "type": "meeting",
+      "date": "2025-12-15",
+      "subject": "support offer update call",
+      "outcome": "call contract up",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0130",
+      "type": "call",
+      "date": "2026-02-18",
+      "subject": "contract demo offer support",
+      "outcome": "contract follow offer",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0131",
+      "type": "email",
+      "date": "2025-05-14",
+      "subject": "invoice demo demo renewal",
+      "outcome": "up update offer",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0132",
+      "type": "task",
+      "date": "2025-01-15",
+      "subject": "offer renewal support support",
+      "outcome": "question support offer",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0133",
+      "type": "task",
+      "date": "2025-05-23",
+      "subject": "contract question contract update",
+      "outcome": "meeting contract question",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0134",
+      "type": "email",
+      "date": "2025-05-24",
+      "subject": "contract follow renewal meeting",
+      "outcome": "follow meeting meeting",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0135",
+      "type": "note",
+      "date": "2025-05-29",
+      "subject": "contract offer up question",
+      "outcome": "up update meeting",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0136",
+      "type": "task",
+      "date": "2025-01-10",
+      "subject": "meeting update renewal follow",
+      "outcome": "question call update",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0137",
+      "type": "note",
+      "date": "2026-05-03",
+      "subject": "support follow call question",
+      "outcome": "meeting offer contract",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0138",
+      "type": "note",
+      "date": "2025-06-28",
+      "subject": "invoice meeting invoice update",
+      "outcome": "meeting invoice contract",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0139",
+      "type": "note",
+      "date": "2025-07-11",
+      "subject": "demo demo follow contract",
+      "outcome": "offer support renewal",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0140",
+      "type": "call",
+      "date": "2025-05-05",
+      "subject": "update offer up demo",
+      "outcome": "call contract offer",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0141",
+      "type": "task",
+      "date": "2026-03-03",
+      "subject": "renewal contract meeting invoice",
+      "outcome": "offer invoice contract",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0142",
+      "type": "note",
+      "date": "2025-06-10",
+      "subject": "follow offer call update",
+      "outcome": "question follow invoice",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0143",
+      "type": "note",
+      "date": "2025-12-22",
+      "subject": "contract support follow meeting",
+      "outcome": "question invoice follow",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0144",
+      "type": "task",
+      "date": "2025-10-16",
+      "subject": "call meeting call offer",
+      "outcome": "follow invoice call",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0145",
+      "type": "email",
+      "date": "2026-02-03",
+      "subject": "offer renewal demo support",
+      "outcome": "demo up follow",
+      "done": false,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0146",
+      "type": "email",
+      "date": "2025-10-15",
+      "subject": "demo up contract offer",
+      "outcome": "contract call meeting",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0147",
+      "type": "task",
+      "date": "2026-03-12",
+      "subject": "offer offer invoice support",
+      "outcome": "demo support demo",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0148",
+      "type": "meeting",
+      "date": "2026-02-05",
+      "subject": "offer renewal up support",
+      "outcome": "renewal call renewal",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0149",
+      "type": "meeting",
+      "date": "2026-03-04",
+      "subject": "offer support demo contract",
+      "outcome": "follow offer demo",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0150",
+      "type": "call",
+      "date": "2025-05-24",
+      "subject": "call renewal up demo",
+      "outcome": "call support up",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0151",
+      "type": "note",
+      "date": "2025-11-09",
+      "subject": "question update call renewal",
+      "outcome": "meeting contract invoice",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0152",
+      "type": "meeting",
+      "date": "2025-08-25",
+      "subject": "up support offer up",
+      "outcome": "update invoice offer",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0153",
+      "type": "meeting",
+      "date": "2025-08-02",
+      "subject": "follow question follow up",
+      "outcome": "up meeting call",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0154",
+      "type": "email",
+      "date": "2026-05-31",
+      "subject": "update demo meeting support",
+      "outcome": "demo question meeting",
+      "done": false,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0155",
+      "type": "meeting",
+      "date": "2025-04-19",
+      "subject": "up offer follow question",
+      "outcome": "meeting follow update",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0156",
+      "type": "meeting",
+      "date": "2025-10-17",
+      "subject": "call contract question up",
+      "outcome": "renewal meeting invoice",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0157",
+      "type": "meeting",
+      "date": "2026-01-06",
+      "subject": "follow up invoice up",
+      "outcome": "renewal question call",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0158",
+      "type": "meeting",
+      "date": "2026-08-13",
+      "subject": "follow follow demo renewal",
+      "outcome": "update up update",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0159",
+      "type": "email",
+      "date": "2026-07-10",
+      "subject": "update invoice call offer",
+      "outcome": "support demo meeting",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0160",
+      "type": "meeting",
+      "date": "2026-08-03",
+      "subject": "invoice meeting call call",
+      "outcome": "call meeting follow",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0161",
+      "type": "note",
+      "date": "2025-04-18",
+      "subject": "invoice up meeting renewal",
+      "outcome": "demo contract call",
+      "done": false,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0162",
+      "type": "email",
+      "date": "2025-01-17",
+      "subject": "call update support follow",
+      "outcome": "support demo meeting",
+      "done": false,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0163",
+      "type": "task",
+      "date": "2025-05-30",
+      "subject": "contract support renewal up",
+      "outcome": "renewal question contract",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0164",
+      "type": "email",
+      "date": "2025-09-06",
+      "subject": "demo invoice offer follow",
+      "outcome": "support offer follow",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0165",
+      "type": "note",
+      "date": "2026-04-23",
+      "subject": "up question demo renewal",
+      "outcome": "call renewal renewal",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0166",
+      "type": "email",
+      "date": "2026-02-15",
+      "subject": "support call contract question",
+      "outcome": "call invoice call",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0167",
+      "type": "call",
+      "date": "2025-11-12",
+      "subject": "meeting follow update demo",
+      "outcome": "up demo update",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0168",
+      "type": "task",
+      "date": "2025-02-22",
+      "subject": "renewal question call update",
+      "outcome": "follow call demo",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0169",
+      "type": "call",
+      "date": "2025-11-27",
+      "subject": "question renewal follow up",
+      "outcome": "offer support call",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0170",
+      "type": "task",
+      "date": "2025-04-20",
+      "subject": "invoice follow support support",
+      "outcome": "update contract offer",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0171",
+      "type": "note",
+      "date": "2025-11-01",
+      "subject": "offer update renewal call",
+      "outcome": "contract call support",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0172",
+      "type": "task",
+      "date": "2025-02-22",
+      "subject": "support offer meeting update",
+      "outcome": "renewal invoice follow",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0173",
+      "type": "meeting",
+      "date": "2025-08-10",
+      "subject": "renewal support meeting invoice",
+      "outcome": "contract support update",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0174",
+      "type": "email",
+      "date": "2025-03-29",
+      "subject": "call offer invoice demo",
+      "outcome": "follow offer update",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0175",
+      "type": "meeting",
+      "date": "2025-03-25",
+      "subject": "invoice offer meeting invoice",
+      "outcome": "renewal call support",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0176",
+      "type": "email",
+      "date": "2025-07-17",
+      "subject": "call support question meeting",
+      "outcome": "support meeting meeting",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0177",
+      "type": "note",
+      "date": "2025-08-29",
+      "subject": "question follow meeting update",
+      "outcome": "invoice question invoice",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0178",
+      "type": "note",
+      "date": "2026-06-22",
+      "subject": "update demo demo up",
+      "outcome": "follow up update",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0179",
+      "type": "note",
+      "date": "2025-06-26",
+      "subject": "follow update demo update",
+      "outcome": "update update update",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0180",
+      "type": "task",
+      "date": "2025-06-12",
+      "subject": "offer follow renewal question",
+      "outcome": "demo renewal renewal",
+      "done": false,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0181",
+      "type": "note",
+      "date": "2026-04-25",
+      "subject": "call up question update",
+      "outcome": "demo demo demo",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0182",
+      "type": "note",
+      "date": "2026-08-10",
+      "subject": "support invoice call support",
+      "outcome": "update support contract",
+      "done": false,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0183",
+      "type": "email",
+      "date": "2025-05-02",
+      "subject": "offer contract offer up",
+      "outcome": "update offer contract",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0184",
+      "type": "note",
+      "date": "2026-01-30",
+      "subject": "call support call offer",
+      "outcome": "call support update",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0185",
+      "type": "call",
+      "date": "2025-07-31",
+      "subject": "update follow call renewal",
+      "outcome": "question offer renewal",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0186",
+      "type": "meeting",
+      "date": "2025-12-07",
+      "subject": "renewal support meeting up",
+      "outcome": "invoice invoice question",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0187",
+      "type": "call",
+      "date": "2025-05-20",
+      "subject": "offer renewal up follow",
+      "outcome": "follow demo demo",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0188",
+      "type": "call",
+      "date": "2025-12-19",
+      "subject": "up offer meeting contract",
+      "outcome": "offer follow update",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0189",
+      "type": "task",
+      "date": "2025-03-08",
+      "subject": "invoice follow support question",
+      "outcome": "invoice update follow",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0190",
+      "type": "call",
+      "date": "2026-05-05",
+      "subject": "offer offer question demo",
+      "outcome": "contract support renewal",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0191",
+      "type": "task",
+      "date": "2026-07-21",
+      "subject": "contract demo demo follow",
+      "outcome": "call follow meeting",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0192",
+      "type": "meeting",
+      "date": "2025-04-30",
+      "subject": "support update contract demo",
+      "outcome": "contract demo offer",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0193",
+      "type": "meeting",
+      "date": "2026-06-27",
+      "subject": "update contract question offer",
+      "outcome": "offer follow offer",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0194",
+      "type": "email",
+      "date": "2025-07-11",
+      "subject": "support update question offer",
+      "outcome": "meeting renewal follow",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0195",
+      "type": "task",
+      "date": "2026-05-20",
+      "subject": "up question question update",
+      "outcome": "offer contract support",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0196",
+      "type": "call",
+      "date": "2026-01-07",
+      "subject": "renewal question offer renewal",
+      "outcome": "demo offer offer",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0197",
+      "type": "meeting",
+      "date": "2025-08-07",
+      "subject": "call follow meeting meeting",
+      "outcome": "renewal contract up",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0198",
+      "type": "task",
+      "date": "2025-04-27",
+      "subject": "update renewal demo contract",
+      "outcome": "up invoice question",
+      "done": false,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0199",
+      "type": "task",
+      "date": "2025-12-10",
+      "subject": "update follow contract follow",
+      "outcome": "update update demo",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0200",
+      "type": "call",
+      "date": "2025-08-04",
+      "subject": "question renewal follow call",
+      "outcome": "demo contract invoice",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0201",
+      "type": "task",
+      "date": "2026-07-03",
+      "subject": "follow up contract contract",
+      "outcome": "meeting contract up",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0202",
+      "type": "note",
+      "date": "2025-08-23",
+      "subject": "call renewal update support",
+      "outcome": "support follow meeting",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0203",
+      "type": "note",
+      "date": "2026-04-03",
+      "subject": "support renewal renewal renewal",
+      "outcome": "call follow invoice",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0204",
+      "type": "email",
+      "date": "2025-10-24",
+      "subject": "contract question follow call",
+      "outcome": "follow invoice support",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0205",
+      "type": "meeting",
+      "date": "2025-07-18",
+      "subject": "call up question renewal",
+      "outcome": "invoice follow up",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0206",
+      "type": "email",
+      "date": "2026-01-28",
+      "subject": "question call support meeting",
+      "outcome": "question meeting meeting",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0207",
+      "type": "email",
+      "date": "2025-12-07",
+      "subject": "call contract demo invoice",
+      "outcome": "question support offer",
+      "done": false,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0208",
+      "type": "call",
+      "date": "2025-11-20",
+      "subject": "follow meeting meeting update",
+      "outcome": "question meeting offer",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0209",
+      "type": "note",
+      "date": "2025-04-27",
+      "subject": "contract update offer question",
+      "outcome": "invoice invoice invoice",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0210",
+      "type": "meeting",
+      "date": "2026-06-29",
+      "subject": "meeting follow renewal meeting",
+      "outcome": "offer call follow",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0211",
+      "type": "note",
+      "date": "2025-01-15",
+      "subject": "update follow question renewal",
+      "outcome": "invoice invoice call",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0212",
+      "type": "meeting",
+      "date": "2025-05-08",
+      "subject": "support renewal invoice up",
+      "outcome": "invoice update call",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0213",
+      "type": "task",
+      "date": "2026-06-30",
+      "subject": "up offer update renewal",
+      "outcome": "call update support",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0214",
+      "type": "meeting",
+      "date": "2025-12-25",
+      "subject": "renewal renewal invoice call",
+      "outcome": "demo follow meeting",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0215",
+      "type": "task",
+      "date": "2026-05-30",
+      "subject": "invoice call demo contract",
+      "outcome": "follow offer update",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0216",
+      "type": "call",
+      "date": "2025-05-24",
+      "subject": "up meeting contract meeting",
+      "outcome": "follow support update",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0217",
+      "type": "call",
+      "date": "2026-03-12",
+      "subject": "follow meeting update follow",
+      "outcome": "contract demo question",
+      "done": false,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0218",
+      "type": "email",
+      "date": "2025-05-10",
+      "subject": "update support follow demo",
+      "outcome": "update invoice up",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0219",
+      "type": "meeting",
+      "date": "2025-05-25",
+      "subject": "meeting renewal invoice update",
+      "outcome": "demo demo meeting",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0220",
+      "type": "task",
+      "date": "2025-02-09",
+      "subject": "demo renewal up question",
+      "outcome": "update support up",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0221",
+      "type": "call",
+      "date": "2026-02-01",
+      "subject": "offer follow offer offer",
+      "outcome": "call call contract",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0222",
+      "type": "note",
+      "date": "2026-01-19",
+      "subject": "demo follow up offer",
+      "outcome": "meeting call question",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0223",
+      "type": "task",
+      "date": "2025-10-31",
+      "subject": "demo contract follow update",
+      "outcome": "contract contract offer",
+      "done": false,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0224",
+      "type": "email",
+      "date": "2026-01-29",
+      "subject": "contract offer question up",
+      "outcome": "renewal invoice contract",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0225",
+      "type": "call",
+      "date": "2025-12-09",
+      "subject": "update contract offer meeting",
+      "outcome": "renewal follow meeting",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0226",
+      "type": "email",
+      "date": "2026-01-18",
+      "subject": "update invoice question follow",
+      "outcome": "call question call",
+      "done": false,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0227",
+      "type": "meeting",
+      "date": "2025-04-28",
+      "subject": "contract update meeting renewal",
+      "outcome": "contract invoice question",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0228",
+      "type": "call",
+      "date": "2026-07-08",
+      "subject": "invoice update contract meeting",
+      "outcome": "renewal update meeting",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0229",
+      "type": "note",
+      "date": "2025-02-09",
+      "subject": "renewal demo question offer",
+      "outcome": "follow up call",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0230",
+      "type": "meeting",
+      "date": "2025-02-15",
+      "subject": "follow offer offer contract",
+      "outcome": "follow call meeting",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0231",
+      "type": "call",
+      "date": "2025-10-17",
+      "subject": "invoice meeting support invoice",
+      "outcome": "renewal follow follow",
+      "done": true,
+      "ownerId": "u-26"
+    },
+    {
+      "id": "a-0232",
+      "type": "meeting",
+      "date": "2026-05-29",
+      "subject": "question invoice update question",
+      "outcome": "question call contract",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0233",
+      "type": "task",
+      "date": "2026-07-26",
+      "subject": "up question meeting demo",
+      "outcome": "demo demo contract",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0234",
+      "type": "note",
+      "date": "2025-07-21",
+      "subject": "invoice call question call",
+      "outcome": "renewal update renewal",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0235",
+      "type": "email",
+      "date": "2026-01-24",
+      "subject": "up up follow demo",
+      "outcome": "renewal follow support",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0236",
+      "type": "call",
+      "date": "2025-09-02",
+      "subject": "meeting offer renewal question",
+      "outcome": "up call offer",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0237",
+      "type": "call",
+      "date": "2025-08-18",
+      "subject": "meeting question support renewal",
+      "outcome": "update up follow",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0238",
+      "type": "email",
+      "date": "2026-01-04",
+      "subject": "update renewal up contract",
+      "outcome": "demo up renewal",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0239",
+      "type": "email",
+      "date": "2026-04-04",
+      "subject": "invoice update meeting question",
+      "outcome": "update up contract",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0240",
+      "type": "email",
+      "date": "2026-05-15",
+      "subject": "follow follow call question",
+      "outcome": "follow follow contract",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0241",
+      "type": "call",
+      "date": "2026-03-01",
+      "subject": "demo contract update call",
+      "outcome": "renewal invoice meeting",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0242",
+      "type": "task",
+      "date": "2025-11-28",
+      "subject": "question question demo call",
+      "outcome": "offer demo call",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0243",
+      "type": "call",
+      "date": "2025-07-24",
+      "subject": "follow offer renewal up",
+      "outcome": "follow offer update",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0244",
+      "type": "call",
+      "date": "2025-12-27",
+      "subject": "offer call invoice support",
+      "outcome": "invoice contract question",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0245",
+      "type": "note",
+      "date": "2026-07-25",
+      "subject": "demo contract question meeting",
+      "outcome": "support follow up",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0246",
+      "type": "task",
+      "date": "2025-08-21",
+      "subject": "contract demo contract call",
+      "outcome": "up demo renewal",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0247",
+      "type": "task",
+      "date": "2025-01-28",
+      "subject": "offer offer support follow",
+      "outcome": "demo update contract",
+      "done": false,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0248",
+      "type": "email",
+      "date": "2025-05-24",
+      "subject": "invoice invoice support update",
+      "outcome": "call update follow",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0249",
+      "type": "meeting",
+      "date": "2026-03-31",
+      "subject": "call follow up demo",
+      "outcome": "offer question follow",
+      "done": false,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0250",
+      "type": "note",
+      "date": "2026-05-11",
+      "subject": "update invoice contract contract",
+      "outcome": "contract demo up",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0251",
+      "type": "note",
+      "date": "2026-07-27",
+      "subject": "invoice demo call meeting",
+      "outcome": "demo call call",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0252",
+      "type": "meeting",
+      "date": "2026-05-26",
+      "subject": "question invoice meeting offer",
+      "outcome": "call renewal update",
+      "done": false,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0253",
+      "type": "meeting",
+      "date": "2025-01-18",
+      "subject": "invoice renewal contract offer",
+      "outcome": "invoice question renewal",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0254",
+      "type": "call",
+      "date": "2025-07-15",
+      "subject": "support up update meeting",
+      "outcome": "offer up up",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0255",
+      "type": "call",
+      "date": "2025-03-25",
+      "subject": "question follow offer meeting",
+      "outcome": "demo follow call",
+      "done": false,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0256",
+      "type": "call",
+      "date": "2025-10-18",
+      "subject": "update support invoice follow",
+      "outcome": "renewal contract call",
+      "done": false,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0257",
+      "type": "call",
+      "date": "2026-07-09",
+      "subject": "offer contract follow contract",
+      "outcome": "question follow update",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0258",
+      "type": "note",
+      "date": "2025-02-14",
+      "subject": "meeting invoice contract update",
+      "outcome": "call offer support",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0259",
+      "type": "note",
+      "date": "2025-05-07",
+      "subject": "up invoice follow demo",
+      "outcome": "call up call",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0260",
+      "type": "call",
+      "date": "2025-12-28",
+      "subject": "demo demo renewal question",
+      "outcome": "renewal call contract",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0261",
+      "type": "meeting",
+      "date": "2025-05-27",
+      "subject": "offer follow question support",
+      "outcome": "offer contract demo",
+      "done": false,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0262",
+      "type": "call",
+      "date": "2025-05-14",
+      "subject": "offer offer invoice up",
+      "outcome": "question up contract",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0263",
+      "type": "note",
+      "date": "2025-06-08",
+      "subject": "support invoice call support",
+      "outcome": "follow question support",
+      "done": false,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0264",
+      "type": "email",
+      "date": "2025-04-20",
+      "subject": "renewal demo follow update",
+      "outcome": "follow offer support",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0265",
+      "type": "call",
+      "date": "2025-10-09",
+      "subject": "question support meeting invoice",
+      "outcome": "demo up meeting",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0266",
+      "type": "note",
+      "date": "2025-01-20",
+      "subject": "invoice demo meeting contract",
+      "outcome": "question question contract",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0267",
+      "type": "email",
+      "date": "2026-02-15",
+      "subject": "invoice meeting renewal update",
+      "outcome": "contract call follow",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0268",
+      "type": "email",
+      "date": "2025-01-27",
+      "subject": "invoice question renewal up",
+      "outcome": "demo meeting renewal",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0269",
+      "type": "task",
+      "date": "2025-04-19",
+      "subject": "offer contract support support",
+      "outcome": "update contract support",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0270",
+      "type": "meeting",
+      "date": "2025-01-18",
+      "subject": "contract meeting question call",
+      "outcome": "support support follow",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0271",
+      "type": "meeting",
+      "date": "2025-01-28",
+      "subject": "invoice demo invoice demo",
+      "outcome": "demo invoice invoice",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0272",
+      "type": "email",
+      "date": "2026-02-04",
+      "subject": "question up support contract",
+      "outcome": "contract update support",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0273",
+      "type": "meeting",
+      "date": "2025-06-19",
+      "subject": "question meeting contract up",
+      "outcome": "meeting meeting meeting",
+      "done": false,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0274",
+      "type": "task",
+      "date": "2025-10-04",
+      "subject": "follow question up update",
+      "outcome": "demo up call",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0275",
+      "type": "meeting",
+      "date": "2026-05-11",
+      "subject": "demo renewal offer demo",
+      "outcome": "offer meeting renewal",
+      "done": false,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0276",
+      "type": "call",
+      "date": "2025-01-08",
+      "subject": "offer demo follow renewal",
+      "outcome": "support renewal meeting",
+      "done": false,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0277",
+      "type": "task",
+      "date": "2025-01-10",
+      "subject": "update contract up follow",
+      "outcome": "demo call invoice",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0278",
+      "type": "meeting",
+      "date": "2025-12-08",
+      "subject": "meeting demo meeting call",
+      "outcome": "meeting demo follow",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0279",
+      "type": "note",
+      "date": "2026-06-07",
+      "subject": "up meeting update support",
+      "outcome": "up meeting question",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0280",
+      "type": "call",
+      "date": "2026-08-03",
+      "subject": "invoice up up renewal",
+      "outcome": "support support follow",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0281",
+      "type": "note",
+      "date": "2026-02-03",
+      "subject": "follow update support follow",
+      "outcome": "up call offer",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0282",
+      "type": "call",
+      "date": "2025-05-30",
+      "subject": "demo call demo up",
+      "outcome": "meeting follow meeting",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0283",
+      "type": "task",
+      "date": "2025-06-27",
+      "subject": "invoice follow follow support",
+      "outcome": "invoice support support",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0284",
+      "type": "email",
+      "date": "2026-03-15",
+      "subject": "demo follow offer meeting",
+      "outcome": "support update question",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0285",
+      "type": "email",
+      "date": "2025-11-27",
+      "subject": "call offer contract offer",
+      "outcome": "invoice follow renewal",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0286",
+      "type": "meeting",
+      "date": "2025-07-26",
+      "subject": "call question offer renewal",
+      "outcome": "demo up update",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0287",
+      "type": "email",
+      "date": "2026-06-02",
+      "subject": "up question call offer",
+      "outcome": "up support offer",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0288",
+      "type": "task",
+      "date": "2026-05-30",
+      "subject": "offer demo contract call",
+      "outcome": "update invoice meeting",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0289",
+      "type": "task",
+      "date": "2025-05-16",
+      "subject": "meeting offer support follow",
+      "outcome": "follow demo update",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0290",
+      "type": "email",
+      "date": "2026-07-30",
+      "subject": "meeting up question question",
+      "outcome": "offer meeting question",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0291",
+      "type": "call",
+      "date": "2026-05-22",
+      "subject": "up up question renewal",
+      "outcome": "demo renewal contract",
+      "done": false,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0292",
+      "type": "call",
+      "date": "2025-04-07",
+      "subject": "renewal support meeting follow",
+      "outcome": "demo up demo",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0293",
+      "type": "note",
+      "date": "2025-07-21",
+      "subject": "demo offer follow offer",
+      "outcome": "renewal update contract",
+      "done": false,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0294",
+      "type": "meeting",
+      "date": "2026-08-12",
+      "subject": "update call meeting offer",
+      "outcome": "up call update",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0295",
+      "type": "task",
+      "date": "2025-03-26",
+      "subject": "follow update call contract",
+      "outcome": "update update update",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0296",
+      "type": "email",
+      "date": "2026-08-20",
+      "subject": "question meeting renewal follow",
+      "outcome": "question renewal up",
+      "done": false,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0297",
+      "type": "task",
+      "date": "2026-07-16",
+      "subject": "invoice meeting offer invoice",
+      "outcome": "invoice offer question",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0298",
+      "type": "note",
+      "date": "2025-04-23",
+      "subject": "follow up contract invoice",
+      "outcome": "call invoice follow",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0299",
+      "type": "email",
+      "date": "2025-08-11",
+      "subject": "meeting question follow up",
+      "outcome": "follow meeting offer",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0300",
+      "type": "call",
+      "date": "2025-12-17",
+      "subject": "offer question meeting contract",
+      "outcome": "offer update follow",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0301",
+      "type": "call",
+      "date": "2026-05-06",
+      "subject": "meeting follow update contract",
+      "outcome": "contract invoice question",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0302",
+      "type": "meeting",
+      "date": "2025-12-13",
+      "subject": "up support call demo",
+      "outcome": "call follow up",
+      "done": false,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0303",
+      "type": "note",
+      "date": "2026-08-23",
+      "subject": "follow question demo contract",
+      "outcome": "question invoice meeting",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0304",
+      "type": "call",
+      "date": "2025-10-14",
+      "subject": "support question question support",
+      "outcome": "up renewal follow",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0305",
+      "type": "task",
+      "date": "2025-05-11",
+      "subject": "demo question meeting meeting",
+      "outcome": "renewal support question",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0306",
+      "type": "email",
+      "date": "2026-07-16",
+      "subject": "question support meeting renewal",
+      "outcome": "demo demo invoice",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0307",
+      "type": "note",
+      "date": "2026-01-25",
+      "subject": "renewal contract update offer",
+      "outcome": "renewal support renewal",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0308",
+      "type": "note",
+      "date": "2025-12-20",
+      "subject": "call renewal meeting invoice",
+      "outcome": "update invoice demo",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0309",
+      "type": "meeting",
+      "date": "2026-05-31",
+      "subject": "offer support up demo",
+      "outcome": "demo offer renewal",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0310",
+      "type": "call",
+      "date": "2025-11-14",
+      "subject": "support offer invoice invoice",
+      "outcome": "follow call offer",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0311",
+      "type": "meeting",
+      "date": "2026-08-21",
+      "subject": "support up up support",
+      "outcome": "renewal question follow",
+      "done": true,
+      "ownerId": "u-26"
+    },
+    {
+      "id": "a-0312",
+      "type": "task",
+      "date": "2026-04-28",
+      "subject": "demo meeting invoice contract",
+      "outcome": "follow update support",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0313",
+      "type": "task",
+      "date": "2025-05-01",
+      "subject": "question up invoice follow",
+      "outcome": "demo support demo",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0314",
+      "type": "note",
+      "date": "2025-12-08",
+      "subject": "question question invoice invoice",
+      "outcome": "contract call invoice",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0315",
+      "type": "task",
+      "date": "2025-07-25",
+      "subject": "up support demo renewal",
+      "outcome": "meeting follow question",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0316",
+      "type": "note",
+      "date": "2025-06-04",
+      "subject": "contract meeting contract follow",
+      "outcome": "meeting support renewal",
+      "done": false,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0317",
+      "type": "meeting",
+      "date": "2026-02-14",
+      "subject": "meeting invoice renewal contract",
+      "outcome": "meeting call invoice",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0318",
+      "type": "email",
+      "date": "2025-03-07",
+      "subject": "question update up meeting",
+      "outcome": "contract up update",
+      "done": false,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0319",
+      "type": "meeting",
+      "date": "2025-12-01",
+      "subject": "update contract contract renewal",
+      "outcome": "invoice meeting invoice",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0320",
+      "type": "task",
+      "date": "2025-08-13",
+      "subject": "question meeting support call",
+      "outcome": "meeting renewal call",
+      "done": true,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0321",
+      "type": "meeting",
+      "date": "2026-06-07",
+      "subject": "renewal follow support meeting",
+      "outcome": "renewal update invoice",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0322",
+      "type": "meeting",
+      "date": "2025-06-21",
+      "subject": "offer contract question demo",
+      "outcome": "update question update",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0323",
+      "type": "task",
+      "date": "2025-10-09",
+      "subject": "contract contract demo update",
+      "outcome": "question question demo",
+      "done": false,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0324",
+      "type": "note",
+      "date": "2026-08-21",
+      "subject": "renewal follow update follow",
+      "outcome": "update support up",
+      "done": false,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0325",
+      "type": "meeting",
+      "date": "2026-02-23",
+      "subject": "invoice up support invoice",
+      "outcome": "invoice contract invoice",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0326",
+      "type": "note",
+      "date": "2026-02-19",
+      "subject": "invoice demo update invoice",
+      "outcome": "meeting update support",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0327",
+      "type": "note",
+      "date": "2026-01-08",
+      "subject": "renewal follow invoice up",
+      "outcome": "demo update invoice",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0328",
+      "type": "meeting",
+      "date": "2025-12-10",
+      "subject": "renewal renewal contract meeting",
+      "outcome": "demo renewal up",
+      "done": false,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0329",
+      "type": "meeting",
+      "date": "2026-05-17",
+      "subject": "support call up call",
+      "outcome": "support renewal meeting",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0330",
+      "type": "email",
+      "date": "2026-08-14",
+      "subject": "follow contract renewal contract",
+      "outcome": "question meeting follow",
+      "done": false,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0331",
+      "type": "call",
+      "date": "2025-02-23",
+      "subject": "meeting question renewal follow",
+      "outcome": "offer update invoice",
+      "done": false,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0332",
+      "type": "task",
+      "date": "2025-12-15",
+      "subject": "renewal demo renewal invoice",
+      "outcome": "support follow contract",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0333",
+      "type": "call",
+      "date": "2026-03-26",
+      "subject": "invoice contract meeting call",
+      "outcome": "meeting demo update",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0334",
+      "type": "note",
+      "date": "2025-12-01",
+      "subject": "update demo update up",
+      "outcome": "offer demo renewal",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0335",
+      "type": "meeting",
+      "date": "2026-04-26",
+      "subject": "call demo call offer",
+      "outcome": "follow meeting renewal",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0336",
+      "type": "meeting",
+      "date": "2025-01-28",
+      "subject": "invoice support update offer",
+      "outcome": "support question invoice",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0337",
+      "type": "note",
+      "date": "2025-04-12",
+      "subject": "renewal question up support",
+      "outcome": "question renewal offer",
+      "done": false,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0338",
+      "type": "task",
+      "date": "2025-05-17",
+      "subject": "follow renewal follow meeting",
+      "outcome": "follow offer follow",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0339",
+      "type": "email",
+      "date": "2025-12-16",
+      "subject": "up meeting invoice question",
+      "outcome": "question meeting up",
+      "done": false,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0340",
+      "type": "task",
+      "date": "2026-05-31",
+      "subject": "offer question contract call",
+      "outcome": "update demo update",
+      "done": false,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0341",
+      "type": "task",
+      "date": "2026-04-19",
+      "subject": "meeting question follow update",
+      "outcome": "question update question",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0342",
+      "type": "email",
+      "date": "2025-08-12",
+      "subject": "contract meeting update contract",
+      "outcome": "offer meeting up",
+      "done": true,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0343",
+      "type": "call",
+      "date": "2025-05-25",
+      "subject": "call meeting demo follow",
+      "outcome": "renewal demo offer",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0344",
+      "type": "call",
+      "date": "2026-04-24",
+      "subject": "follow update follow support",
+      "outcome": "offer question call",
+      "done": true,
+      "ownerId": "u-9"
+    },
+    {
+      "id": "a-0345",
+      "type": "call",
+      "date": "2025-06-04",
+      "subject": "demo contract support call",
+      "outcome": "demo meeting renewal",
+      "done": true,
+      "ownerId": "u-26"
+    },
+    {
+      "id": "a-0346",
+      "type": "meeting",
+      "date": "2025-12-03",
+      "subject": "up demo contract call",
+      "outcome": "call follow up",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0347",
+      "type": "note",
+      "date": "2025-02-25",
+      "subject": "update update question update",
+      "outcome": "support renewal up",
+      "done": false,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0348",
+      "type": "task",
+      "date": "2025-04-02",
+      "subject": "up call demo support",
+      "outcome": "renewal call update",
+      "done": false,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0349",
+      "type": "call",
+      "date": "2025-02-05",
+      "subject": "follow demo call support",
+      "outcome": "support follow call",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0350",
+      "type": "email",
+      "date": "2025-12-27",
+      "subject": "meeting offer contract update",
+      "outcome": "update up renewal",
+      "done": false,
+      "ownerId": "u-6"
+    },
+    {
+      "id": "a-0351",
+      "type": "email",
+      "date": "2026-02-21",
+      "subject": "offer offer question offer",
+      "outcome": "update follow renewal",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0352",
+      "type": "meeting",
+      "date": "2026-01-13",
+      "subject": "follow offer invoice call",
+      "outcome": "update follow update",
+      "done": false,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0353",
+      "type": "task",
+      "date": "2025-10-19",
+      "subject": "support meeting up renewal",
+      "outcome": "renewal support question",
+      "done": true,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0354",
+      "type": "email",
+      "date": "2025-04-08",
+      "subject": "meeting update call call",
+      "outcome": "up demo question",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0355",
+      "type": "note",
+      "date": "2025-07-10",
+      "subject": "call contract offer call",
+      "outcome": "follow support follow",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0356",
+      "type": "call",
+      "date": "2025-07-30",
+      "subject": "meeting demo demo demo",
+      "outcome": "follow invoice contract",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0357",
+      "type": "note",
+      "date": "2025-04-10",
+      "subject": "support support offer call",
+      "outcome": "up offer meeting",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0358",
+      "type": "meeting",
+      "date": "2026-07-17",
+      "subject": "up demo offer demo",
+      "outcome": "renewal call up",
+      "done": true,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0359",
+      "type": "call",
+      "date": "2025-11-25",
+      "subject": "support support update update",
+      "outcome": "question up contract",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0360",
+      "type": "task",
+      "date": "2026-06-13",
+      "subject": "update question offer support",
+      "outcome": "demo up support",
+      "done": false,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0361",
+      "type": "call",
+      "date": "2025-08-03",
+      "subject": "update invoice up meeting",
+      "outcome": "contract question support",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0362",
+      "type": "meeting",
+      "date": "2025-06-24",
+      "subject": "offer renewal offer renewal",
+      "outcome": "update invoice follow",
+      "done": false,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0363",
+      "type": "call",
+      "date": "2026-01-21",
+      "subject": "offer call demo update",
+      "outcome": "contract question offer",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0364",
+      "type": "task",
+      "date": "2025-03-12",
+      "subject": "update demo demo question",
+      "outcome": "offer up offer",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0365",
+      "type": "note",
+      "date": "2026-04-13",
+      "subject": "question demo offer up",
+      "outcome": "follow follow meeting",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0366",
+      "type": "meeting",
+      "date": "2025-11-29",
+      "subject": "call renewal renewal support",
+      "outcome": "support up follow",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0367",
+      "type": "meeting",
+      "date": "2026-01-13",
+      "subject": "call up call call",
+      "outcome": "offer offer renewal",
+      "done": false,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0368",
+      "type": "meeting",
+      "date": "2026-06-17",
+      "subject": "support update up demo",
+      "outcome": "follow contract question",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0369",
+      "type": "meeting",
+      "date": "2025-01-15",
+      "subject": "support call follow contract",
+      "outcome": "question meeting meeting",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0370",
+      "type": "task",
+      "date": "2026-07-22",
+      "subject": "meeting up call call",
+      "outcome": "update update update",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0371",
+      "type": "meeting",
+      "date": "2026-08-22",
+      "subject": "call invoice update demo",
+      "outcome": "update update support",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0372",
+      "type": "call",
+      "date": "2026-08-16",
+      "subject": "update meeting offer invoice",
+      "outcome": "meeting demo demo",
+      "done": false,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0373",
+      "type": "call",
+      "date": "2025-07-23",
+      "subject": "follow demo call contract",
+      "outcome": "up up invoice",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0374",
+      "type": "email",
+      "date": "2025-03-14",
+      "subject": "invoice invoice update meeting",
+      "outcome": "up meeting question",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0375",
+      "type": "task",
+      "date": "2025-02-08",
+      "subject": "follow question demo renewal",
+      "outcome": "question invoice demo",
+      "done": true,
+      "ownerId": "u-26"
+    },
+    {
+      "id": "a-0376",
+      "type": "call",
+      "date": "2026-05-09",
+      "subject": "invoice question support contract",
+      "outcome": "offer invoice contract",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0377",
+      "type": "task",
+      "date": "2025-09-30",
+      "subject": "question meeting meeting demo",
+      "outcome": "demo follow demo",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0378",
+      "type": "email",
+      "date": "2025-03-22",
+      "subject": "question contract invoice update",
+      "outcome": "follow update call",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0379",
+      "type": "meeting",
+      "date": "2025-05-22",
+      "subject": "question support question call",
+      "outcome": "offer follow update",
+      "done": true,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0380",
+      "type": "task",
+      "date": "2025-08-06",
+      "subject": "up offer follow demo",
+      "outcome": "demo question demo",
+      "done": false,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0381",
+      "type": "task",
+      "date": "2025-07-09",
+      "subject": "call meeting follow renewal",
+      "outcome": "update contract demo",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0382",
+      "type": "task",
+      "date": "2026-06-14",
+      "subject": "support offer contract update",
+      "outcome": "call offer support",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0383",
+      "type": "email",
+      "date": "2025-02-14",
+      "subject": "update question contract offer",
+      "outcome": "call up invoice",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0384",
+      "type": "meeting",
+      "date": "2025-01-02",
+      "subject": "update update demo meeting",
+      "outcome": "invoice follow offer",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0385",
+      "type": "meeting",
+      "date": "2025-06-28",
+      "subject": "invoice up offer offer",
+      "outcome": "call up renewal",
+      "done": false,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0386",
+      "type": "meeting",
+      "date": "2025-03-09",
+      "subject": "update renewal demo follow",
+      "outcome": "invoice question offer",
+      "done": true,
+      "ownerId": "u-1"
+    },
+    {
+      "id": "a-0387",
+      "type": "call",
+      "date": "2026-03-08",
+      "subject": "invoice meeting question contract",
+      "outcome": "update offer offer",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0388",
+      "type": "task",
+      "date": "2025-03-13",
+      "subject": "meeting up support up",
+      "outcome": "up contract renewal",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0389",
+      "type": "task",
+      "date": "2026-03-08",
+      "subject": "call invoice meeting contract",
+      "outcome": "invoice invoice update",
+      "done": false,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0390",
+      "type": "meeting",
+      "date": "2025-10-01",
+      "subject": "question update call contract",
+      "outcome": "invoice demo contract",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0391",
+      "type": "meeting",
+      "date": "2026-08-02",
+      "subject": "meeting follow support support",
+      "outcome": "up invoice update",
+      "done": false,
+      "ownerId": "u-24"
+    },
+    {
+      "id": "a-0392",
+      "type": "task",
+      "date": "2026-05-20",
+      "subject": "call demo meeting question",
+      "outcome": "meeting support call",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0393",
+      "type": "meeting",
+      "date": "2025-07-17",
+      "subject": "support call update offer",
+      "outcome": "question meeting follow",
+      "done": false,
+      "ownerId": "u-23"
+    },
+    {
+      "id": "a-0394",
+      "type": "call",
+      "date": "2026-04-15",
+      "subject": "update contract question invoice",
+      "outcome": "support demo call",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0395",
+      "type": "call",
+      "date": "2025-12-03",
+      "subject": "call invoice demo offer",
+      "outcome": "contract up up",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0396",
+      "type": "email",
+      "date": "2025-08-29",
+      "subject": "offer invoice update demo",
+      "outcome": "contract question meeting",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0397",
+      "type": "task",
+      "date": "2025-08-13",
+      "subject": "demo question follow contract",
+      "outcome": "renewal support call",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0398",
+      "type": "meeting",
+      "date": "2025-03-02",
+      "subject": "demo demo support question",
+      "outcome": "question call offer",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0399",
+      "type": "call",
+      "date": "2025-07-23",
+      "subject": "demo renewal update call",
+      "outcome": "up invoice invoice",
+      "done": true,
+      "ownerId": "u-18"
+    },
+    {
+      "id": "a-0400",
+      "type": "task",
+      "date": "2025-06-07",
+      "subject": "update offer follow demo",
+      "outcome": "follow offer question",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0401",
+      "type": "email",
+      "date": "2026-02-24",
+      "subject": "invoice renewal offer meeting",
+      "outcome": "update question up",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0402",
+      "type": "meeting",
+      "date": "2025-08-03",
+      "subject": "question invoice up demo",
+      "outcome": "contract support call",
+      "done": true,
+      "ownerId": "u-29"
+    },
+    {
+      "id": "a-0403",
+      "type": "email",
+      "date": "2026-07-30",
+      "subject": "follow invoice demo meeting",
+      "outcome": "invoice question offer",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0404",
+      "type": "task",
+      "date": "2025-09-27",
+      "subject": "contract question follow meeting",
+      "outcome": "question contract up",
+      "done": true,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0405",
+      "type": "meeting",
+      "date": "2025-07-15",
+      "subject": "call invoice update support",
+      "outcome": "invoice follow follow",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0406",
+      "type": "task",
+      "date": "2025-07-01",
+      "subject": "support question call update",
+      "outcome": "follow question call",
+      "done": false,
+      "ownerId": "u-27"
+    },
+    {
+      "id": "a-0407",
+      "type": "note",
+      "date": "2025-08-14",
+      "subject": "update follow support offer",
+      "outcome": "call support call",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0408",
+      "type": "email",
+      "date": "2026-03-30",
+      "subject": "contract offer contract up",
+      "outcome": "renewal contract demo",
+      "done": true,
+      "ownerId": "u-13"
+    },
+    {
+      "id": "a-0409",
+      "type": "email",
+      "date": "2025-10-08",
+      "subject": "update call question offer",
+      "outcome": "question offer offer",
+      "done": false,
+      "ownerId": "u-15"
+    },
+    {
+      "id": "a-0410",
+      "type": "task",
+      "date": "2025-06-07",
+      "subject": "demo question offer meeting",
+      "outcome": "contract follow renewal",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0411",
+      "type": "email",
+      "date": "2025-06-15",
+      "subject": "offer call renewal update",
+      "outcome": "demo offer demo",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0412",
+      "type": "call",
+      "date": "2025-11-08",
+      "subject": "offer offer contract invoice",
+      "outcome": "demo support question",
+      "done": true,
+      "ownerId": "u-19"
+    },
+    {
+      "id": "a-0413",
+      "type": "note",
+      "date": "2025-03-29",
+      "subject": "renewal demo follow support",
+      "outcome": "renewal demo support",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0414",
+      "type": "call",
+      "date": "2025-06-19",
+      "subject": "call follow call update",
+      "outcome": "invoice update follow",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0415",
+      "type": "meeting",
+      "date": "2025-10-26",
+      "subject": "contract contract meeting call",
+      "outcome": "contract meeting demo",
+      "done": false,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0416",
+      "type": "call",
+      "date": "2025-04-11",
+      "subject": "question update call meeting",
+      "outcome": "support support update",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0417",
+      "type": "note",
+      "date": "2026-03-21",
+      "subject": "update offer support invoice",
+      "outcome": "renewal contract call",
+      "done": true,
+      "ownerId": "u-4"
+    },
+    {
+      "id": "a-0418",
+      "type": "email",
+      "date": "2025-10-31",
+      "subject": "up offer contract call",
+      "outcome": "invoice support call",
+      "done": false,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0419",
+      "type": "call",
+      "date": "2025-03-15",
+      "subject": "question up offer renewal",
+      "outcome": "contract contract call",
+      "done": false,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0420",
+      "type": "call",
+      "date": "2026-01-19",
+      "subject": "meeting renewal renewal demo",
+      "outcome": "demo update question",
+      "done": false,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0421",
+      "type": "email",
+      "date": "2025-12-12",
+      "subject": "demo question call demo",
+      "outcome": "support up follow",
+      "done": true,
+      "ownerId": "u-7"
+    },
+    {
+      "id": "a-0422",
+      "type": "task",
+      "date": "2026-06-23",
+      "subject": "question meeting question call",
+      "outcome": "invoice follow question",
+      "done": true,
+      "ownerId": "u-16"
+    },
+    {
+      "id": "a-0423",
+      "type": "email",
+      "date": "2025-04-20",
+      "subject": "demo question support update",
+      "outcome": "question call follow",
+      "done": true,
+      "ownerId": "u-28"
+    },
+    {
+      "id": "a-0424",
+      "type": "call",
+      "date": "2026-07-08",
+      "subject": "question call question up",
+      "outcome": "update renewal contract",
+      "done": true,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0425",
+      "type": "note",
+      "date": "2025-12-14",
+      "subject": "question offer call renewal",
+      "outcome": "support support update",
+      "done": true,
+      "ownerId": "u-11"
+    },
+    {
+      "id": "a-0426",
+      "type": "note",
+      "date": "2026-02-06",
+      "subject": "support invoice meeting meeting",
+      "outcome": "contract contract question",
+      "done": true,
+      "ownerId": "u-5"
+    },
+    {
+      "id": "a-0427",
+      "type": "note",
+      "date": "2026-05-19",
+      "subject": "contract meeting demo call",
+      "outcome": "question support contract",
+      "done": false,
+      "ownerId": "u-25"
+    },
+    {
+      "id": "a-0428",
+      "type": "call",
+      "date": "2025-06-04",
+      "subject": "demo support update question",
+      "outcome": "up question up",
+      "done": false,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0429",
+      "type": "note",
+      "date": "2025-01-03",
+      "subject": "call follow demo contract",
+      "outcome": "meeting up follow",
+      "done": true,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0430",
+      "type": "call",
+      "date": "2025-04-11",
+      "subject": "up call meeting meeting",
+      "outcome": "offer question update",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0431",
+      "type": "task",
+      "date": "2025-01-30",
+      "subject": "offer invoice offer offer",
+      "outcome": "follow update follow",
+      "done": false,
+      "ownerId": "u-12"
+    },
+    {
+      "id": "a-0432",
+      "type": "meeting",
+      "date": "2026-05-24",
+      "subject": "follow demo offer support",
+      "outcome": "renewal offer demo",
+      "done": true,
+      "ownerId": "u-20"
+    },
+    {
+      "id": "a-0433",
+      "type": "task",
+      "date": "2026-05-26",
+      "subject": "follow call call question",
+      "outcome": "up meeting follow",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0434",
+      "type": "note",
+      "date": "2025-03-20",
+      "subject": "support offer demo update",
+      "outcome": "meeting update contract",
+      "done": false,
+      "ownerId": "u-14"
+    },
+    {
+      "id": "a-0435",
+      "type": "email",
+      "date": "2025-09-06",
+      "subject": "update invoice follow support",
+      "outcome": "follow follow demo",
+      "done": true,
+      "ownerId": "u-17"
+    },
+    {
+      "id": "a-0436",
+      "type": "email",
+      "date": "2025-09-21",
+      "subject": "update meeting contract follow",
+      "outcome": "update up support",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0437",
+      "type": "call",
+      "date": "2026-02-06",
+      "subject": "question offer offer invoice",
+      "outcome": "renewal update call",
+      "done": true,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0438",
+      "type": "meeting",
+      "date": "2026-08-12",
+      "subject": "question offer offer support",
+      "outcome": "update contract follow",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0439",
+      "type": "call",
+      "date": "2026-07-12",
+      "subject": "question support offer question",
+      "outcome": "follow meeting demo",
+      "done": false,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0440",
+      "type": "note",
+      "date": "2026-03-30",
+      "subject": "meeting meeting follow question",
+      "outcome": "offer meeting up",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0441",
+      "type": "task",
+      "date": "2026-05-02",
+      "subject": "up contract question call",
+      "outcome": "renewal update meeting",
+      "done": true,
+      "ownerId": "u-22"
+    },
+    {
+      "id": "a-0442",
+      "type": "email",
+      "date": "2025-10-18",
+      "subject": "renewal invoice offer meeting",
+      "outcome": "update renewal update",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0443",
+      "type": "call",
+      "date": "2026-07-07",
+      "subject": "contract call up question",
+      "outcome": "follow follow update",
+      "done": false,
+      "ownerId": "u-8"
+    },
+    {
+      "id": "a-0444",
+      "type": "task",
+      "date": "2026-08-08",
+      "subject": "renewal follow follow contract",
+      "outcome": "renewal demo question",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0445",
+      "type": "meeting",
+      "date": "2025-09-19",
+      "subject": "question offer call follow",
+      "outcome": "update renewal support",
+      "done": true,
+      "ownerId": "u-3"
+    },
+    {
+      "id": "a-0446",
+      "type": "email",
+      "date": "2025-07-21",
+      "subject": "invoice invoice call support",
+      "outcome": "meeting call renewal",
+      "done": true,
+      "ownerId": "u-2"
+    },
+    {
+      "id": "a-0447",
+      "type": "meeting",
+      "date": "2025-11-19",
+      "subject": "question call contract offer",
+      "outcome": "update offer invoice",
+      "done": true,
+      "ownerId": "u-30"
+    },
+    {
+      "id": "a-0448",
+      "type": "task",
+      "date": "2025-01-31",
+      "subject": "offer support offer demo",
+      "outcome": "invoice up up",
+      "done": true,
+      "ownerId": "u-21"
+    },
+    {
+      "id": "a-0449",
+      "type": "email",
+      "date": "2025-08-09",
+      "subject": "update meeting offer invoice",
+      "outcome": "up call demo",
+      "done": true,
+      "ownerId": "u-10"
+    },
+    {
+      "id": "a-0450",
+      "type": "note",
+      "date": "2026-05-31",
+      "subject": "call follow demo follow",
+      "outcome": "up up call",
+      "done": true,
+      "ownerId": "u-11"
+    }
+  ],
+  "customFields": {
+    "cf_001": null,
+    "cf_002": "up up",
+    "cf_003": "update invoice",
+    "cf_004": null,
+    "cf_005": false,
+    "cf_006": "follow invoice",
+    "cf_007": true,
+    "cf_008": 655,
+    "cf_009": 98,
+    "cf_010": 481,
+    "cf_011": null,
+    "cf_012": "meeting meeting",
+    "cf_013": null,
+    "cf_014": "support offer",
+    "cf_015": false,
+    "cf_016": null,
+    "cf_017": 320,
+    "cf_018": 931,
+    "cf_019": null,
+    "cf_020": null,
+    "cf_021": false,
+    "cf_022": "invoice demo",
+    "cf_023": null,
+    "cf_024": null,
+    "cf_025": false,
+    "cf_026": null,
+    "cf_027": true,
+    "cf_028": null,
+    "cf_029": 193,
+    "cf_030": 5,
+    "cf_031": 751,
+    "cf_032": null,
+    "cf_033": null,
+    "cf_034": 822,
+    "cf_035": null,
+    "cf_036": null,
+    "cf_037": null,
+    "cf_038": null,
+    "cf_039": true,
+    "cf_040": "renewal offer",
+    "cf_041": 939,
+    "cf_042": null,
+    "cf_043": 842,
+    "cf_044": "contract renewal",
+    "cf_045": null,
+    "cf_046": "invoice up",
+    "cf_047": null,
+    "cf_048": null,
+    "cf_049": "invoice offer",
+    "cf_050": 698,
+    "cf_051": null,
+    "cf_052": "support meeting",
+    "cf_053": 878,
+    "cf_054": null,
+    "cf_055": false,
+    "cf_056": 942,
+    "cf_057": 669,
+    "cf_058": 707,
+    "cf_059": true,
+    "cf_060": 200,
+    "cf_061": 639,
+    "cf_062": null,
+    "cf_063": 829,
+    "cf_064": null,
+    "cf_065": "contract meeting",
+    "cf_066": false,
+    "cf_067": "update question",
+    "cf_068": true,
+    "cf_069": null,
+    "cf_070": false,
+    "cf_071": "offer offer",
+    "cf_072": null,
+    "cf_073": false,
+    "cf_074": "demo contract",
+    "cf_075": "invoice contract",
+    "cf_076": "renewal question",
+    "cf_077": 450,
+    "cf_078": 24,
+    "cf_079": true,
+    "cf_080": "renewal support",
+    "cf_081": "support question",
+    "cf_082": null,
+    "cf_083": null,
+    "cf_084": null,
+    "cf_085": null,
+    "cf_086": null,
+    "cf_087": "update call",
+    "cf_088": false,
+    "cf_089": "follow call",
+    "cf_090": false,
+    "cf_091": "follow contract",
+    "cf_092": "follow up",
+    "cf_093": 254,
+    "cf_094": "follow renewal",
+    "cf_095": 26,
+    "cf_096": false,
+    "cf_097": null,
+    "cf_098": false,
+    "cf_099": null,
+    "cf_100": null,
+    "cf_101": 240,
+    "cf_102": true,
+    "cf_103": 345,
+    "cf_104": "support update",
+    "cf_105": null,
+    "cf_106": true,
+    "cf_107": 144,
+    "cf_108": false,
+    "cf_109": false,
+    "cf_110": false,
+    "cf_111": 932,
+    "cf_112": true,
+    "cf_113": true,
+    "cf_114": "follow invoice",
+    "cf_115": 868,
+    "cf_116": 15,
+    "cf_117": "question follow",
+    "cf_118": 179,
+    "cf_119": true,
+    "cf_120": 642,
+    "cf_121": null,
+    "cf_122": 548,
+    "cf_123": null,
+    "cf_124": null,
+    "cf_125": true,
+    "cf_126": true,
+    "cf_127": false,
+    "cf_128": null,
+    "cf_129": null,
+    "cf_130": true,
+    "cf_131": 450,
+    "cf_132": null,
+    "cf_133": "offer offer",
+    "cf_134": false,
+    "cf_135": true,
+    "cf_136": "meeting contract",
+    "cf_137": null,
+    "cf_138": "renewal update",
+    "cf_139": false,
+    "cf_140": "call renewal",
+    "cf_141": 983,
+    "cf_142": true,
+    "cf_143": null,
+    "cf_144": null,
+    "cf_145": null,
+    "cf_146": "demo offer",
+    "cf_147": "follow up",
+    "cf_148": 517,
+    "cf_149": "support contract",
+    "cf_150": null,
+    "cf_151": "call offer",
+    "cf_152": true,
+    "cf_153": 153,
+    "cf_154": "invoice call",
+    "cf_155": 86,
+    "cf_156": 721,
+    "cf_157": "support meeting",
+    "cf_158": 509,
+    "cf_159": 504,
+    "cf_160": null,
+    "cf_161": "update contract",
+    "cf_162": 251,
+    "cf_163": 753,
+    "cf_164": "support call",
+    "cf_165": "support invoice",
+    "cf_166": true,
+    "cf_167": null,
+    "cf_168": null,
+    "cf_169": null,
+    "cf_170": "up call",
+    "cf_171": false,
+    "cf_172": false,
+    "cf_173": false,
+    "cf_174": 249,
+    "cf_175": true,
+    "cf_176": "support support",
+    "cf_177": null,
+    "cf_178": "contract call",
+    "cf_179": false,
+    "cf_180": false,
+    "cf_181": 325,
+    "cf_182": 988,
+    "cf_183": true,
+    "cf_184": null,
+    "cf_185": 717,
+    "cf_186": "support demo",
+    "cf_187": true,
+    "cf_188": 559,
+    "cf_189": "renewal support",
+    "cf_190": 693,
+    "cf_191": 184,
+    "cf_192": "meeting update",
+    "cf_193": "invoice call",
+    "cf_194": null,
+    "cf_195": 968,
+    "cf_196": "contract invoice",
+    "cf_197": "offer offer",
+    "cf_198": 323,
+    "cf_199": false,
+    "cf_200": 656,
+    "cf_201": true,
+    "cf_202": 394,
+    "cf_203": false,
+    "cf_204": 120,
+    "cf_205": "update renewal",
+    "cf_206": "call follow",
+    "cf_207": 120,
+    "cf_208": "follow offer",
+    "cf_209": 902,
+    "cf_210": true,
+    "cf_211": "question up",
+    "cf_212": 631,
+    "cf_213": null,
+    "cf_214": 319,
+    "cf_215": 440,
+    "cf_216": null,
+    "cf_217": "contract up",
+    "cf_218": true,
+    "cf_219": 465,
+    "cf_220": 499,
+    "cf_221": false,
+    "cf_222": "call renewal",
+    "cf_223": false,
+    "cf_224": 592,
+    "cf_225": false,
+    "cf_226": true,
+    "cf_227": 421,
+    "cf_228": null,
+    "cf_229": null,
+    "cf_230": false,
+    "cf_231": false,
+    "cf_232": "update follow",
+    "cf_233": "renewal question",
+    "cf_234": null,
+    "cf_235": 10,
+    "cf_236": false,
+    "cf_237": null,
+    "cf_238": "support question",
+    "cf_239": "demo call",
+    "cf_240": null,
+    "cf_241": null,
+    "cf_242": false,
+    "cf_243": false,
+    "cf_244": "up offer",
+    "cf_245": 76,
+    "cf_246": 210,
+    "cf_247": false,
+    "cf_248": "follow offer",
+    "cf_249": true,
+    "cf_250": null,
+    "cf_251": "call update",
+    "cf_252": true,
+    "cf_253": 155,
+    "cf_254": true,
+    "cf_255": "renewal up",
+    "cf_256": "renewal update",
+    "cf_257": "offer meeting",
+    "cf_258": false,
+    "cf_259": null,
+    "cf_260": "meeting contract",
+    "cf_261": "up invoice",
+    "cf_262": "meeting meeting",
+    "cf_263": false,
+    "cf_264": 995,
+    "cf_265": null,
+    "cf_266": 819,
+    "cf_267": 10,
+    "cf_268": true,
+    "cf_269": true,
+    "cf_270": 700,
+    "cf_271": true,
+    "cf_272": 204,
+    "cf_273": false,
+    "cf_274": "contract contract",
+    "cf_275": 303,
+    "cf_276": null,
+    "cf_277": true,
+    "cf_278": 398,
+    "cf_279": true,
+    "cf_280": null,
+    "cf_281": false,
+    "cf_282": null,
+    "cf_283": null,
+    "cf_284": 649,
+    "cf_285": 511,
+    "cf_286": null,
+    "cf_287": false,
+    "cf_288": null,
+    "cf_289": "invoice up",
+    "cf_290": false,
+    "cf_291": 421,
+    "cf_292": 445,
+    "cf_293": "question call",
+    "cf_294": "renewal contract",
+    "cf_295": null,
+    "cf_296": 911,
+    "cf_297": null,
+    "cf_298": null,
+    "cf_299": true,
+    "cf_300": false
+  }
+}

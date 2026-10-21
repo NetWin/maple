@@ -38,7 +38,7 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
   boundary as JSON text (`maple-worker-protocol.ts`, `benchmark-protocol.ts`).
 - `@netwin/js-interpreter` is a dev dependency used only to compare against; `js-interpreter-engine.ts` is the one
   place in the app that calls it.
-- `scripts/` holds Node-only tools such as `measure-memory.ts`. Node ignores the `paths` mapping, so they import
+- `scripts/` holds Node-only tools such as `measure-run.ts`. Node ignores the `paths` mapping, so they import
   `packages/maple/src/index.ts` by relative path.
 - Use standalone components and signals, styled with Tailwind. Don't add `.component` / `.service` suffixes to file
   names.
