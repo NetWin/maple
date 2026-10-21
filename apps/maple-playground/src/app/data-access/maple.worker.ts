@@ -1,11 +1,12 @@
 /// <reference lib="webworker" />
 import { Maple, MapleError, parse } from '@netwin/maple';
-import type {
-  RunError,
-  RunLimits,
-  RunRequest,
-  RunResponse,
-  StepOutcome
+import {
+  parseContext,
+  type RunError,
+  type RunLimits,
+  type RunRequest,
+  type RunResponse,
+  type StepOutcome
 } from './maple-worker-protocol';
 
 // Runs off the main thread, so an endless loop in the interpreter can be stopped by terminating
@@ -29,7 +30,7 @@ addEventListener('message', (event: MessageEvent<RunRequest>) => {
 /** Runs the code within the limits and reports the value as JSON text next to the run's stats. */
 function runStep(code: string, context: string, limits: RunLimits): StepOutcome {
   try {
-    const { value, stats } = new Maple(limits).run(code, context);
+    const { value, stats } = new Maple(limits).run(code, parseContext(context));
     return { ok: true, value: JSON.stringify(value, null, 2) ?? String(value), stats };
   } catch (error) {
     return { ok: false, error: describeError(error) };

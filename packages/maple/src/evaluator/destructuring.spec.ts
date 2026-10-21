@@ -4,11 +4,11 @@ import { runAndCatch } from '../spec-helpers.ts';
 
 const maple = new Maple();
 
-function run(code: string, data?: unknown): unknown {
+function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 
-function sandboxError(code: string, data?: unknown): { name: string; message: string } | undefined {
+function sandboxError(code: string, data?: object): { name: string; message: string } | undefined {
   return runAndCatch(maple, code, data).sandboxError;
 }
 

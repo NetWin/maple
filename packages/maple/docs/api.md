@@ -25,7 +25,7 @@ const result = maple.run('return "Hello " + upper(name);', { name: 'Steve' });
 Instance globals are converted once at construction (see [Boundary](boundary.md)). An instance
 holds no state between runs.
 
-## `maple.run(code: string, data?: unknown, options?: RunOptions): MapleRunResult`
+## `maple.run(code: string, data?: object, options?: RunOptions): MapleRunResult`
 
 Runs `code` against `data` and returns the copied result with the run's statistics:
 
@@ -46,8 +46,8 @@ interface MapleRunStats {
 }
 ```
 
-`data` is `undefined`, a plain object, or a JSON string encoding a plain object; its top-level keys
-become globals. `options.globals` adds bindings for this run only. `options.freeze: false` lets the
+`data` is `undefined` or a plain object; its top-level keys become globals. `options.globals` adds
+bindings for this run only. `options.freeze: false` lets the
 script change and reassign its copy of `data` and of the run globals (see
 [Boundary](boundary.md#changeable-input)).
 A `code` that is not a string, or

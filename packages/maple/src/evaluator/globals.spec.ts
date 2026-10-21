@@ -14,7 +14,6 @@ function assignInData(options: object): unknown {
 describe('globals', () => {
   it('exposes each top-level data key as a binding', () => {
     expect(new Maple().run('return name;', { name: 'maple' }).value).toBe('maple');
-    expect(new Maple().run('return name;', '{"name":"maple"}').value).toBe('maple');
   });
 
   it('exposes instance and run globals', () => {
@@ -97,7 +96,8 @@ describe('globals', () => {
   });
 
   it('treats a key named __proto__ as a plain binding', () => {
-    const { value } = new Maple().run('return __proto__;', '{"__proto__": 1}');
+    // A computed key makes `__proto__` an own property instead of setting the prototype
+    const { value } = new Maple().run('return __proto__;', { ['__proto__']: 1 });
 
     expect(value).toBe(1);
   });

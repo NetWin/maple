@@ -12,6 +12,18 @@ export interface RunRequest {
   limits: RunLimits;
 }
 
+/**
+ * Turns the JSON `context` of a request back into the data a run takes. Maple rejects an array
+ * itself, so only what is not an object at all is refused here.
+ */
+export function parseContext(context: string): object {
+  const data: unknown = JSON.parse(context);
+  if (typeof data !== 'object' || data === null) {
+    throw new TypeError('context must be a JSON object');
+  }
+  return data;
+}
+
 /** An error, reduced to what survives `postMessage`. */
 export interface RunError {
   message: string;

@@ -54,7 +54,7 @@ export class Maple {
    * Runs `code` against `data`. Everything that goes wrong inside the run throws a `MapleError`;
    * a misuse of this method itself throws a plain `TypeError` before anything runs.
    */
-  public run(code: string, data?: unknown, options: RunOptions = {}): MapleRunResult {
+  public run(code: string, data?: object, options: RunOptions = {}): MapleRunResult {
     const budget = new Budget(this.#maxOps, this.#maxDepth);
     const evaluator: Evaluator = new Evaluator(budget, (nestedCode, nestedData, nestedOptions) => {
       const before = budget.stats();
@@ -168,18 +168,9 @@ function asPositiveIntegerOrThrow(name: string, value: number): number {
 }
 
 function asDataObjectOrThrow(data: unknown): Record<string, unknown> {
-  const candidate =
-    typeof data === 'string' ? asParsedJsonOrThrow(data) : data === undefined ? {} : data;
+  const candidate = data === undefined ? {} : data;
   if (!isPlainObject(candidate)) {
-    throw new TypeError('data must be a plain object, or a JSON string of one');
+    throw new TypeError('data must be a plain object');
   }
   return candidate;
-}
-
-function asParsedJsonOrThrow(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new TypeError('data is not valid JSON', { cause: error });
-  }
 }
