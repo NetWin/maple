@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { intrinsic } from '../boundary/host.ts';
 import { Maple } from '../maple.ts';
 import { errorMessage, runAndCatch } from '../spec-helpers.ts';
 
@@ -82,6 +83,26 @@ describe('tagged templates', () => {
       run('function tag(s) { return s; } function f() { return tag`x`; } return f() === f();')
     ).toBe(true);
     expect(run('function tag(s) { return s; } return tag`x` === tag`x`;')).toBe(false);
+  });
+
+  it('gives a nested run of the same cached source strings arrays of its own', () => {
+    const kept: Array<unknown> = [];
+    const code = 'keep(((s) => s)`x`); if (!nested) { nest(); }';
+    const cached = new Maple({
+      astCache: true,
+      globals: {
+        keep: intrinsic(([strings]) => {
+          kept.push(strings);
+        }),
+        nest: intrinsic((_args, sandbox) => {
+          sandbox.run(code, { nested: true });
+        })
+      }
+    });
+    cached.run(code, { nested: false });
+
+    expect(kept).toHaveLength(2);
+    expect(kept[0]).not.toBe(kept[1]);
   });
 
   it('binds this as a call of the same form does', () => {

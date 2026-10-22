@@ -187,19 +187,14 @@ export class Evaluator {
   /** The active script calls, outermost first; `Error.stack` is rendered from it. */
   readonly #frames: Array<Frame> = [];
 
-  /** What this run changed on the values every run shares; a nested run gets its own for its length. */
+  /**
+   * What this run changed on the values every run shares, and its template strings arrays; a nested
+   * run gets its own for its length.
+   */
   #runState = new RunState();
 
   /** Script throws handed to an intrinsic as `MapleError`s, so they can be restored on the way out. */
   readonly #wrapped = new WeakMap<MapleError, SandboxThrow>();
-
-  /**
-   * The strings array of each tagged template site, so a site hands its tag the same array on
-   * every evaluation, as JavaScript does per realm. A run is Maple's realm: the array is frozen but
-   * the evaluator is per run, so nothing is carried from one run to the next, and the cached AST,
-   * which the sites are keyed by, is shared but deep-frozen.
-   */
-  readonly #templateObjects = new WeakMap<TemplateLiteral, ReadonlyArray<string | undefined>>();
 
   constructor(budget: Budget, nestedRun: NestedRun) {
     this.#budget = budget;
@@ -827,7 +822,7 @@ export class Evaluator {
    * strings, as in JavaScript.
    */
   private templateObject(quasi: TemplateLiteral, node: Node): ReadonlyArray<string | undefined> {
-    const cached = this.#templateObjects.get(quasi);
+    const cached = this.#runState.getTemplateObject(quasi);
     if (cached) {
       return cached;
     }
@@ -848,7 +843,7 @@ export class Evaluator {
     });
     Object.freeze(cooked);
 
-    this.#templateObjects.set(quasi, cooked);
+    this.#runState.setTemplateObject(quasi, cooked);
     return cooked;
   }
 
@@ -1255,8 +1250,8 @@ export class Evaluator {
 
   /**
    * A nested program is one more call level and one more frame on the same budget. It starts from
-   * the shared values as they were, like any run, and what it changes on them is gone when it
-   * returns.
+   * the shared values as they were, like any run, with strings arrays of its own for its template
+   * sites, and what it changes on the shared values is gone when it returns.
    */
   private runNested(code: string, data: unknown, options: RunOptions, node: Node): MapleRunResult {
     this.enterCall(node);

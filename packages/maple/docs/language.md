@@ -91,7 +91,8 @@ A tagged template `` tag`a${x}b` `` calls `tag` with the strings array and then 
 a value, not converted to a string, with `this` bound as for a call of the same form. The strings
 array is frozen, its non-enumerable `raw` holds the raw text, and an invalid escape, which only a
 tagged template allows, leaves `undefined` in the cooked string. Each template site has one strings
-array for the run, so a tag sees the same array every time its site is evaluated.
+array for the run, so a tag sees the same array every time its site is evaluated; a nested run has
+arrays of its own, even for the same source.
 
 ## Value model
 
