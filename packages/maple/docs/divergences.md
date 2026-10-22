@@ -5,7 +5,7 @@ one that does; the linked section has the detail.
 
 ## Syntax and names
 
-- `class`, `super`, `async` / `await`, generators, getters and setters, tagged templates,
+- `class`, `super`, `async` / `await`, generators, getters and setters,
   `import` / `export`, `import.meta` and `new.target` throw `DISALLOWED_SYNTAX`
   ([Language](language.md#not-supported)).
 - An `async` or generator function throws when it is created, not when it is called.
@@ -36,6 +36,8 @@ one that does; the linked section has the detail.
   `TypeError`.
 - A function converts to `[function]`, not to its source.
 - Host functions, and functions bound from them, have no `length` or `name`.
+- A host function used as a tag receives the strings array as a copy without `raw`
+  ([Boundary](boundary.md#host-function-calls)).
 - A method refuses a receiver of another type, so `({ t: 'x'.trim }).t()`, `''.trim.call({})` and
   `[].slice.call(arguments)` are `TypeError`s ([Methods](language.md#methods)).
 

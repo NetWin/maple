@@ -98,7 +98,6 @@ describe('escape attempts', () => {
       expect(errorCode('import("x");')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('class A {}')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('({ get a() { return 1; } });')).toBe('DISALLOWED_SYNTAX');
-      expect(errorCode('String.raw`x`;')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('with ({}) {}')).toBe('PARSE_ERROR');
       expect(run('return typeof Function;')).toBe('undefined');
     });

@@ -22,6 +22,7 @@ import type {
   Statement,
   Super,
   SwitchStatement,
+  TaggedTemplateExpression,
   TemplateLiteral,
   TryStatement,
   UnaryExpression,
@@ -137,7 +138,6 @@ const NODE_NAMES: Partial<Record<Node['type'], string>> = {
   Super: 'super',
   AwaitExpression: 'await',
   YieldExpression: 'yield',
-  TaggedTemplateExpression: 'tagged templates',
   ImportDeclaration: 'import',
   ImportExpression: 'import',
   ExportNamedDeclaration: 'export',
@@ -192,6 +192,14 @@ export class Evaluator {
 
   /** Script throws handed to an intrinsic as `MapleError`s, so they can be restored on the way out. */
   readonly #wrapped = new WeakMap<MapleError, SandboxThrow>();
+
+  /**
+   * The strings array of each tagged template site, so a site hands its tag the same array on
+   * every evaluation, as JavaScript does per realm. A run is Maple's realm: the array is frozen but
+   * the evaluator is per run, so nothing is carried from one run to the next, and the cached AST,
+   * which the sites are keyed by, is shared but deep-frozen.
+   */
+  readonly #templateObjects = new WeakMap<TemplateLiteral, ReadonlyArray<string | undefined>>();
 
   constructor(budget: Budget, nestedRun: NestedRun) {
     this.#budget = budget;
@@ -691,6 +699,8 @@ export class Evaluator {
           return scope.receiver();
         case 'TemplateLiteral':
           return this.evaluateTemplate(node, scope);
+        case 'TaggedTemplateExpression':
+          return this.evaluateTaggedTemplate(node, scope);
         case 'ObjectExpression':
           return this.evaluateObject(node, scope);
         case 'ArrayExpression':
@@ -789,6 +799,57 @@ export class Evaluator {
       }
     }
     return guardHostErrors(this.failAt(node), () => parts.join(''));
+  }
+
+  /**
+   * Calls the tag with the site's strings array and the substitutions as values, in JavaScript's
+   * order: the tag, then the strings, then the substitutions.
+   */
+  private evaluateTaggedTemplate(node: TaggedTemplateExpression, scope: Scope): unknown {
+    const { receiver, target } = this.resolveCallee(node.tag, scope);
+    const strings = this.templateObject(node.quasi, node);
+    const substitutions = node.quasi.expressions.map((expression) =>
+      this.evaluateExpression(expression, scope)
+    );
+    // acorn refuses an optional chain in a tag, so the target cannot be a short circuit here
+    return this.invoke(
+      receiver,
+      target,
+      [strings, ...substitutions],
+      node,
+      this.describe(node.tag)
+    );
+  }
+
+  /**
+   * The frozen strings array of a template site, with the raw text under a non-enumerable `raw`.
+   * An invalid escape, which acorn allows in a tagged template, leaves `undefined` in the cooked
+   * strings, as in JavaScript.
+   */
+  private templateObject(quasi: TemplateLiteral, node: Node): ReadonlyArray<string | undefined> {
+    const cached = this.#templateObjects.get(quasi);
+    if (cached) {
+      return cached;
+    }
+
+    this.charge(quasi.quasis.length, node);
+    const cooked: Array<string | undefined> = quasi.quasis.map(
+      (element) => element.value.cooked ?? undefined
+    );
+
+    const raw: Array<string> = quasi.quasis.map((element) => element.value.raw);
+    Object.freeze(raw);
+
+    Object.defineProperty(cooked, 'raw', {
+      value: raw,
+      writable: false,
+      enumerable: false,
+      configurable: false
+    });
+    Object.freeze(cooked);
+
+    this.#templateObjects.set(quasi, cooked);
+    return cooked;
   }
 
   private evaluateObject(node: ObjectExpression, scope: Scope): Record<string, unknown> {
@@ -1027,42 +1088,52 @@ export class Evaluator {
   }
 
   private evaluateCall(node: CallExpression, scope: Scope): unknown {
-    const { callee } = node;
-    if (callee.type === 'Super') {
-      return this.unsupported(callee);
-    }
-
-    let target: unknown;
-    let receiver: unknown;
-    if (callee.type === 'MemberExpression') {
-      // Not routed through evaluateExpression so a short-circuited object is seen here
-      this.tick(callee);
-      const access = this.accessMember(callee, scope);
-      if (access === SHORT_CIRCUIT) {
-        target = SHORT_CIRCUIT;
-      } else {
-        receiver = access.object;
-        target = access.value;
-      }
-    } else if (callee.type === 'ChainExpression' && callee.expression.type === 'MemberExpression') {
-      // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
-      this.tick(callee);
-      this.tick(callee.expression);
-      const access = this.accessMember(callee.expression, scope);
-      if (access !== SHORT_CIRCUIT) {
-        receiver = access.object;
-        target = access.value;
-      }
-    } else {
-      target = this.evaluateExpression(callee, scope);
-    }
+    const { receiver, target } = this.resolveCallee(node.callee, scope);
 
     if (target === SHORT_CIRCUIT || (node.optional && (target === null || target === undefined))) {
       return SHORT_CIRCUIT;
     }
 
     const args = this.evaluateArguments(node.arguments, scope);
-    return this.invoke(receiver, target, args, node, this.describe(callee));
+    return this.invoke(receiver, target, args, node, this.describe(node.callee));
+  }
+
+  /**
+   * What a call or a tagged template invokes and with which `this`: a member callee binds its
+   * object, any other leaves the receiver `undefined`. The target is `SHORT_CIRCUIT` when an
+   * optional chain in a member callee short-circuited.
+   */
+  private resolveCallee(
+    callee: Expression | Super,
+    scope: Scope
+  ): { receiver: unknown; target: unknown } {
+    if (callee.type === 'Super') {
+      return this.unsupported(callee);
+    }
+
+    if (callee.type === 'MemberExpression') {
+      // Not routed through evaluateExpression so a short-circuited object is seen here
+      this.tick(callee);
+      const access = this.accessMember(callee, scope);
+      if (access === SHORT_CIRCUIT) {
+        return { receiver: undefined, target: SHORT_CIRCUIT };
+      } else {
+        return { receiver: access.object, target: access.value };
+      }
+    }
+
+    if (callee.type === 'ChainExpression' && callee.expression.type === 'MemberExpression') {
+      // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
+      this.tick(callee);
+      this.tick(callee.expression);
+      const access = this.accessMember(callee.expression, scope);
+      if (access === SHORT_CIRCUIT) {
+        return { receiver: undefined, target: SHORT_CIRCUIT };
+      } else {
+        return { receiver: access.object, target: access.value };
+      }
+    }
+    return { receiver: undefined, target: this.evaluateExpression(callee, scope) };
   }
 
   /** What a member operation at `node` needs from the run. */
@@ -1453,6 +1524,8 @@ export class Evaluator {
           : `${this.describe(node.object)}.${this.describe(node.property)}`;
       case 'CallExpression':
         return `${this.describe(node.callee)}(...)`;
+      case 'TaggedTemplateExpression':
+        return `${this.describe(node.tag)}(...)`;
       case 'ArrayExpression':
         return '[...]';
       case 'ObjectExpression':
