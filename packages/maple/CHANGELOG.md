@@ -1,3 +1,19 @@
+## [0.5.0](https://github.com/NetWin/maple/compare/0.4.0...0.5.0) (2026-10-22)
+
+### 🚀 Features
+
+* **boundary:** leave run input unfrozen by default ([6167b4e](https://github.com/NetWin/maple/commit/6167b4ef0fd4ac5dbabc0cb96d002b1ac4b32ac0))
+* **evaluator:** support tagged templates ([e755435](https://github.com/NetWin/maple/commit/e7554355f5decfb61b26e85c6341d073b1cb94c5))
+* **string:** add String.raw ([0e3933b](https://github.com/NetWin/maple/commit/0e3933ba03a1460e3791935b9a1770b280ff68db))
+
+### 🩹 Bug Fixes
+
+* **evaluator:** give nested runs their own template strings arrays ([132aff8](https://github.com/NetWin/maple/commit/132aff806a8ca4608a4bcfad0eda8b04c73e952d))
+
+### 🔧 Miscellaneous Chores
+
+* add pull request template ([092bcd8](https://github.com/NetWin/maple/commit/092bcd8e459eea33d66234eb481d12aea851b2dc))
+
 ## [0.4.0](https://github.com/NetWin/maple/compare/0.3.0...0.4.0) (2026-10-21)
 
 ### 🚀 Features
