@@ -475,15 +475,21 @@ describe('array methods', () => {
       expect(run('return [1, 2, 3, 4].copyWithin(0, 2);')).toEqual([3, 4, 3, 4]);
     });
 
-    it('refuse to mutate input arrays but still read them', () => {
+    it('refuse to mutate frozen input arrays but still read them', () => {
       const data = { list: [3, 1, 2] };
 
-      expect(runAndCatch(maple, 'list.push(4);', data).sandboxError).toMatchObject({
+      expect(
+        runAndCatch(maple, 'list.push(4);', data, { freeze: true }).sandboxError
+      ).toMatchObject({
         name: 'TypeError',
         message: 'Cannot add property 3, object is not extensible'
       });
-      expect(runAndCatch(maple, 'list.sort();', data).sandboxError?.name).toBe('TypeError');
-      expect(runAndCatch(maple, 'list.pop();', data).sandboxError?.name).toBe('TypeError');
+      expect(runAndCatch(maple, 'list.sort();', data, { freeze: true }).sandboxError?.name).toBe(
+        'TypeError'
+      );
+      expect(runAndCatch(maple, 'list.pop();', data, { freeze: true }).sandboxError?.name).toBe(
+        'TypeError'
+      );
       expect(run('return list.toSorted();', data)).toEqual([1, 2, 3]);
       expect(run('return list.map((x) => x * 2);', data)).toEqual([6, 2, 4]);
       expect(run('return list.slice().sort();', data)).toEqual([1, 2, 3]);

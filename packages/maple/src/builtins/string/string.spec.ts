@@ -178,6 +178,27 @@ describe('String as a function', () => {
       'RangeError'
     );
   });
+
+  it('joins the raw text of a template with String.raw', () => {
+    expect(run('return String.raw`a\\n${1}b`;')).toBe('a\\n1b');
+    expect(run('return String.raw`\\unicode`;')).toBe('\\unicode');
+    expect(run('return String.raw`plain`;')).toBe('plain');
+    expect(run('return String.raw({ raw: ["x", "y"] }, 1, 2);')).toBe('x1y');
+    expect(run('return String.raw({ raw: ["x", "y", "z"] }, 1);')).toBe('x1yz');
+    expect(run('return String.raw({ raw: "ab" }, "-");')).toBe('a-b');
+    expect(
+      run('return String.raw({ raw: { length: 2, 0: "p", 1: "q" } }, obj);', { obj: {} })
+    ).toBe('p[object Object]q');
+    expect(run('return String.raw({ raw: [] });')).toBe('');
+    expect(run('return String.raw.length;')).toBe(1);
+    expect(runAndCatch(maple, 'String.raw();').sandboxError?.message).toBe(
+      'Cannot convert undefined to object'
+    );
+    expect(runAndCatch(maple, 'String.raw({});').sandboxError?.message).toBe(
+      'Cannot convert undefined to object'
+    );
+    expect(runAndCatch(maple, 'String.raw({ raw: null });').sandboxError?.name).toBe('TypeError');
+  });
 });
 
 describe('ES2024 and legacy string methods', () => {

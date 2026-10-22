@@ -11,8 +11,8 @@ import { runAndCatch, type UntypedRunner } from './spec-helpers.ts';
  */
 const maple = new Maple({ globals: { host: (): number => 1 } });
 
-function run(code: string, data?: object): unknown {
-  return maple.run(code, data).value;
+function run(code: string, data?: object, globals?: Record<string, unknown>): unknown {
+  return maple.run(code, data, { globals }).value;
 }
 
 function errorCode(source: string, data?: object): string | undefined {
@@ -23,8 +23,8 @@ function errorName(source: string, data?: object): string | undefined {
   return runAndCatch(maple, source, data).sandboxError?.name;
 }
 
-function runUnfrozen(code: string, data?: object, globals?: Record<string, unknown>): unknown {
-  return maple.run(code, data, { freeze: false, globals }).value;
+function frozenErrorName(source: string, data?: object): string | undefined {
+  return runAndCatch(maple, source, data, { freeze: true }).sandboxError?.name;
 }
 
 /** Nothing a script did may have reached the host's prototypes. */
@@ -98,7 +98,6 @@ describe('escape attempts', () => {
       expect(errorCode('import("x");')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('class A {}')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('({ get a() { return 1; } });')).toBe('DISALLOWED_SYNTAX');
-      expect(errorCode('String.raw`x`;')).toBe('DISALLOWED_SYNTAX');
       expect(errorCode('with ({}) {}')).toBe('PARSE_ERROR');
       expect(run('return typeof Function;')).toBe('undefined');
     });
@@ -231,17 +230,17 @@ describe('escape attempts', () => {
     });
   });
 
-  describe('input and globals stay read-only', () => {
+  describe('frozen input and globals stay read-only', () => {
     const data = { obj: { a: [1] }, when: new Date(0), lookup: new Map([['k', 1]]) };
 
     it('at every depth and for every wrapper', () => {
-      expect(errorName('obj.a = 1;', data)).toBe('TypeError');
-      expect(errorName('obj.a[0] = 2;', data)).toBe('TypeError');
-      expect(errorName('obj.a.push(2);', data)).toBe('TypeError');
-      expect(errorName('delete obj.a;', data)).toBe('TypeError');
-      expect(errorName('when.setTime(1);', data)).toBe('TypeError');
-      expect(errorName('lookup.set("x", 1);', data)).toBe('TypeError');
-      expect(errorName('obj = {};', data)).toBe('TypeError');
+      expect(frozenErrorName('obj.a = 1;', data)).toBe('TypeError');
+      expect(frozenErrorName('obj.a[0] = 2;', data)).toBe('TypeError');
+      expect(frozenErrorName('obj.a.push(2);', data)).toBe('TypeError');
+      expect(frozenErrorName('delete obj.a;', data)).toBe('TypeError');
+      expect(frozenErrorName('when.setTime(1);', data)).toBe('TypeError');
+      expect(frozenErrorName('lookup.set("x", 1);', data)).toBe('TypeError');
+      expect(frozenErrorName('obj = {};', data)).toBe('TypeError');
       expect(errorName('Math.max = 1;')).toBe('TypeError');
       expect(errorName('Math.PI = 3;')).toBe('TypeError');
       expect(errorName('undefined = 1;')).toBe('TypeError');
@@ -256,19 +255,19 @@ describe('escape attempts', () => {
       // @ts-expect-error - assigning a host object to lastIndex is normally not allowed in TypeScript
       regexp.lastIndex = host;
       expect(errorCode('r.lastIndex.n = 1;', { r: regexp })).toBe('INTERNAL_ERROR');
-      expect(() => runUnfrozen('r.lastIndex.n = 1;', { r: regexp })).toThrow(
+      expect(() => run('r.lastIndex.n = 1;', { r: regexp })).toThrow(
         'Unsupported value at data.r.lastIndex: Object'
       );
       expect(host.n).toBe(0);
     });
   });
 
-  describe('unfrozen input stays a copy of this run', () => {
+  describe('input stays a copy of this run', () => {
     it('so changing it never reaches the host', () => {
       const data = { obj: { a: [1] }, when: new Date(0), lookup: new Map([['k', 1]]) };
       const globals = { shared: { n: 1 } };
 
-      runUnfrozen(
+      run(
         'obj.a.push(2); obj.b = 1; delete obj.a; when.setTime(1); lookup.set("x", 2); shared.n = 2;',
         data,
         globals
@@ -281,16 +280,14 @@ describe('escape attempts', () => {
     it('so the next run starts from the host value again', () => {
       const data = { obj: { n: 1 } };
 
-      expect(runUnfrozen('obj.n += 1; return obj.n;', data)).toBe(2);
-      expect(runUnfrozen('obj.n += 1; return obj.n;', data)).toBe(2);
+      expect(run('obj.n += 1; return obj.n;', data)).toBe(2);
+      expect(run('obj.n += 1; return obj.n;', data)).toBe(2);
     });
 
     it('so instance globals stay frozen, since every run shares them', () => {
       const shared = new Maple({ globals: { config: { n: 1 } } });
       const attempt = (): unknown =>
-        shared.run('try { config.n = 2; } catch (e) { return e.name; }', undefined, {
-          freeze: false
-        }).value;
+        shared.run('try { config.n = 2; } catch (e) { return e.name; }').value;
 
       expect(attempt()).toBe('TypeError');
       expect(shared.run('return config.n;').value).toBe(1);
@@ -300,9 +297,9 @@ describe('escape attempts', () => {
       const data = { obj: { n: 1 } };
       const shared = new Maple({ globals: { config: { n: 1 } } });
       const reassign = (code: string): unknown =>
-        shared.run(`try { ${code} } catch (e) { return e.name; }`, data, { freeze: false }).value;
+        shared.run(`try { ${code} } catch (e) { return e.name; }`, data).value;
 
-      expect(runUnfrozen('obj = obj.inner; return obj;', { obj: { inner: 2 } })).toBe(2);
+      expect(run('obj = obj.inner; return obj;', { obj: { inner: 2 } })).toBe(2);
       expect(reassign('obj = { n: 2 }; return obj.n;')).toBe(2);
       expect(reassign('return obj.n;')).toBe(1);
       expect(reassign('config = {};')).toBe('TypeError');
@@ -315,14 +312,14 @@ describe('escape attempts', () => {
       // A computed key makes `__proto__` an own property instead of setting the prototype
       const data = { obj: {}, own: { ['__proto__']: { polluted: true } } };
       const errorOf = (code: string): unknown =>
-        runUnfrozen(`try { ${code} } catch (e) { return e.name; }`, data);
+        run(`try { ${code} } catch (e) { return e.name; }`, data);
 
       expect(errorOf('obj.__proto__ = { polluted: true };')).toBe('TypeError');
       expect(errorOf('obj["constructor"] = { prototype: { polluted: true } };')).toBe('TypeError');
       expect(errorOf('obj.prototype = { polluted: true };')).toBe('TypeError');
       expect(errorOf('Object.assign(obj, own);')).toBe('TypeError');
       expect(errorOf('own.__proto__.polluted = 1;')).toBe('TypeError');
-      expect(runUnfrozen('own.x = 1; return [Object.keys(own), ({}).polluted];', data)).toEqual([
+      expect(run('own.x = 1; return [Object.keys(own), ({}).polluted];', data)).toEqual([
         ['__proto__', 'x'],
         undefined
       ]);
@@ -369,15 +366,15 @@ describe('escape attempts', () => {
       ]);
     });
 
-    it('cannot change frozen input, and changes only the copy of unfrozen input', () => {
+    it('cannot change frozen input, and changes only the copy of other input', () => {
       const data = { obj: { n: 1 } };
       const code = 'const o = { f() { this.x = 1; return this.x; } }; return o.f.call(obj);';
 
-      expect(errorName(code, data)).toBe('TypeError');
-      expect(
-        runUnfrozen('obj.f = function () { this.x = 1; return this.x; }; return obj.f();', data)
-      ).toBe(1);
-      expect(runUnfrozen(code, data)).toBe(1);
+      expect(frozenErrorName(code, data)).toBe('TypeError');
+      expect(run('obj.f = function () { this.x = 1; return this.x; }; return obj.f();', data)).toBe(
+        1
+      );
+      expect(run(code, data)).toBe(1);
       expect(data).toEqual({ obj: { n: 1 } });
     });
 
@@ -581,9 +578,9 @@ describe('escape attempts', () => {
       expect(errorName('const f = () => 1; f.constructor = 1;')).toBe('TypeError');
     });
 
-    it('cannot be added to input wrappers', () => {
-      expect(errorName('when.x = 1;', { when: new Date(0) })).toBe('TypeError');
-      expect(errorName('lookup.x = 1;', { lookup: new Map() })).toBe('TypeError');
+    it('cannot be added to frozen input wrappers', () => {
+      expect(frozenErrorName('when.x = 1;', { when: new Date(0) })).toBe('TypeError');
+      expect(frozenErrorName('lookup.x = 1;', { lookup: new Map() })).toBe('TypeError');
     });
   });
 

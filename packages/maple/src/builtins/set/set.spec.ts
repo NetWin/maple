@@ -48,11 +48,11 @@ describe('Set', () => {
     expect(run('return new Set().forEach.length;')).toBe(1);
   });
 
-  it('is read-only from the input and crosses the boundary as a native Set', () => {
+  it('is read-only from frozen input and crosses the boundary as a native Set', () => {
     const data = { tags: new Set(['a']) };
 
     expect(run('return tags.has("a");', data)).toBe(true);
-    expect(runAndCatch(maple, 'tags.add("b");', data).sandboxError?.message).toBe(
+    expect(runAndCatch(maple, 'tags.add("b");', data, { freeze: true }).sandboxError?.message).toBe(
       'Cannot call add on a read-only Set'
     );
     expect(run('return new Set(tags).add("b").size;', data)).toBe(2);

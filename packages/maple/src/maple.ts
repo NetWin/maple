@@ -29,7 +29,7 @@ export interface RunOptions {
   /** Bindings for this run only; they shadow the instance globals and are shadowed by `data`. */
   globals?: Record<string, unknown>;
   /**
-   * Whether `data` and the run's `globals` arrive frozen and bound read-only (default `true`).
+   * Whether `data` and the run's `globals` arrive frozen and bound read-only (default `false`).
    * Instance globals are frozen and read-only regardless.
    */
   freeze?: boolean;
@@ -89,8 +89,8 @@ export class Maple {
     const program = this.#astCache?.get(source) ?? parse(source);
     // Code that does not parse has thrown already, so it never enters the cache
     this.#astCache?.set(source, program);
-    // Only an explicit `false` unfreezes, so a JavaScript caller's typo keeps the safe default
-    const freeze = options.freeze !== false;
+    // Only an explicit `true` freezes, so a JavaScript caller's typo keeps the default
+    const freeze = options.freeze === true;
     const runGlobals = asGlobalsOrThrow(options.globals ?? {}, 'options.globals', freeze);
     const dataObject = asDataObjectOrThrow(data);
     const runKind = freeze ? 'global' : 'var';

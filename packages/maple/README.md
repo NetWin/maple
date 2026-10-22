@@ -39,8 +39,8 @@ const result = maple.run(code, { name: 'Steve' });
 // result.stats === { ops: number, maxDepth: number, durationMs: number }
 ```
 
-The script runs against `data` and nothing else: each top-level key of `data` becomes a read-only variable the
-script can read. A script must `return` its result explicitly. Without a `return`, the value is `undefined`.
+The script runs against `data` and nothing else: each top-level key of `data` becomes a variable holding a copy of
+its value, which the script can read and change. A script must `return` its result explicitly. Without a `return`, the value is `undefined`.
 
 Results are safe to pass to `JSON.stringify`. A script may also return a `Date`, `RegExp`, `Map` or `Set`, which
 come back as native instances; functions never leave the sandbox and become `undefined`.
@@ -62,8 +62,8 @@ const maple = new Maple({ globals: { upper: (s: string) => s.toUpperCase() }, ma
 ### `maple.run(code: string, data?: object, options?: RunOptions): MapleRunResult`
 
 Runs `code` against `data` and returns `{ value, stats }`. `options.globals` adds
-bindings for this run only; they shadow the instance's `globals`, and the keys of `data` shadow both. `data` and
-`options.globals` arrive frozen and read-only; `options.freeze: false` lets the script change and reassign its own copy of them. Every failure
+bindings for this run only; they shadow the instance's `globals`, and the keys of `data` shadow both. The script works on its own copy of `data`
+and `options.globals`; `options.freeze: true` freezes them and binds them read-only. Every failure
 inside the run throws a `MapleError` with a `code`, a `message` and, where known, `line` and `column`.
 
 ### `parse(code: string): Program`

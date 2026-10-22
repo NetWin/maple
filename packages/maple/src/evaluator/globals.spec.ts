@@ -40,8 +40,8 @@ describe('globals', () => {
     expect(maple.run('return Infinity;').value).toBe(Number.POSITIVE_INFINITY);
   });
 
-  it('is read-only', () => {
-    const error = runAndCatch(new Maple(), 'name = "x";', { name: 'maple' });
+  it('is read-only with freeze: true', () => {
+    const error = runAndCatch(new Maple(), 'name = "x";', { name: 'maple' }, { freeze: true });
 
     expect(error.code).toBe('RUNTIME_ERROR');
     expect(error.sandboxError).toMatchObject({
@@ -51,7 +51,7 @@ describe('globals', () => {
     expect(runAndCatch(new Maple(), 'undefined = 1;').sandboxError?.name).toBe('TypeError');
   });
 
-  it('lets the script change data and run globals with freeze: false', () => {
+  it('lets the script change data and run globals', () => {
     const data = { list: [1], obj: { a: 1, b: 2 }, when: new Date(0), lookup: new Map([['k', 1]]) };
     const { value } = new Maple().run(
       `
@@ -64,27 +64,27 @@ describe('globals', () => {
         return [list, obj, when.getTime(), lookup.size, run.n];
       `,
       data,
-      { freeze: false, globals: { run: { n: 1 } } }
+      { globals: { run: { n: 1 } } }
     );
 
     expect(value).toEqual([[1, 2], { a: 3 }, 5, 2, 2]);
   });
 
-  it('lets the script reassign data and run globals with freeze: false', () => {
+  it('lets the script reassign data and run globals', () => {
     const { value } = new Maple().run(
       'item = item.inner; count += 1; return [item, count];',
       { item: { inner: 'value' } },
-      { freeze: false, globals: { count: 1 } }
+      { globals: { count: 1 } }
     );
 
     expect(value).toEqual(['value', 2]);
   });
 
-  it('keeps data frozen unless freeze is exactly false', () => {
-    expect(assignInData({})).toBe('TypeError');
-    expect(assignInData({ freeze: true })).toBe('TypeError');
-    expect(assignInData({ freeze: 0 })).toBe('TypeError');
+  it('freezes data only when freeze is exactly true', () => {
+    expect(assignInData({})).toBe(2);
     expect(assignInData({ freeze: false })).toBe(2);
+    expect(assignInData({ freeze: 1 })).toBe(2);
+    expect(assignInData({ freeze: true })).toBe('TypeError');
   });
 
   it('can be shadowed by a declaration in the script', () => {
