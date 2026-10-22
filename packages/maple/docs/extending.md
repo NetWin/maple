@@ -73,7 +73,7 @@ interface Sandbox {
 
 ### Data as input
 
-The keys of `data` become read-only globals:
+The keys of `data` become globals:
 
 ```ts
 const maple = new Maple();
@@ -85,8 +85,8 @@ const { value } = maple.run('return items.filter((item) => item.price > limit).l
 // value === 1
 ```
 
-The script works on a frozen copy, so `items.push(…)` throws a `TypeError` unless the run passes
-`freeze: false`. Either way, the host's object is never touched.
+The script works on a copy, so `items.push(…)` changes only that copy, and the host's object is
+never touched. With `freeze: true` the copy is frozen and `items.push(…)` throws a `TypeError`.
 
 ### Host functions
 

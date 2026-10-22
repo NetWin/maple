@@ -6,8 +6,8 @@ globals), the arguments of a host function, its return value, and the result of 
 | Value                          | Into the run       | To a host function | From a host function | Out of the run  |
 | ------------------------------ | ------------------ | ------------------ | -------------------- | --------------- |
 | Primitive                      | as is              | as is              | as is                | as is           |
-| Plain object, array            | frozen copy        | fresh copy         | mutable copy         | fresh copy      |
-| `Date`, `RegExp`, `Map`, `Set` | read-only wrapper  | fresh native       | mutable wrapper      | fresh native    |
+| Plain object, array            | copy               | fresh copy         | mutable copy         | fresh copy      |
+| `Date`, `RegExp`, `Map`, `Set` | wrapper            | fresh native       | mutable wrapper      | fresh native    |
 | Sandbox error                  | –                  | plain object       | –                    | plain object    |
 | Function                       | host function      | `undefined`        | `INTERNAL_ERROR`     | `undefined`     |
 | Iterator                       | –                  | `TypeError`        | –                    | `undefined`     |
@@ -65,52 +65,53 @@ maple.run('return format(total, currency);', { total: 12 }, { globals: { currenc
 // '12 USD'
 ```
 
-Every global binding is read-only: assigning to one throws a `TypeError` (see
-[Changeable input](#changeable-input) for the exception). A script may declare its
-own `var`, `let`, `const` or function with the same name, which shadows the global for the whole
-script.
-
-A function may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
-It becomes a host function, or an intrinsic if it carries the `intrinsic` mark.
-
-Every object and array of the copy is frozen, so the script can never observe mutable input: writes,
-deletes and mutating methods throw a `TypeError`. Wrappers are read-only as well, so `Map.set`,
-`Set.add`, the Date setters, assigning `lastIndex` and adding a property throw a `TypeError`. A
-read-only regexp matches on a fresh copy every time, so its `lastIndex` stays `0`. A copy the
-script makes (`new Map(input)`, `new Date(input)`, `new RegExp(input)`, `[...input]`) is its own to
-change.
-
-### Changeable input
-
-`run(code, data, { freeze: false })` copies `data` and the run's `globals` without freezing them,
-like a host function's return value, and binds them as ordinary variables. A script can change its
-input in place and return it, or point a name at another value:
+The bindings from `data` and run globals are ordinary variables, and their values are copies made
+for this run. A script can change its input in place and return it, or point a name at another
+value:
 
 ```ts
-maple.run('item.price = item.price * 2; return item;', { item: { price: 5 } }, { freeze: false })
-  .value;
+maple.run('item.price = item.price * 2; return item;', { item: { price: 5 } }).value;
 // { price: 10 }
 ```
 
 ```ts
-maple.run(
-  'if (item.item) { item = item.item; } return item.price;',
-  { item: { item: { price: 5 } } },
-  { freeze: false }
-).value;
+maple.run('if (item.item) { item = item.item; } return item.price;', {
+  item: { item: { price: 5 } }
+}).value;
 // 5
 ```
 
-Only an explicit `false` turns freezing off. This does not widen the sandbox:
+This does not widen the sandbox:
 
 - The script changes a copy made for this run. The host's objects are never touched, and the next
   run starts from the host's value again.
 - A reassigned binding lives in this run's scope only, so it changes which value the name points to
   for the rest of the run and nothing else.
-- Instance globals and the standard globals such as `Math` or `JSON` stay frozen and read-only,
-  since every run of the instance shares them; otherwise one run could leave values for the next.
+- Instance globals and the standard globals such as `Math` or `JSON` are frozen and their bindings
+  read-only, since every run of the instance shares them; otherwise one run could leave values for
+  the next. Assigning to one throws a `TypeError`.
 - The script can already create mutable objects of every kind, and `__proto__`, `constructor` and
   `prototype` are refused on every write, frozen or not.
+
+A script may declare its own `var`, `let`, `const` or function with the same name as any global,
+which shadows the global for the whole script.
+
+A function may sit at any depth, so a namespace object such as `{ text: { upper, lower } }` works.
+It becomes a host function, or an intrinsic if it carries the `intrinsic` mark.
+
+A copy the script makes (`new Map(input)`, `new Date(input)`, `new RegExp(input)`, `[...input]`) is
+always its own to change.
+
+### Frozen input
+
+`run(code, data, { freeze: true })` freezes the copies of `data` and the run's `globals`, as the
+instance globals are, and binds them read-only. Every object and array of the copy is frozen, so
+writes, deletes and mutating methods throw a `TypeError`. Wrappers are read-only as well, so
+`Map.set`, `Set.add`, the Date setters, assigning `lastIndex` and adding a property throw a
+`TypeError`. A read-only regexp matches on a fresh copy every time, so its `lastIndex` stays `0`.
+Assigning to a binding from `data` or the run globals throws a `TypeError` too.
+
+Only an explicit `true` turns freezing on.
 
 ## Host function calls
 
@@ -119,7 +120,7 @@ script sees. Functions become `undefined` at any depth, as in a result, so the s
 anything executable but can still pass an object that holds functions. A sandbox error arrives as
 the plain object described below.
 
-The return value is copied like the input, except that the copy is not frozen, because the script
+The return value is copied like the input, except that the copy is never frozen, because the script
 owns it, and functions are not accepted.
 
 ## Out of the run

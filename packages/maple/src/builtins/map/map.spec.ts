@@ -94,15 +94,17 @@ describe('Map', () => {
     expect(run('return JSON.stringify(new Map([[1, 2]]));')).toBe('{}');
   });
 
-  it('crosses the boundary as a native Map and is read-only from the input', () => {
+  it('crosses the boundary as a native Map and is read-only from frozen input', () => {
     const data = { lookup: new Map([['a', { n: 1 }]]) };
 
     expect(run('return lookup.get("a").n;', data)).toBe(1);
     expect(run('return lookup.size;', data)).toBe(1);
-    expect(runAndCatch(maple, 'lookup.set("b", 2);', data).sandboxError?.message).toBe(
-      'Cannot call set on a read-only Map'
-    );
-    expect(runAndCatch(maple, 'lookup.get("a").n = 2;', data).sandboxError?.name).toBe('TypeError');
+    expect(
+      runAndCatch(maple, 'lookup.set("b", 2);', data, { freeze: true }).sandboxError?.message
+    ).toBe('Cannot call set on a read-only Map');
+    expect(
+      runAndCatch(maple, 'lookup.get("a").n = 2;', data, { freeze: true }).sandboxError?.name
+    ).toBe('TypeError');
     expect(run('return new Map(lookup).set("b", 2).size;', data)).toBe(2);
     const out = run('return new Map([["k", [1]]]);');
     expect(out).toBeInstanceOf(Map);

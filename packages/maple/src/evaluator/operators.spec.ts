@@ -163,7 +163,7 @@ describe('operators', () => {
 
     it('rejects writes to constants and globals through compound forms', () => {
       expect(runAndCatch(maple, 'const a = 1; a += 1;').sandboxError?.name).toBe('TypeError');
-      expect(runAndCatch(maple, 'n++;', { n: 1 }).sandboxError?.message).toBe(
+      expect(runAndCatch(maple, 'n++;', { n: 1 }, { freeze: true }).sandboxError?.message).toBe(
         "Cannot assign to read-only global 'n'"
       );
     });

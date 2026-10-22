@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Maple } from '../maple.ts';
+import { Maple, type RunOptions } from '../maple.ts';
 import { runAndCatch } from '../spec-helpers.ts';
 
 const maple = new Maple();
@@ -8,8 +8,16 @@ function run(code: string, data?: object): unknown {
   return maple.run(code, data).value;
 }
 
-function sandboxError(code: string, data?: object): { name: string; message: string } | undefined {
-  return runAndCatch(maple, code, data).sandboxError;
+function sandboxError(
+  code: string,
+  data?: object,
+  options?: RunOptions
+): { name: string; message: string } | undefined {
+  return runAndCatch(maple, code, data, options).sandboxError;
+}
+
+function frozenError(code: string, data: object): { name: string; message: string } | undefined {
+  return sandboxError(code, data, { freeze: true });
 }
 
 describe('object literals', () => {
@@ -168,18 +176,18 @@ describe('member writes', () => {
     });
   });
 
-  it('rejects writes to input data at any depth', () => {
+  it('rejects writes to frozen input data at any depth', () => {
     const data = { obj: { a: { b: 1 } }, list: [1] };
 
-    expect(sandboxError('obj.a = 1;', data)).toMatchObject({
+    expect(frozenError('obj.a = 1;', data)).toMatchObject({
       name: 'TypeError',
       message: "Cannot assign to read-only property 'a'"
     });
-    expect(sandboxError('obj.a.b = 2;', data)?.name).toBe('TypeError');
-    expect(sandboxError('obj.fresh = 2;', data)?.name).toBe('TypeError');
-    expect(sandboxError('list[0] = 2;', data)?.name).toBe('TypeError');
-    expect(sandboxError('list.length = 0;', data)?.name).toBe('TypeError');
-    expect(sandboxError('obj.a.b++;', data)?.name).toBe('TypeError');
+    expect(frozenError('obj.a.b = 2;', data)?.name).toBe('TypeError');
+    expect(frozenError('obj.fresh = 2;', data)?.name).toBe('TypeError');
+    expect(frozenError('list[0] = 2;', data)?.name).toBe('TypeError');
+    expect(frozenError('list.length = 0;', data)?.name).toBe('TypeError');
+    expect(frozenError('obj.a.b++;', data)?.name).toBe('TypeError');
   });
 
   it('rejects writes to primitives, read-only properties, nullish values and forbidden keys', () => {
@@ -210,8 +218,8 @@ describe('delete and in', () => {
     expect(run('const l = [1, 2]; delete l[0]; return [l.length, l[0]];')).toEqual([2, undefined]);
   });
 
-  it('rejects deleting from input, nullish values and forbidden keys', () => {
-    expect(sandboxError('delete obj.a;', { obj: { a: 1 } })).toMatchObject({
+  it('rejects deleting from frozen input, nullish values and forbidden keys', () => {
+    expect(frozenError('delete obj.a;', { obj: { a: 1 } })).toMatchObject({
       name: 'TypeError',
       message: "Cannot delete property 'a' of #<Object>"
     });

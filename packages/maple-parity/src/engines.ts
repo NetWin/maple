@@ -54,33 +54,31 @@ export function runJsInterpreter(
 /**
  * Runs `code` in Node as the reference for what JavaScript does: the same strict-mode
  * function body as the other engines, with each key of `data` as a parameter. The input is a
- * frozen copy, as Maple's is, so a write to it fails in all three. Only the cases of this package
- * run here, never a script from outside.
+ * copy, as Maple's is, so a write to it never reaches the case. Only the cases of this package run
+ * here, never a script from outside.
  */
 export function runNode(code: string, data: Record<string, unknown> = {}, strict = true): Outcome {
   try {
     const keys = Object.keys(data);
     // oxlint-disable-next-line typescript/no-implied-eval -- the host is the reference engine here
     const run = new Function(...keys, `${strict ? "'use strict';\n" : ''}${code}`);
-    return { ok: true, value: run(...keys.map((key) => frozenCopy(data[key]))) };
+    return { ok: true, value: run(...keys.map((key) => copyOf(data[key]))) };
   } catch (error) {
     return { ok: false, error };
   }
 }
 
-/** A deep copy of plain objects and arrays, frozen; anything else is passed as it is. */
-function frozenCopy(value: unknown): unknown {
+/** A deep copy of plain objects and arrays; anything else is passed as it is. */
+function copyOf(value: unknown): unknown {
   if (Array.isArray(value)) {
-    return Object.freeze(value.map(frozenCopy));
+    return value.map(copyOf);
   }
   if (
     typeof value === 'object' &&
     value !== null &&
     Object.getPrototypeOf(value) === Object.prototype
   ) {
-    return Object.freeze(
-      Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, frozenCopy(entry)]))
-    );
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, copyOf(entry)]));
   }
   return value;
 }
