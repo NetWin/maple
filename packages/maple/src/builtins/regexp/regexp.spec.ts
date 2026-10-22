@@ -58,17 +58,17 @@ describe('RegExp', () => {
     expect(run('return /a/g + "";')).toBe('/a/g');
   });
 
-  it('is read-only when it came from the input', () => {
+  it('is read-only when it came from frozen input', () => {
     const data = { pattern: /a/g };
 
     expect(run('return pattern.test("a");', data)).toBe(true);
     expect(run('return pattern instanceof RegExp;', data)).toBe(true);
-    expect(runAndCatch(maple, 'pattern.lastIndex = 0;', data).sandboxError?.message).toBe(
-      "Cannot assign to read-only property 'lastIndex' of a RegExp"
-    );
-    expect(runAndCatch(maple, 'pattern.label = 1;', data).sandboxError?.message).toBe(
-      'Cannot add property label, object is not extensible'
-    );
+    expect(
+      runAndCatch(maple, 'pattern.lastIndex = 0;', data, { freeze: true }).sandboxError?.message
+    ).toBe("Cannot assign to read-only property 'lastIndex' of a RegExp");
+    expect(
+      runAndCatch(maple, 'pattern.label = 1;', data, { freeze: true }).sandboxError?.message
+    ).toBe('Cannot add property label, object is not extensible');
   });
 
   type Row = { flags: string; code: string };

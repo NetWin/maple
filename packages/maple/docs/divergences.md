@@ -12,9 +12,9 @@ one that does; the linked section has the detail.
 - Reading host and dangerous globals such as `globalThis`, `eval`, `Function`, `Proxy`, `process`
   or `window` throws `DISALLOWED_SYNTAX` instead of a `ReferenceError` ([Names](language.md#names)).
 - Scripts return their result with `return`; the completion value is not used.
-- Every global binding is read-only, so assigning to one throws a `TypeError`, unless the host
-  passes `freeze: false` for the bindings from `data` and run globals
-  ([Boundary](boundary.md#into-the-run)).
+- The standard and instance global bindings are read-only, so assigning to one throws a
+  `TypeError`. The bindings from `data` and run globals are too when the host passes
+  `freeze: true` ([Boundary](boundary.md#into-the-run)).
 
 ## Objects and properties
 
@@ -25,7 +25,7 @@ one that does; the linked section has the detail.
 - Plain objects have only `hasOwnProperty`, `toString`, `toLocaleString` and `valueOf`.
 - `defineProperty`, `getPrototypeOf`, `create` and the other descriptor and prototype functions
   are not available ([Object](builtins.md#object)).
-- Input data is frozen unless the host passes `freeze: false` ([Boundary](boundary.md#into-the-run)).
+- Input data is frozen when the host passes `freeze: true` ([Boundary](boundary.md#frozen-input)).
 
 ## Functions and constructors
 

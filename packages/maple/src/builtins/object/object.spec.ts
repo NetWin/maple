@@ -60,9 +60,9 @@ describe('Object statics', () => {
     ).toEqual([true, { a: 3, b: 2 }]);
     expect(run('return Object.assign({}, obj);', data)).toEqual({ b: 1, a: 2 });
     expect(run('return Object.assign({}, "ab");')).toEqual({ 0: 'a', 1: 'b' });
-    expect(runAndCatch(maple, 'Object.assign(obj, { c: 1 });', data).sandboxError?.name).toBe(
-      'TypeError'
-    );
+    expect(
+      runAndCatch(maple, 'Object.assign(obj, { c: 1 });', data, { freeze: true }).sandboxError?.name
+    ).toBe('TypeError');
     expect(runAndCatch(maple, 'Object.assign(5, {});').sandboxError?.name).toBe('TypeError');
   });
 
@@ -270,7 +270,11 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
       )
     ).toEqual(['TypeError', true, true, 1]);
     expect(
-      run('return [Object.isFrozen(obj), Object.isFrozen(lookup)];', { obj: {}, lookup: new Map() })
+      maple.run(
+        'return [Object.isFrozen(obj), Object.isFrozen(lookup)];',
+        { obj: {}, lookup: new Map() },
+        { freeze: true }
+      ).value
     ).toEqual([true, true]);
     expect(run('const o = Object.freeze({ a: [1] }); o.a.push(2); return o;')).toEqual({
       a: [1, 2]
@@ -405,10 +409,11 @@ describe('Object.seal and isSealed', () => {
 
   it('report it, true for primitives and for anything frozen', () => {
     expect(
-      run(
+      maple.run(
         'return [Object.isSealed(1), Object.isSealed(null), Object.isSealed({}), Object.isSealed(Object.preventExtensions({})), Object.isSealed(Object.preventExtensions({ a: 1 })), Object.isSealed(Object.freeze({ a: 1 })), Object.isSealed(obj)];',
-        { obj: { a: 1 } }
-      )
+        { obj: { a: 1 } },
+        { freeze: true }
+      ).value
     ).toEqual([true, true, false, true, false, true, true]);
     expect(
       run('return [Object.isFrozen(Object.seal({ a: 1 })), Object.isFrozen(Object.seal({}))];')

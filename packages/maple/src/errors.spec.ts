@@ -113,7 +113,9 @@ describe('errors', () => {
         'RangeError'
       );
       expect(
-        run('try { obj.a = 1; } catch (e) { return e instanceof TypeError; }', { obj: {} })
+        run(
+          'const obj = Object.freeze({}); try { obj.a = 1; } catch (e) { return e instanceof TypeError; }'
+        )
       ).toBe(true);
     });
 

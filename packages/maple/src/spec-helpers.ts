@@ -1,5 +1,5 @@
 import { MapleError } from './boundary/maple-error.ts';
-import type { Maple } from './maple.ts';
+import type { Maple, RunOptions } from './maple.ts';
 
 /**
  * `run` as a JavaScript caller sees it, with any value as the code and the data. `Maple` and
@@ -10,9 +10,14 @@ export interface UntypedRunner {
 }
 
 /** Runs `code` and returns the `MapleError` it throws, failing the test if it doesn't throw. */
-export function runAndCatch(maple: Maple, code: string, data?: object): MapleError {
+export function runAndCatch(
+  maple: Maple,
+  code: string,
+  data?: object,
+  options?: RunOptions
+): MapleError {
   try {
-    maple.run(code, data);
+    maple.run(code, data, options);
   } catch (error) {
     if (error instanceof MapleError) {
       return error;

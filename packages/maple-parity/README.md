@@ -12,8 +12,7 @@ It runs as part of `pnpm test` and so in CI.
 ## How it works
 
 `src/engines.ts` runs a script in all three engines the same way: as the body of a strict-mode function that hands
-its result back with `return`, with each key of `data` as a global. Node gets the input as a frozen copy, as Maple
-does. `@netwin/maple` resolves to the library's sources, so no build is needed.
+its result back with `return`, with each key of `data` as a global. Node gets the input as a copy, as Maple does. `@netwin/maple` resolves to the library's sources, so no build is needed.
 
 Each case in `src/cases/` is an explicit Vitest test:
 

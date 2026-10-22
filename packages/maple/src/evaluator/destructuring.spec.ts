@@ -97,9 +97,9 @@ describe('destructuring', () => {
 
     it('respect const and read-only bindings', () => {
       expect(sandboxError('const a = 1; [a] = [2];')?.name).toBe('TypeError');
-      expect(sandboxError('({ a: obj } = {});', data)?.message).toBe(
-        "Cannot assign to read-only global 'obj'"
-      );
+      expect(
+        runAndCatch(maple, '({ a: obj } = {});', data, { freeze: true }).sandboxError?.message
+      ).toBe("Cannot assign to read-only global 'obj'");
     });
   });
 

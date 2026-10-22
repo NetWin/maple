@@ -132,10 +132,12 @@ describe('Date', () => {
     expect(run('return [new Date(7)];')).toEqual([new Date(7)]);
   });
 
-  it('is read-only when it came from the input', () => {
+  it('is read-only when it came from frozen input', () => {
     const data = { when: new Date(0) };
 
-    expect(runAndCatch(maple, 'when.setHours(1);', data).sandboxError).toMatchObject({
+    expect(
+      runAndCatch(maple, 'when.setHours(1);', data, { freeze: true }).sandboxError
+    ).toMatchObject({
       name: 'TypeError',
       message: 'Cannot call setHours on a read-only Date'
     });
@@ -180,7 +182,8 @@ describe('legacy Date methods', () => {
     ).toEqual([2000, 0, 1, 0, true]);
     expect(run('return new Date(0).toGMTString();')).toBe('Thu, 01 Jan 1970 00:00:00 GMT');
     expect(
-      runAndCatch(maple, 'when.setYear(1);', { when: new Date(0) }).sandboxError?.message
+      runAndCatch(maple, 'when.setYear(1);', { when: new Date(0) }, { freeze: true }).sandboxError
+        ?.message
     ).toBe('Cannot call setYear on a read-only Date');
   });
 });

@@ -48,8 +48,8 @@ it can terminate.
   `this`, and host functions and intrinsics receive none.
 - **Copied input.** Everything the host passes in is a copy (see
   [Boundary](boundary.md#into-the-run)), so the host's own objects are never modified. A key of
-  `data` is copied when the script first reads it. The copy is frozen unless the host asks for a
-  changeable one for a single run; instance globals are frozen always.
+  `data` is copied when the script first reads it. The copy is frozen only when the host asks for it
+  for a single run; instance globals are frozen always.
 - **No state between runs.** An instance holds only its limits, its frozen globals and, when
   enabled, the frozen syntax trees of scripts it ran. What a run adds to a shared built-in, host
   function or namespace is gone when the next run starts. Host functions are the one channel

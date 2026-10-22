@@ -108,13 +108,15 @@ describe('data keys', () => {
     it('are read-only bindings to frozen copies', () => {
       const address = { city: 'Berlin' };
 
-      expect(maple.run('return Object.isFrozen(address);', { address }).value).toBe(true);
-      expect(runAndCatch(maple, 'address.city = "Hamburg";', { address }).sandboxError).toEqual(
-        expect.objectContaining({ name: 'TypeError' })
-      );
-      expect(runAndCatch(maple, 'address = {};', { address }).sandboxError?.message).toBe(
-        "Cannot assign to read-only global 'address'"
-      );
+      expect(
+        maple.run('return Object.isFrozen(address);', { address }, { freeze: true }).value
+      ).toBe(true);
+      expect(
+        runAndCatch(maple, 'address.city = "Hamburg";', { address }, { freeze: true }).sandboxError
+      ).toEqual(expect.objectContaining({ name: 'TypeError' }));
+      expect(
+        runAndCatch(maple, 'address = {};', { address }, { freeze: true }).sandboxError?.message
+      ).toBe("Cannot assign to read-only global 'address'");
       expect(address.city).toBe('Berlin');
     });
   });
@@ -122,7 +124,7 @@ describe('data keys', () => {
   describe('when not frozen', () => {
     it('are replaced unread by an assignment', () => {
       const { address, reads } = countedAddress();
-      const { value } = maple.run('address = 1; return address;', { address }, { freeze: false });
+      const { value } = maple.run('address = 1; return address;', { address });
 
       expect(value).toBe(1);
       expect(reads()).toBe(0);
@@ -130,11 +132,7 @@ describe('data keys', () => {
 
     it('are copies the script may change', () => {
       const address = { city: 'Berlin' };
-      const { value } = maple.run(
-        'address.city = "Hamburg"; return address;',
-        { address },
-        { freeze: false }
-      );
+      const { value } = maple.run('address.city = "Hamburg"; return address;', { address });
 
       expect(value).toEqual({ city: 'Hamburg' });
       expect(address.city).toBe('Berlin');

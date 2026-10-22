@@ -61,9 +61,9 @@ interface MapleRunStats {
 ```
 
 `data` is `undefined` or a plain object; its top-level keys become globals. `options.globals` adds
-bindings for this run only. `options.freeze: false` lets the
-script change and reassign its copy of `data` and of the run globals (see
-[Boundary](boundary.md#changeable-input)).
+bindings for this run only. The script may change and reassign its copy of
+`data` and of the run globals; `options.freeze: true` freezes them and binds them read-only (see
+[Boundary](boundary.md#frozen-input)).
 A `code` that is not a string, a `data` that is not a plain object, or a symbol or bigint directly
 under `data` throws a plain `TypeError` before the run starts, because that is a host programming
 error, not a script error. A value Maple cannot copy deeper in `data` ends the run with
