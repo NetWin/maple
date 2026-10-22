@@ -27,7 +27,7 @@ Instance: `length`, `at`, `charAt`, `charCodeAt`, `codePointAt`, `concat`, `ends
 `toUpperCase`, `toString`, `toWellFormed`, `trim`, `trimEnd`, `trimLeft`, `trimRight`, `trimStart`,
 `valueOf`.
 
-Static: `String.fromCharCode`, `String.fromCodePoint`.
+Static: `String.fromCharCode`, `String.fromCodePoint`, `String.raw`.
 
 The HTML methods such as `anchor` and `bold` are not available.
 

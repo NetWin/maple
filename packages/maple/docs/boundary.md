@@ -117,7 +117,8 @@ Only an explicit `false` turns freezing off. This does not widen the sandbox:
 Arguments are copied into normal host objects, so the host function cannot mutate anything the
 script sees. Functions become `undefined` at any depth, as in a result, so the script cannot hand it
 anything executable but can still pass an object that holds functions. A sandbox error arrives as
-the plain object described below.
+the plain object described below. A host function used as a tag receives the strings array as such
+a copy, so it has no `raw`.
 
 The return value is copied like the input, except that the copy is not frozen, because the script
 owns it, and functions are not accepted.

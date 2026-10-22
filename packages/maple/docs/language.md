@@ -20,7 +20,7 @@ Statements:
 
 Expressions:
 
-- Literals, including template literals and regular expression literals
+- Literals, including template literals, tagged templates and regular expression literals
 - Array and object literals, with shorthand properties, computed keys, spread and holes
 - Function expressions and arrow functions, with default, rest and destructuring parameters
 - Destructuring in declarations, parameters, assignments and loop heads
@@ -33,8 +33,8 @@ Expressions:
 ## Not supported
 
 Reaching any of these throws `DISALLOWED_SYNTAX`: `class`, `super`, `async` / `await`, generators
-and `yield`, getters and setters, tagged templates, `import` / `export`, `import.meta`, `new.target`,
-and `arguments` at the script level, which is no function.
+and `yield`, getters and setters, `import` / `export`, `import.meta`, `new.target`, and `arguments`
+at the script level, which is no function.
 
 An `async` or generator function throws when the closure is created, not when it is called. For a
 function declaration that is hoisting time, so the script fails before its first statement runs.
@@ -86,6 +86,13 @@ function still cannot be constructed ([Constructors](#constructors)).
 Every function, and every namespace such as `Math`, takes the properties a script adds, as in
 `fn.cache = {}`. Built-ins, host functions and namespaces are shared by every run, so what a run
 adds to one, or `freeze`s on it, is gone when the next run starts.
+
+A tagged template `` tag`a${x}b` `` calls `tag` with the strings array and then each substitution as
+a value, not converted to a string, with `this` bound as for a call of the same form. The strings
+array is frozen, its non-enumerable `raw` holds the raw text, and an invalid escape, which only a
+tagged template allows, leaves `undefined` in the cooked string. Each template site has one strings
+array for the run, so a tag sees the same array every time its site is evaluated; a nested run has
+arrays of its own, even for the same source.
 
 ## Value model
 
