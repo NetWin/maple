@@ -1,41 +1,22 @@
 import type {
-  ArrayExpression,
-  AssignmentExpression,
   CallExpression,
   Expression,
-  LogicalExpression,
-  MemberExpression,
   ModuleDeclaration,
   NewExpression,
   Node,
-  ObjectExpression,
   Pattern,
   Program,
   SpreadElement,
   Statement,
   Super,
-  TaggedTemplateExpression,
-  TemplateLiteral,
-  UnaryExpression,
-  UpdateExpression
+  TaggedTemplateExpression
 } from 'acorn';
-import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
-import { assertNever } from '../support/assert-never.ts';
-import { defineOwn } from '../support/own-property.ts';
 import { createArgumentsObject } from '../values/arguments-object.ts';
 import { Builtin } from '../values/builtin.ts';
 import { Closure } from '../values/closure.ts';
-import { toBoolean, toNumber, toString, typeOf } from '../values/coercion.ts';
-import {
-  assertAllowedKey,
-  deleteMember,
-  hasMember,
-  ownEntries,
-  toPropertyKey
-} from '../values/members.ts';
-import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
+import { type CallContext, NativeFunction } from '../values/native.ts';
 import { UnplacedError } from '../values/sandbox-error.ts';
-import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
+import { evaluateAssignment, evaluateUpdate } from './assignments.ts';
 import { evaluateBlock, evaluateDeclaration, evaluateFunctionBody } from './blocks.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
 import { createClosure } from './closures.ts';
@@ -50,9 +31,17 @@ import {
   evaluateThrow,
   evaluateTry
 } from './control-flow.ts';
-import { describe, patternName } from './describe.ts';
+import { describe } from './describe.ts';
 import { HostBridge, type NestedRun } from './host-bridge.ts';
 import type { Interpreter } from './interpreter.ts';
+import {
+  evaluateArray,
+  evaluateLiteral,
+  evaluateObject,
+  evaluateTemplate,
+  spreadInto,
+  templateObject
+} from './literals.ts';
 import {
   evaluateDoWhile,
   evaluateFor,
@@ -62,18 +51,18 @@ import {
   type Labels,
   NO_LABELS
 } from './loops.ts';
-import { propertyKey } from './member-access.ts';
-import { applyBinary, applyUnary, COMPOUND_OPERATORS } from './operators.ts';
-import { bindPattern, iterateOrThrow } from './patterns.ts';
-import { readIdentifier, resolveTarget } from './references.ts';
+import { accessMember, evaluateChain, evaluateMember, SHORT_CIRCUIT } from './member-access.ts';
+import {
+  evaluateBinary,
+  evaluateConditional,
+  evaluateLogical,
+  evaluateSequence,
+  evaluateUnary
+} from './operators.ts';
+import { bindPattern } from './patterns.ts';
+import { readIdentifier } from './references.ts';
 import { RunContext } from './run-context.ts';
 import { Scope } from './scope.ts';
-
-/**
- * Travels up an optional chain once a `?.` met null or undefined; `ChainExpression` turns it into
- * undefined.
- */
-const SHORT_CIRCUIT: unique symbol = Symbol('short-circuit');
 
 /** Evaluates a parsed program under a budget; anything it does not implement throws when reached. */
 export class Evaluator implements Interpreter {
@@ -177,86 +166,66 @@ export class Evaluator implements Interpreter {
     }
   }
 
+  /**
+   * Evaluates one expression to its value: charges an operation for it, then hands it, by its AST
+   * node type, to the chapter that implements it (`literals.ts`, `member-access.ts`,
+   * `assignments.ts`, `operators.ts`, ...), or handles it right here when it takes a line or two.
+   * An expression type that is not listed, such as `class` or `await`, ends the run as
+   * unsupported syntax.
+   *
+   * Like `evaluateStatement`, it turns an `UnplacedError` from code that knows no positions, such
+   * as a value conversion, into a script error. Expressions nest, so the error gets the position of
+   * the innermost expression it surfaces from: in `'Groups: ' + Object.groupBy(list, by)`, the
+   * object without a prototype cannot be converted to a string, and the TypeError points at the
+   * `+` expression.
+   */
   public evaluateExpression(node: Expression, scope: Scope): unknown {
     this.context.tick(node);
-    // An error from a conversion gets the position of the innermost expression it surfaces from
     try {
       switch (node.type) {
         case 'Literal':
-          if (node.regex) {
-            // Every evaluation creates a new regexp, as the spec requires for literals
-            const { pattern, flags } = node.regex;
-            return new RegExpWrapper(
-              guardHostErrors(this.context.failAt(node), () => new RegExp(pattern, flags))
-            );
-          }
-          if (typeof node.value === 'bigint') {
-            return this.context.unsupportedFeature(node, 'bigint literals');
-          }
-          return node.value;
+          return evaluateLiteral(this, node);
         case 'Identifier':
           return readIdentifier(this.context, node, scope);
         case 'ThisExpression':
+          // The receiver of the nearest non-arrow function call, or undefined at the script level
           return scope.receiver();
         case 'TemplateLiteral':
-          return this.evaluateTemplate(node, scope);
+          return evaluateTemplate(this, node, scope);
         case 'TaggedTemplateExpression':
           return this.evaluateTaggedTemplate(node, scope);
         case 'ObjectExpression':
-          return this.evaluateObject(node, scope);
+          return evaluateObject(this, node, scope);
         case 'ArrayExpression':
-          return this.evaluateArray(node, scope);
+          return evaluateArray(this, node, scope);
         case 'MemberExpression':
-          return this.evaluateMember(node, scope);
-        case 'ChainExpression': {
-          const value = this.evaluateExpression(node.expression, scope);
-          return value === SHORT_CIRCUIT ? undefined : value;
-        }
+          return evaluateMember(this, node, scope);
+        case 'ChainExpression':
+          return evaluateChain(this, node, scope);
         case 'AssignmentExpression':
-          return this.evaluateAssignment(node, scope);
+          return evaluateAssignment(this, node, scope);
         case 'UpdateExpression':
-          return this.evaluateUpdate(node, scope);
+          return evaluateUpdate(this, node, scope);
         case 'UnaryExpression':
-          return this.evaluateUnary(node, scope);
-        case 'BinaryExpression': {
-          if (node.left.type === 'PrivateIdentifier') {
-            return this.context.unsupported(node.left);
-          }
-          const left = this.evaluateExpression(node.left, scope);
-          const right = this.evaluateExpression(node.right, scope);
-          if (node.operator === 'in') {
-            const key = toPropertyKey(left);
-            return hasMember(right, key, this.context.memberContext(node)) || hasMethod(right, key);
-          }
-          if (node.operator === 'instanceof') {
-            return this.instanceOf(left, right, node);
-          }
-          const operator = node.operator;
-          return guardHostErrors(this.context.failAt(node), () =>
-            applyBinary(operator, left, right)
-          );
-        }
+          return evaluateUnary(this, node, scope);
+        case 'BinaryExpression':
+          return evaluateBinary(this, node, scope);
         case 'LogicalExpression':
-          return this.evaluateLogical(node, scope);
+          return evaluateLogical(this, node, scope);
         case 'ConditionalExpression':
-          return toBoolean(this.evaluateExpression(node.test, scope))
-            ? this.evaluateExpression(node.consequent, scope)
-            : this.evaluateExpression(node.alternate, scope);
-        case 'SequenceExpression': {
-          let result: unknown;
-          for (const expression of node.expressions) {
-            result = this.evaluateExpression(expression, scope);
-          }
-          return result;
-        }
+          return evaluateConditional(this, node, scope);
+        case 'SequenceExpression':
+          return evaluateSequence(this, node, scope);
         case 'FunctionExpression':
         case 'ArrowFunctionExpression':
+          // Creating a function evaluates nothing inside it yet; its body runs when it is called
           return createClosure(this.context, node, scope);
         case 'CallExpression':
           return this.evaluateCall(node, scope);
         case 'NewExpression':
           return this.evaluateNew(node, scope);
         case 'MetaProperty':
+          // `new.target` and `import.meta`
           return this.context.unsupported(node, `${node.meta.name}.${node.property.name}`);
         default:
           return this.context.unsupported(node);
@@ -278,241 +247,18 @@ export class Evaluator implements Interpreter {
     return callee.construct(this.evaluateArguments(node.arguments, scope), this.callContext(node));
   }
 
-  private instanceOf(value: unknown, constructor: unknown, node: Node): boolean {
-    if (!(constructor instanceof Builtin) || !constructor.isInstance) {
-      return this.context.throwError(
-        'TypeError',
-        "Right-hand side of 'instanceof' is not a constructor",
-        node
-      );
-    }
-    return constructor.isInstance(value);
-  }
-
-  private evaluateTemplate(node: TemplateLiteral, scope: Scope): string {
-    const parts: Array<string> = [];
-    for (const [index, quasi] of node.quasis.entries()) {
-      parts.push(quasi.value.cooked ?? '');
-      const expression = node.expressions[index];
-      if (expression) {
-        parts.push(toString(this.evaluateExpression(expression, scope)));
-      }
-    }
-    return guardHostErrors(this.context.failAt(node), () => parts.join(''));
-  }
-
   /**
    * Calls the tag with the site's strings array and the substitutions as values, in JavaScript's
    * order: the tag, then the strings, then the substitutions.
    */
   private evaluateTaggedTemplate(node: TaggedTemplateExpression, scope: Scope): unknown {
     const { receiver, target } = this.resolveCallee(node.tag, scope);
-    const strings = this.templateObject(node.quasi, node);
+    const strings = templateObject(this, node.quasi, node);
     const substitutions = node.quasi.expressions.map((expression) =>
       this.evaluateExpression(expression, scope)
     );
     // acorn refuses an optional chain in a tag, so the target cannot be a short circuit here
     return this.invoke(receiver, target, [strings, ...substitutions], node, describe(node.tag));
-  }
-
-  /**
-   * The frozen strings array of a template site, with the raw text under a non-enumerable `raw`.
-   * An invalid escape, which acorn allows in a tagged template, leaves `undefined` in the cooked
-   * strings, as in JavaScript.
-   */
-  private templateObject(quasi: TemplateLiteral, node: Node): ReadonlyArray<string | undefined> {
-    const cached = this.context.runState.getTemplateObject(quasi);
-    if (cached) {
-      return cached;
-    }
-
-    this.context.charge(quasi.quasis.length, node);
-    const cooked: Array<string | undefined> = quasi.quasis.map(
-      (element) => element.value.cooked ?? undefined
-    );
-
-    const raw: Array<string> = quasi.quasis.map((element) => element.value.raw);
-    Object.freeze(raw);
-
-    Object.defineProperty(cooked, 'raw', {
-      value: raw,
-      writable: false,
-      enumerable: false,
-      configurable: false
-    });
-    Object.freeze(cooked);
-
-    this.context.runState.setTemplateObject(quasi, cooked);
-    return cooked;
-  }
-
-  private evaluateObject(node: ObjectExpression, scope: Scope): Record<string, unknown> {
-    const object: Record<string, unknown> = {};
-    for (const property of node.properties) {
-      if (property.type === 'SpreadElement') {
-        for (const [key, value] of ownEntries(
-          this.evaluateExpression(property.argument, scope),
-          this.context.runState
-        )) {
-          this.context.tick(property);
-          defineOwn(object, key, value);
-        }
-        continue;
-      }
-      if (property.kind !== 'init') {
-        return this.context.unsupportedFeature(property, 'getters and setters');
-      }
-      const key = propertyKey(this, property.key, property.computed, scope);
-      assertAllowedKey(key, this.context.failAt(property));
-      defineOwn(object, key, this.evaluateNamed(property.value, scope, key));
-    }
-    return object;
-  }
-
-  private evaluateArray(node: ArrayExpression, scope: Scope): Array<unknown> {
-    const array: Array<unknown> = [];
-    for (const element of node.elements) {
-      if (element === null) {
-        // An elision leaves a hole, so `1 in [1, , 3]` is false
-        array.length++;
-      } else if (element.type === 'SpreadElement') {
-        this.spreadInto(array, element, scope);
-      } else {
-        array.push(this.evaluateExpression(element, scope));
-      }
-    }
-    return array;
-  }
-
-  private spreadInto(target: Array<unknown>, element: SpreadElement, scope: Scope): void {
-    const value = this.evaluateExpression(element.argument, scope);
-    const iterator = iterateOrThrow(
-      this.context,
-      value,
-      element.argument,
-      describe(element.argument)
-    );
-    for (let step = iterator.next(); !step.done; step = iterator.next()) {
-      this.context.tick(element);
-      target.push(step.value);
-    }
-  }
-
-  private evaluateMember(node: MemberExpression, scope: Scope): unknown {
-    const access = this.accessMember(node, scope);
-    return access === SHORT_CIRCUIT ? SHORT_CIRCUIT : access.value;
-  }
-
-  /** A member read that also hands back the object, which a call needs as its receiver. */
-  private accessMember(
-    node: MemberExpression,
-    scope: Scope
-  ): { object: unknown; value: unknown } | typeof SHORT_CIRCUIT {
-    if (node.object.type === 'Super') {
-      return this.context.unsupported(node.object);
-    }
-    const object = this.evaluateExpression(node.object, scope);
-    if (object === SHORT_CIRCUIT || (node.optional && (object === null || object === undefined))) {
-      return SHORT_CIRCUIT;
-    }
-    const key = propertyKey(this, node.property, node.computed, scope);
-    return { object, value: getMember(object, key, this.context.memberContext(node)) };
-  }
-
-  private evaluateAssignment(node: AssignmentExpression, scope: Scope): unknown {
-    const target = node.left;
-    if (target.type !== 'Identifier' && target.type !== 'MemberExpression') {
-      const value = this.evaluateExpression(node.right, scope);
-      bindPattern(this, target, value, scope, 'assign', describe(node.right));
-      return value;
-    }
-    const reference = resolveTarget(this, target, scope);
-    const { operator } = node;
-    if (operator === '=') {
-      const value = this.evaluateNamed(node.right, scope, patternName(target));
-      reference.set(value);
-      return value;
-    }
-    const current = reference.get();
-    let value: unknown;
-    switch (operator) {
-      case '&&=':
-        if (!toBoolean(current)) {
-          return current;
-        }
-        value = this.evaluateNamed(node.right, scope, patternName(target));
-        break;
-      case '||=':
-        if (toBoolean(current)) {
-          return current;
-        }
-        value = this.evaluateNamed(node.right, scope, patternName(target));
-        break;
-      case '??=':
-        if (current !== null && current !== undefined) {
-          return current;
-        }
-        value = this.evaluateNamed(node.right, scope, patternName(target));
-        break;
-      default:
-        const right = this.evaluateExpression(node.right, scope);
-        value = guardHostErrors(this.context.failAt(node), () =>
-          applyBinary(COMPOUND_OPERATORS[operator], current, right)
-        );
-    }
-    reference.set(value);
-    return value;
-  }
-
-  private evaluateUpdate(node: UpdateExpression, scope: Scope): number {
-    const target = node.argument;
-    if (target.type !== 'Identifier' && target.type !== 'MemberExpression') {
-      return this.context.unsupported(target);
-    }
-    const reference = resolveTarget(this, target, scope);
-    const previous = toNumber(reference.get());
-    const value = node.operator === '++' ? previous + 1 : previous - 1;
-    reference.set(value);
-    return node.prefix ? value : previous;
-  }
-
-  private evaluateUnary(node: UnaryExpression, scope: Scope): unknown {
-    switch (node.operator) {
-      case 'delete': {
-        if (node.argument.type !== 'MemberExpression') {
-          this.evaluateExpression(node.argument, scope);
-          return true;
-        }
-        if (node.argument.object.type === 'Super') {
-          return this.context.unsupported(node.argument.object);
-        }
-        const object = this.evaluateExpression(node.argument.object, scope);
-        const key = propertyKey(this, node.argument.property, node.argument.computed, scope);
-        return deleteMember(object, key, this.context.memberContext(node.argument));
-      }
-      case 'typeof':
-        // `typeof undeclared` is the one read of an unknown name that does not throw
-        if (node.argument.type === 'Identifier' && !scope.lookup(node.argument.name)) {
-          return 'undefined';
-        }
-        return typeOf(this.evaluateExpression(node.argument, scope));
-      default:
-        return applyUnary(node.operator, this.evaluateExpression(node.argument, scope));
-    }
-  }
-
-  private evaluateLogical(node: LogicalExpression, scope: Scope): unknown {
-    const left = this.evaluateExpression(node.left, scope);
-    switch (node.operator) {
-      case '&&':
-        return toBoolean(left) ? this.evaluateExpression(node.right, scope) : left;
-      case '||':
-        return toBoolean(left) ? left : this.evaluateExpression(node.right, scope);
-      case '??':
-        return left ?? this.evaluateExpression(node.right, scope);
-      default:
-        return assertNever(node.operator, 'logical operator');
-    }
   }
 
   /**
@@ -557,7 +303,7 @@ export class Evaluator implements Interpreter {
     if (callee.type === 'MemberExpression') {
       // Not routed through evaluateExpression so a short-circuited object is seen here
       this.context.tick(callee);
-      const access = this.accessMember(callee, scope);
+      const access = accessMember(this, callee, scope);
       if (access === SHORT_CIRCUIT) {
         return { receiver: undefined, target: SHORT_CIRCUIT };
       } else {
@@ -569,7 +315,7 @@ export class Evaluator implements Interpreter {
       // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
       this.context.tick(callee);
       this.context.tick(callee.expression);
-      const access = this.accessMember(callee.expression, scope);
+      const access = accessMember(this, callee.expression, scope);
       if (access === SHORT_CIRCUIT) {
         return { receiver: undefined, target: SHORT_CIRCUIT };
       } else {
@@ -639,7 +385,7 @@ export class Evaluator implements Interpreter {
     const args: Array<unknown> = [];
     for (const argument of nodes) {
       if (argument.type === 'SpreadElement') {
-        this.spreadInto(args, argument, scope);
+        spreadInto(this, args, argument, scope);
       } else {
         args.push(this.evaluateExpression(argument, scope));
       }
