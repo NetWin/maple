@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Maple } from '../maple.ts';
-import { runAndCatch } from '../spec-helpers.ts';
+import { Maple } from '../../maple.ts';
+import { runAndCatch } from '../../spec-helpers.ts';
 
 /** Assigns to a property of the data and returns the new value, or the name of the error. */
 function assignInData(options: object): unknown {

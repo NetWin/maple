@@ -1,8 +1,9 @@
 import type { FunctionDeclaration, ModuleDeclaration, Pattern, Statement } from 'acorn';
-import { assertNever } from '../support/assert-never.ts';
-import type { Scope } from './scope.ts';
+import { assertNever } from '../../support/assert-never.ts';
+import type { Scope } from '../scope.ts';
 
-type StatementList = ReadonlyArray<Statement | ModuleDeclaration>;
+/** The statements of a block, a function body or a whole script. */
+export type StatementList = ReadonlyArray<Statement | ModuleDeclaration>;
 
 /**
  * Declares every `var` of a function body in `scope`, so reads before the declaration see
@@ -22,8 +23,8 @@ export function hoistVarDeclarations(body: StatementList, scope: Scope): void {
 }
 
 /**
- * Declares the `let` and `const` of a block as uninitialized, which is what makes the TDZ
- * observable.
+ * Declares the `let` and `const` of a block as uninitialized,
+ * which is what makes the TDZ observable.
  */
 export function hoistLexicalDeclarations(statements: StatementList, scope: Scope): void {
   for (const statement of statements) {

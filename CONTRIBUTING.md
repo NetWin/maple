@@ -67,6 +67,44 @@ The library compiles against `lib: ["ES2024", "ES2025.Collection", "ES2025.Itera
 It has neither DOM nor Node type definitions, so a host API cannot be used by accident.
 The declared exceptions are the guarded `performance.now()` behind `durationMs`, and `atob` and `btoa`.
 
+### Evaluator layout
+
+The evaluator in `packages/maple/src/evaluator` runs a script by walking the syntax tree acorn parsed from it.
+`Evaluator` in `evaluator.ts` is only a switchboard: `evaluateStatement` and `evaluateExpression` charge an operation for each node and hand it, by its node type, to the file in `language/` that implements that part of JavaScript.
+
+| `language/`        | JavaScript it implements                                                 |
+| ------------------ | ------------------------------------------------------------------------ |
+| `hoisting.ts`      | which names a block or function declares, before its statements run      |
+| `blocks.ts`        | statement lists, hoisting, `var` / `let` / `const`                       |
+| `loops.ts`         | `while`, `do…while`, `for`, `for…of`, `for…in`                           |
+| `control-flow.ts`  | `if`, `return`, `break`, `continue`, labels, `switch`, `throw`, `try`    |
+| `literals.ts`      | literals, template literals, object and array literals, spread           |
+| `member-access.ts` | `a.b`, `a[b]`, optional chains, `delete`                                 |
+| `references.ts`    | reading and assigning variables                                          |
+| `patterns.ts`      | destructuring into names, as in declarations, parameters and assignments |
+| `operators.ts`     | unary, binary, logical, conditional and comma operators                  |
+| `assignments.ts`   | `=`, compound and logical assignment, `++` / `--`                        |
+| `closures.ts`      | creating function values from `function` and arrow syntax                |
+| `calls.ts`         | calls, `new`, tagged templates, running a script function                |
+
+Next to `language/` is what every part of JavaScript runs on:
+
+- `run-context.ts`: the run's budget, call stack and run state, and how errors are raised: a script error the script can catch, or a `MapleError` that ends the run.
+- `host-bridge.ts`: every call into host functions and intrinsics, which is where values are copied and host exceptions are hidden from the script.
+- `scope.ts`, `completion.ts`, `budget.ts`, `describe.ts`: scopes, completions (how a `return`, `break` or `continue` travels up), the operation budget, and the text error messages quote from the script.
+
+Three rules keep the language files apart, so a function can be understood from its own file:
+
+1. A language file is a set of plain functions that take the `Interpreter` (see `interpreter.ts`) as their first argument.
+   Whenever it evaluates a piece of syntax it does not handle itself, such as the default in `{ size = 10 }`, it calls the interpreter, which dispatches it.
+2. A language file may call plain helpers of the language files below it, as `patterns.ts` uses `resolveMember` from `references.ts`, but never of one above, so the imports form no cycle.
+3. A function that takes only a `RunContext`, not the interpreter, cannot evaluate anything.
+
+Every language file starts with a comment that explains its part of JavaScript with examples, written for a reader who does not know Maple.
+
+To support a new piece of syntax, add its case to the dispatcher in `evaluator.ts`, implement it as a function in the language file it belongs to, test it through `Maple.run` in the spec in `language/` for that part of the language, such as `control-flow.spec.ts` or `destructuring.spec.ts`, and list it in [language.md](packages/maple/docs/language.md).
+Hot paths are measured with `pnpm --filter @netwin/maple-playground measure-run <script.js>`; compare before and after a change to the evaluator.
+
 ### Adding a built-in
 
 1. Register the method under its name in the prototype of the receiver type as `method(String.prototype.name.length, (receiver, args, context) => value)`, or a static as `new NativeFunction('isArray', Array.isArray.length, (args, context) => value)` in the `members` of the namespace.

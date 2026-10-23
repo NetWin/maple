@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Maple, type RunOptions } from '../maple.ts';
-import { runAndCatch } from '../spec-helpers.ts';
+import { Maple, type RunOptions } from '../../maple.ts';
+import { runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 
