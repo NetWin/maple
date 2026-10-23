@@ -8,7 +8,6 @@ import type {
   ForInStatement,
   ForOfStatement,
   ForStatement,
-  Identifier,
   LogicalExpression,
   MemberExpression,
   ModuleDeclaration,
@@ -16,7 +15,6 @@ import type {
   Node,
   ObjectExpression,
   Pattern,
-  PrivateIdentifier,
   Program,
   SpreadElement,
   Statement,
@@ -30,8 +28,6 @@ import type {
   VariableDeclaration,
   WhileStatement
 } from 'acorn';
-import { UnsupportedInputError } from '../boundary/from-host.ts';
-import { MapleErrorCode } from '../boundary/maple-error.ts';
 import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
 import { assertNever } from '../support/assert-never.ts';
 import { defineOwn } from '../support/own-property.ts';
@@ -39,13 +35,12 @@ import { createArgumentsObject } from '../values/arguments-object.ts';
 import { Builtin } from '../values/builtin.ts';
 import { Closure, type FunctionNode } from '../values/closure.ts';
 import { toBoolean, toNumber, toString, typeOf } from '../values/coercion.ts';
-import { enumerableKeys, iterate } from '../values/iteration.ts';
+import { enumerableKeys } from '../values/iteration.ts';
 import {
   assertAllowedKey,
   deleteMember,
   hasMember,
   ownEntries,
-  setMember,
   toPropertyKey
 } from '../values/members.ts';
 import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
@@ -61,62 +56,13 @@ import {
   hoistVarDeclarations
 } from './hoisting.ts';
 import { HostBridge, type NestedRun } from './host-bridge.ts';
+import type { Interpreter } from './interpreter.ts';
+import { propertyKey } from './member-access.ts';
 import { applyBinary, applyUnary, COMPOUND_OPERATORS } from './operators.ts';
+import { bindPattern, iterateOrThrow } from './patterns.ts';
+import { readIdentifier, resolveTarget } from './references.ts';
 import { RunContext } from './run-context.ts';
 import { Scope } from './scope.ts';
-
-/**
- * Host globals that must never resolve; reading one is reported as unsupported, not undefined.
- * `arguments` is among them for the script level, which is no function and has none.
- */
-const HOST_ONLY_NAMES: ReadonlySet<string> = new Set([
-  'eval',
-  'arguments',
-  'Function',
-  'globalThis',
-  'Proxy',
-  'Reflect',
-  'Symbol',
-  'WeakMap',
-  'WeakSet',
-  'Promise',
-  'WeakRef',
-  'FinalizationRegistry',
-  'SharedArrayBuffer',
-  'Atomics',
-  'WebAssembly',
-  'Intl',
-  'require',
-  'module',
-  'exports',
-  'process',
-  'global',
-  'Buffer',
-  '__dirname',
-  '__filename',
-  'Deno',
-  'Bun',
-  'window',
-  'self',
-  'document',
-  'navigator',
-  'location',
-  'localStorage',
-  'sessionStorage',
-  'indexedDB',
-  'fetch',
-  'XMLHttpRequest',
-  'WebSocket',
-  'Worker',
-  'importScripts',
-  'postMessage',
-  'structuredClone',
-  'setTimeout',
-  'setInterval',
-  'setImmediate',
-  'queueMicrotask',
-  'requestAnimationFrame'
-]);
 
 /**
  * Travels up an optional chain once a `?.` met null or undefined; `ChainExpression` turns it into
@@ -131,30 +77,21 @@ type Labels = ReadonlyArray<string>;
 
 const NO_LABELS: Labels = [];
 
-/** How a pattern binds its names: a declaration, a parameter, or an assignment to existing targets. */
-type BindMode = 'initialize' | 'parameter' | 'assign';
-
-/** A resolved assignment target, read and written in place for compound operators. */
-interface Reference {
-  get(): unknown;
-  set(value: unknown): void;
-}
-
 /** Evaluates a parsed program under a budget; anything it does not implement throws when reached. */
-export class Evaluator {
-  readonly #context: RunContext;
+export class Evaluator implements Interpreter {
+  public readonly context: RunContext;
 
   readonly #host: HostBridge;
 
   constructor(budget: Budget, nestedRun: NestedRun) {
-    this.#context = new RunContext(budget);
-    this.#host = new HostBridge(this.#context, nestedRun, (callee, args, node) =>
+    this.context = new RunContext(budget);
+    this.#host = new HostBridge(this.context, nestedRun, (callee, args, node) =>
       this.call(undefined, callee, args, node)
     );
   }
 
   public stats(): MapleRunStats {
-    return this.#context.stats();
+    return this.context.stats();
   }
 
   /**
@@ -202,7 +139,7 @@ export class Evaluator {
     scope: Scope,
     labels: Labels = NO_LABELS
   ): Completion {
-    this.#context.tick(node);
+    this.context.tick(node);
     // The net for conversions outside any expression, such as a computed key in a pattern
     try {
       switch (node.type) {
@@ -258,17 +195,17 @@ export class Evaluator {
           throw new SandboxThrow(
             value,
             node,
-            value instanceof SandboxError ? '' : this.#context.stackTrace(node)
+            value instanceof SandboxError ? '' : this.context.stackTrace(node)
           );
         }
         case 'TryStatement':
           return this.evaluateTry(node, scope);
         default:
-          return this.#context.unsupported(node);
+          return this.context.unsupported(node);
       }
     } catch (error) {
       if (error instanceof UnplacedError) {
-        return this.#context.throwError(error.name, error.message, node);
+        return this.context.throwError(error.name, error.message, node);
       }
       throw error;
     }
@@ -321,7 +258,7 @@ export class Evaluator {
       for (const name of names) {
         catchScope.define(name, 'let');
       }
-      this.bindPattern(handler.param, thrown, catchScope, 'initialize');
+      bindPattern(this, handler.param, thrown, catchScope, 'initialize');
     }
     return this.evaluateStatement(handler.body, catchScope);
   }
@@ -329,7 +266,7 @@ export class Evaluator {
   private evaluateDeclaration(node: VariableDeclaration, scope: Scope): void {
     const kind = node.kind;
     if (kind !== 'var' && kind !== 'let' && kind !== 'const') {
-      return this.#context.unsupported(node, kind);
+      return this.context.unsupported(node, kind);
     }
     for (const declarator of node.declarations) {
       // A bare `var a;` must not reset a value the hoisted binding already holds
@@ -340,126 +277,13 @@ export class Evaluator {
         ? this.evaluateNamed(declarator.init, scope, patternName(declarator.id))
         : undefined;
       const source = declarator.init ? describe(declarator.init) : 'undefined';
-      this.bindPattern(declarator.id, value, scope, 'initialize', source);
-    }
-  }
-
-  /**
-   * Binds a pattern's names; for declarations the bindings themselves were created by hoisting.
-   * `source` names the value in error messages, as in `obj is not iterable`.
-   */
-  private bindPattern(
-    pattern: Pattern,
-    value: unknown,
-    scope: Scope,
-    mode: BindMode,
-    source: string = 'value'
-  ): void {
-    switch (pattern.type) {
-      case 'Identifier':
-        this.bindName(pattern, value, scope, mode);
-        return;
-      case 'MemberExpression':
-        this.resolveMember(pattern, scope).set(value);
-        return;
-      case 'AssignmentPattern': {
-        const bound =
-          value === undefined
-            ? this.evaluateNamed(pattern.right, scope, patternName(pattern.left))
-            : value;
-        this.bindPattern(pattern.left, bound, scope, mode);
-        return;
-      }
-      case 'ObjectPattern':
-        this.bindObjectPattern(pattern, value, scope, mode);
-        return;
-      case 'ArrayPattern':
-        this.bindArrayPattern(pattern, value, scope, mode, source);
-        return;
-      case 'RestElement':
-        throw new Error('A rest element outside of its pattern');
-      default:
-        return assertNever(pattern, 'pattern');
-    }
-  }
-
-  private bindName(node: Identifier, value: unknown, scope: Scope, mode: BindMode): void {
-    switch (mode) {
-      case 'initialize':
-        scope.initialize(node.name, value);
-        return;
-      case 'parameter':
-        scope.define(node.name, 'var', value);
-        return;
-      case 'assign':
-        this.assignIdentifier(node, value, scope);
-        return;
-      default:
-        return assertNever(mode, 'bind mode');
-    }
-  }
-
-  private bindObjectPattern(
-    pattern: Extract<Pattern, { type: 'ObjectPattern' }>,
-    value: unknown,
-    scope: Scope,
-    mode: BindMode
-  ): void {
-    if (value === undefined || value === null) {
-      return this.#context.throwError(
-        'TypeError',
-        `Cannot destructure '${String(value)}' as it is ${String(value)}.`,
-        pattern
-      );
-    }
-    const context = this.#context.memberContext(pattern);
-    const taken = new Set<string>();
-    for (const property of pattern.properties) {
-      if (property.type === 'RestElement') {
-        const rest: Record<string, unknown> = {};
-        for (const [key, entry] of ownEntries(value, this.#context.runState)) {
-          this.#context.tick(property);
-          if (!taken.has(key)) {
-            defineOwn(rest, key, entry);
-          }
-        }
-        this.bindPattern(property.argument, rest, scope, mode);
-        continue;
-      }
-      const key = this.propertyKey(property.key, property.computed, scope);
-      taken.add(key);
-      this.bindPattern(property.value, getMember(value, key, context), scope, mode);
-    }
-  }
-
-  private bindArrayPattern(
-    pattern: Extract<Pattern, { type: 'ArrayPattern' }>,
-    value: unknown,
-    scope: Scope,
-    mode: BindMode,
-    source: string
-  ): void {
-    const iterator = this.iterateOrThrow(value, pattern, source);
-    for (const element of pattern.elements) {
-      if (element?.type === 'RestElement') {
-        const rest: Array<unknown> = [];
-        for (let step = iterator.next(); !step.done; step = iterator.next()) {
-          this.#context.tick(element);
-          rest.push(step.value);
-        }
-        this.bindPattern(element.argument, rest, scope, mode);
-        return;
-      }
-      const step = iterator.next();
-      if (element) {
-        this.bindPattern(element, step.done ? undefined : step.value, scope, mode);
-      }
+      bindPattern(this, declarator.id, value, scope, 'initialize', source);
     }
   }
 
   private evaluateWhile(node: WhileStatement, scope: Scope, labels: Labels): Completion {
     while (toBoolean(this.evaluateExpression(node.test, scope))) {
-      this.#context.tick(node);
+      this.context.tick(node);
       const exit = this.evaluateLoopBody(node.body, scope, labels);
       if (exit) {
         return exit;
@@ -470,7 +294,7 @@ export class Evaluator {
 
   private evaluateDoWhile(node: DoWhileStatement, scope: Scope, labels: Labels): Completion {
     do {
-      this.#context.tick(node);
+      this.context.tick(node);
       const exit = this.evaluateLoopBody(node.body, scope, labels);
       if (exit) {
         return exit;
@@ -495,7 +319,7 @@ export class Evaluator {
     }
     let iterationScope = perIteration ? loopScope.copy() : loopScope;
     for (;;) {
-      this.#context.tick(node);
+      this.context.tick(node);
       if (node.test && !toBoolean(this.evaluateExpression(node.test, iterationScope))) {
         break;
       }
@@ -515,12 +339,12 @@ export class Evaluator {
 
   private evaluateForOf(node: ForOfStatement, scope: Scope, labels: Labels): Completion {
     if (node.await) {
-      return this.#context.unsupported(node, 'for await');
+      return this.context.unsupported(node, 'for await');
     }
     const iterable = this.evaluateExpression(node.right, scope);
-    const iterator = this.iterateOrThrow(iterable, node.right, describe(node.right));
+    const iterator = iterateOrThrow(this.context, iterable, node.right, describe(node.right));
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
-      this.#context.tick(node);
+      this.context.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, step.value, scope);
       const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
       if (exit) {
@@ -531,9 +355,9 @@ export class Evaluator {
   }
 
   private evaluateForIn(node: ForInStatement, scope: Scope, labels: Labels): Completion {
-    const keys = enumerableKeys(this.evaluateExpression(node.right, scope), this.#context.runState);
+    const keys = enumerableKeys(this.evaluateExpression(node.right, scope), this.context.runState);
     for (const key of keys) {
-      this.#context.tick(node);
+      this.context.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, key, scope);
       const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
       if (exit) {
@@ -546,7 +370,7 @@ export class Evaluator {
   /** Binds the head of a `for...of` / `for...in`; `let` and `const` get a scope per iteration. */
   private bindLoopTarget(left: VariableDeclaration | Pattern, value: unknown, scope: Scope): Scope {
     if (left.type !== 'VariableDeclaration') {
-      this.bindPattern(left, value, scope, 'assign');
+      bindPattern(this, left, value, scope, 'assign');
       return scope;
     }
     const [declarator] = left.declarations;
@@ -554,15 +378,15 @@ export class Evaluator {
       throw new Error('A loop declaration without a declarator');
     }
     if (left.kind === 'var') {
-      this.bindPattern(declarator.id, value, scope, 'initialize');
+      bindPattern(this, declarator.id, value, scope, 'initialize');
       return scope;
     }
     if (left.kind !== 'let' && left.kind !== 'const') {
-      return this.#context.unsupported(left, left.kind);
+      return this.context.unsupported(left, left.kind);
     }
     const iterationScope = new Scope(scope);
     hoistLexicalDeclarations([left], iterationScope);
-    this.bindPattern(declarator.id, value, iterationScope, 'initialize');
+    bindPattern(this, declarator.id, value, iterationScope, 'initialize');
     return iterationScope;
   }
 
@@ -623,8 +447,8 @@ export class Evaluator {
     return NORMAL;
   }
 
-  private evaluateExpression(node: Expression, scope: Scope): unknown {
-    this.#context.tick(node);
+  public evaluateExpression(node: Expression, scope: Scope): unknown {
+    this.context.tick(node);
     // An error from a conversion gets the position of the innermost expression it surfaces from
     try {
       switch (node.type) {
@@ -633,15 +457,15 @@ export class Evaluator {
             // Every evaluation creates a new regexp, as the spec requires for literals
             const { pattern, flags } = node.regex;
             return new RegExpWrapper(
-              guardHostErrors(this.#context.failAt(node), () => new RegExp(pattern, flags))
+              guardHostErrors(this.context.failAt(node), () => new RegExp(pattern, flags))
             );
           }
           if (typeof node.value === 'bigint') {
-            return this.#context.unsupportedFeature(node, 'bigint literals');
+            return this.context.unsupportedFeature(node, 'bigint literals');
           }
           return node.value;
         case 'Identifier':
-          return this.readIdentifier(node, scope);
+          return readIdentifier(this.context, node, scope);
         case 'ThisExpression':
           return scope.receiver();
         case 'TemplateLiteral':
@@ -666,22 +490,19 @@ export class Evaluator {
           return this.evaluateUnary(node, scope);
         case 'BinaryExpression': {
           if (node.left.type === 'PrivateIdentifier') {
-            return this.#context.unsupported(node.left);
+            return this.context.unsupported(node.left);
           }
           const left = this.evaluateExpression(node.left, scope);
           const right = this.evaluateExpression(node.right, scope);
           if (node.operator === 'in') {
-            const propertyKey = toPropertyKey(left);
-            return (
-              hasMember(right, propertyKey, this.#context.memberContext(node)) ||
-              hasMethod(right, propertyKey)
-            );
+            const key = toPropertyKey(left);
+            return hasMember(right, key, this.context.memberContext(node)) || hasMethod(right, key);
           }
           if (node.operator === 'instanceof') {
             return this.instanceOf(left, right, node);
           }
           const operator = node.operator;
-          return guardHostErrors(this.#context.failAt(node), () =>
+          return guardHostErrors(this.context.failAt(node), () =>
             applyBinary(operator, left, right)
           );
         }
@@ -706,13 +527,13 @@ export class Evaluator {
         case 'NewExpression':
           return this.evaluateNew(node, scope);
         case 'MetaProperty':
-          return this.#context.unsupported(node, `${node.meta.name}.${node.property.name}`);
+          return this.context.unsupported(node, `${node.meta.name}.${node.property.name}`);
         default:
-          return this.#context.unsupported(node);
+          return this.context.unsupported(node);
       }
     } catch (error) {
       if (error instanceof UnplacedError) {
-        return this.#context.throwError(error.name, error.message, node);
+        return this.context.throwError(error.name, error.message, node);
       }
       throw error;
     }
@@ -722,14 +543,14 @@ export class Evaluator {
   private evaluateNew(node: NewExpression, scope: Scope): unknown {
     const callee = this.evaluateExpression(node.callee, scope);
     if (!(callee instanceof Builtin) || !callee.construct) {
-      return this.#context.unsupported(node, `new ${describe(node.callee)}`);
+      return this.context.unsupported(node, `new ${describe(node.callee)}`);
     }
     return callee.construct(this.evaluateArguments(node.arguments, scope), this.callContext(node));
   }
 
   private instanceOf(value: unknown, constructor: unknown, node: Node): boolean {
     if (!(constructor instanceof Builtin) || !constructor.isInstance) {
-      return this.#context.throwError(
+      return this.context.throwError(
         'TypeError',
         "Right-hand side of 'instanceof' is not a constructor",
         node
@@ -747,7 +568,7 @@ export class Evaluator {
         parts.push(toString(this.evaluateExpression(expression, scope)));
       }
     }
-    return guardHostErrors(this.#context.failAt(node), () => parts.join(''));
+    return guardHostErrors(this.context.failAt(node), () => parts.join(''));
   }
 
   /**
@@ -770,12 +591,12 @@ export class Evaluator {
    * strings, as in JavaScript.
    */
   private templateObject(quasi: TemplateLiteral, node: Node): ReadonlyArray<string | undefined> {
-    const cached = this.#context.runState.getTemplateObject(quasi);
+    const cached = this.context.runState.getTemplateObject(quasi);
     if (cached) {
       return cached;
     }
 
-    this.#context.charge(quasi.quasis.length, node);
+    this.context.charge(quasi.quasis.length, node);
     const cooked: Array<string | undefined> = quasi.quasis.map(
       (element) => element.value.cooked ?? undefined
     );
@@ -791,7 +612,7 @@ export class Evaluator {
     });
     Object.freeze(cooked);
 
-    this.#context.runState.setTemplateObject(quasi, cooked);
+    this.context.runState.setTemplateObject(quasi, cooked);
     return cooked;
   }
 
@@ -801,18 +622,18 @@ export class Evaluator {
       if (property.type === 'SpreadElement') {
         for (const [key, value] of ownEntries(
           this.evaluateExpression(property.argument, scope),
-          this.#context.runState
+          this.context.runState
         )) {
-          this.#context.tick(property);
+          this.context.tick(property);
           defineOwn(object, key, value);
         }
         continue;
       }
       if (property.kind !== 'init') {
-        return this.#context.unsupportedFeature(property, 'getters and setters');
+        return this.context.unsupportedFeature(property, 'getters and setters');
       }
-      const key = this.propertyKey(property.key, property.computed, scope);
-      assertAllowedKey(key, this.#context.failAt(property));
+      const key = propertyKey(this, property.key, property.computed, scope);
+      assertAllowedKey(key, this.context.failAt(property));
       defineOwn(object, key, this.evaluateNamed(property.value, scope, key));
     }
     return object;
@@ -835,9 +656,14 @@ export class Evaluator {
 
   private spreadInto(target: Array<unknown>, element: SpreadElement, scope: Scope): void {
     const value = this.evaluateExpression(element.argument, scope);
-    const iterator = this.iterateOrThrow(value, element.argument, describe(element.argument));
+    const iterator = iterateOrThrow(
+      this.context,
+      value,
+      element.argument,
+      describe(element.argument)
+    );
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
-      this.#context.tick(element);
+      this.context.tick(element);
       target.push(step.value);
     }
   }
@@ -853,69 +679,24 @@ export class Evaluator {
     scope: Scope
   ): { object: unknown; value: unknown } | typeof SHORT_CIRCUIT {
     if (node.object.type === 'Super') {
-      return this.#context.unsupported(node.object);
+      return this.context.unsupported(node.object);
     }
     const object = this.evaluateExpression(node.object, scope);
     if (object === SHORT_CIRCUIT || (node.optional && (object === null || object === undefined))) {
       return SHORT_CIRCUIT;
     }
-    const key = this.propertyKey(node.property, node.computed, scope);
-    return { object, value: getMember(object, key, this.#context.memberContext(node)) };
-  }
-
-  /** The key of a member access or a literal property; computed keys go through ToPropertyKey. */
-  private propertyKey(
-    key: Expression | PrivateIdentifier,
-    computed: boolean,
-    scope: Scope
-  ): string {
-    if (key.type === 'PrivateIdentifier') {
-      return this.#context.unsupported(key);
-    }
-    if (computed) {
-      return toPropertyKey(this.evaluateExpression(key, scope));
-    }
-    if (key.type === 'Identifier') {
-      return key.name;
-    }
-    if (key.type === 'Literal' && typeof key.value !== 'bigint' && !key.regex) {
-      return toString(key.value);
-    }
-    return this.#context.unsupported(key);
-  }
-
-  /** Resolves an assignment target once, so compound operators read and write the same place. */
-  private resolveTarget(target: Identifier | MemberExpression, scope: Scope): Reference {
-    if (target.type === 'Identifier') {
-      return {
-        get: () => this.readIdentifier(target, scope),
-        set: (value) => this.assignIdentifier(target, value, scope)
-      };
-    }
-    return this.resolveMember(target, scope);
-  }
-
-  private resolveMember(target: MemberExpression, scope: Scope): Reference {
-    if (target.object.type === 'Super') {
-      return this.#context.unsupported(target.object);
-    }
-    const object = this.evaluateExpression(target.object, scope);
-    const key = this.propertyKey(target.property, target.computed, scope);
-    const context = this.#context.memberContext(target);
-    return {
-      get: () => getMember(object, key, context),
-      set: (value) => setMember(object, key, value, context)
-    };
+    const key = propertyKey(this, node.property, node.computed, scope);
+    return { object, value: getMember(object, key, this.context.memberContext(node)) };
   }
 
   private evaluateAssignment(node: AssignmentExpression, scope: Scope): unknown {
     const target = node.left;
     if (target.type !== 'Identifier' && target.type !== 'MemberExpression') {
       const value = this.evaluateExpression(node.right, scope);
-      this.bindPattern(target, value, scope, 'assign', describe(node.right));
+      bindPattern(this, target, value, scope, 'assign', describe(node.right));
       return value;
     }
-    const reference = this.resolveTarget(target, scope);
+    const reference = resolveTarget(this, target, scope);
     const { operator } = node;
     if (operator === '=') {
       const value = this.evaluateNamed(node.right, scope, patternName(target));
@@ -945,7 +726,7 @@ export class Evaluator {
         break;
       default:
         const right = this.evaluateExpression(node.right, scope);
-        value = guardHostErrors(this.#context.failAt(node), () =>
+        value = guardHostErrors(this.context.failAt(node), () =>
           applyBinary(COMPOUND_OPERATORS[operator], current, right)
         );
     }
@@ -956,9 +737,9 @@ export class Evaluator {
   private evaluateUpdate(node: UpdateExpression, scope: Scope): number {
     const target = node.argument;
     if (target.type !== 'Identifier' && target.type !== 'MemberExpression') {
-      return this.#context.unsupported(target);
+      return this.context.unsupported(target);
     }
-    const reference = this.resolveTarget(target, scope);
+    const reference = resolveTarget(this, target, scope);
     const previous = toNumber(reference.get());
     const value = node.operator === '++' ? previous + 1 : previous - 1;
     reference.set(value);
@@ -973,11 +754,11 @@ export class Evaluator {
           return true;
         }
         if (node.argument.object.type === 'Super') {
-          return this.#context.unsupported(node.argument.object);
+          return this.context.unsupported(node.argument.object);
         }
         const object = this.evaluateExpression(node.argument.object, scope);
-        const key = this.propertyKey(node.argument.property, node.argument.computed, scope);
-        return deleteMember(object, key, this.#context.memberContext(node.argument));
+        const key = propertyKey(this, node.argument.property, node.argument.computed, scope);
+        return deleteMember(object, key, this.context.memberContext(node.argument));
       }
       case 'typeof':
         // `typeof undeclared` is the one read of an unknown name that does not throw
@@ -1007,10 +788,10 @@ export class Evaluator {
   /** Async and generator functions fail here, at creation, even if they are never called. */
   private createClosure(node: FunctionNode, scope: Scope, name?: string): Closure {
     if (node.async) {
-      return this.#context.unsupported(node, 'async');
+      return this.context.unsupported(node, 'async');
     }
     if (node.generator) {
-      return this.#context.unsupportedFeature(node, 'generators');
+      return this.context.unsupportedFeature(node, 'generators');
     }
     return new Closure(node, scope, name);
   }
@@ -1019,12 +800,12 @@ export class Evaluator {
    * Evaluates the value of a binding, property or default; an anonymous function there takes
    * `name` as its own, as `var f = function () {}` names `f` in JavaScript.
    */
-  private evaluateNamed(node: Expression, scope: Scope, name: string | undefined): unknown {
+  public evaluateNamed(node: Expression, scope: Scope, name: string | undefined): unknown {
     if (
       name !== undefined &&
       (node.type === 'ArrowFunctionExpression' || (node.type === 'FunctionExpression' && !node.id))
     ) {
-      this.#context.tick(node);
+      this.context.tick(node);
       return this.createClosure(node, scope, name);
     }
     return this.evaluateExpression(node, scope);
@@ -1051,12 +832,12 @@ export class Evaluator {
     scope: Scope
   ): { receiver: unknown; target: unknown } {
     if (callee.type === 'Super') {
-      return this.#context.unsupported(callee);
+      return this.context.unsupported(callee);
     }
 
     if (callee.type === 'MemberExpression') {
       // Not routed through evaluateExpression so a short-circuited object is seen here
-      this.#context.tick(callee);
+      this.context.tick(callee);
       const access = this.accessMember(callee, scope);
       if (access === SHORT_CIRCUIT) {
         return { receiver: undefined, target: SHORT_CIRCUIT };
@@ -1067,8 +848,8 @@ export class Evaluator {
 
     if (callee.type === 'ChainExpression' && callee.expression.type === 'MemberExpression') {
       // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
-      this.#context.tick(callee);
-      this.#context.tick(callee.expression);
+      this.context.tick(callee);
+      this.context.tick(callee.expression);
       const access = this.accessMember(callee.expression, scope);
       if (access === SHORT_CIRCUIT) {
         return { receiver: undefined, target: SHORT_CIRCUIT };
@@ -1082,9 +863,9 @@ export class Evaluator {
   /** What a built-in gets to reach back into the run; `node` is the call it was invoked from. */
   private callContext(node: Node): CallContext {
     return {
-      ...this.#context.memberContext(node),
+      ...this.context.memberContext(node),
       call: (receiver, callee, args) => this.call(receiver, callee, args, node),
-      stackTrace: () => this.#context.stackTrace(node),
+      stackTrace: () => this.context.stackTrace(node),
       invokeHost: (fn, args) => this.#host.invokeHost(fn, args, node),
       invokeIntrinsic: (fn, args) => this.#host.invokeIntrinsic(fn, args, node)
     };
@@ -1100,15 +881,15 @@ export class Evaluator {
     args: ReadonlyArray<unknown>,
     node: Node
   ): unknown {
-    this.#context.tick(node);
+    this.context.tick(node);
     if (callee instanceof Closure) {
       return this.callClosure(receiver, callee, args, node);
     }
-    this.#context.enterCall(node);
+    this.context.enterCall(node);
     try {
       return this.invoke(receiver, callee, args, node, 'callback');
     } finally {
-      this.#context.leaveCall();
+      this.context.leaveCall();
     }
   }
 
@@ -1129,7 +910,7 @@ export class Evaluator {
     if (callee instanceof Builtin && callee.call) {
       return callee.call(args, this.callContext(node));
     }
-    return this.#context.throwError('TypeError', `${description} is not a function`, node);
+    return this.context.throwError('TypeError', `${description} is not a function`, node);
   }
 
   private evaluateArguments(
@@ -1158,7 +939,7 @@ export class Evaluator {
     node: Node
   ): unknown {
     const { node: fn } = closure;
-    this.#context.enterFrame({ name: closure.name || '<anonymous>', calledFrom: node });
+    this.context.enterFrame({ name: closure.name || '<anonymous>', calledFrom: node });
     try {
       const scope = new Scope(this.scopeForNamedFunction(closure));
       if (fn.type !== 'ArrowFunctionExpression') {
@@ -1166,7 +947,7 @@ export class Evaluator {
         scope.bindReceiver(receiver);
         // Built on the first read only; copying the arguments costs one operation per argument
         scope.defineLazy('arguments', 'var', () => {
-          this.#context.charge(args.length, node);
+          this.context.charge(args.length, node);
           return createArgumentsObject(args);
         });
       }
@@ -1178,7 +959,7 @@ export class Evaluator {
       const completion = this.evaluateFunctionBody(body.body, scope);
       return completion.type === 'return' ? completion.value : undefined;
     } finally {
-      this.#context.leaveFrame();
+      this.context.leaveFrame();
     }
   }
 
@@ -1201,69 +982,10 @@ export class Evaluator {
   ): void {
     for (const [index, param] of params.entries()) {
       if (param.type === 'RestElement') {
-        this.bindPattern(param.argument, args.slice(index), scope, 'parameter');
+        bindPattern(this, param.argument, args.slice(index), scope, 'parameter');
         return;
       }
-      this.bindPattern(param, args[index], scope, 'parameter');
+      bindPattern(this, param, args[index], scope, 'parameter');
     }
-  }
-
-  private readIdentifier(node: Identifier, scope: Scope): unknown {
-    const binding = scope.lookup(node.name);
-    if (!binding) {
-      if (HOST_ONLY_NAMES.has(node.name)) {
-        return this.#context.unsupported(node, node.name);
-      }
-      return this.#context.throwError('ReferenceError', `${node.name} is not defined`, node);
-    }
-    if (!binding.initialized) {
-      return this.#context.throwError(
-        'ReferenceError',
-        `Cannot access '${node.name}' before initialization`,
-        node
-      );
-    }
-    try {
-      return binding.value;
-    } catch (error) {
-      if (error instanceof UnsupportedInputError) {
-        return this.#context.fail(MapleErrorCode.INTERNAL_ERROR, error.message, node, error.cause);
-      }
-      throw error;
-    }
-  }
-
-  private assignIdentifier(node: Identifier, value: unknown, scope: Scope): void {
-    const binding = scope.lookup(node.name);
-    if (!binding) {
-      return this.#context.throwError('ReferenceError', `${node.name} is not defined`, node);
-    }
-    if (!binding.initialized) {
-      return this.#context.throwError(
-        'ReferenceError',
-        `Cannot access '${node.name}' before initialization`,
-        node
-      );
-    }
-    if (binding.kind === 'const') {
-      return this.#context.throwError('TypeError', 'Assignment to constant variable.', node);
-    }
-    if (binding.kind === 'global') {
-      return this.#context.throwError(
-        'TypeError',
-        `Cannot assign to read-only global '${node.name}'`,
-        node
-      );
-    }
-    binding.value = value;
-  }
-
-  /** The iterator of a value, or a TypeError naming `what` when the value is not iterable. */
-  private iterateOrThrow(value: unknown, node: Node, what: string): Iterator<unknown> {
-    const iterator = iterate(value);
-    if (!iterator) {
-      return this.#context.throwError('TypeError', `${what} is not iterable`, node);
-    }
-    return iterator;
   }
 }
