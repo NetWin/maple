@@ -6,16 +6,16 @@ import type {
   SpreadElement,
   TemplateLiteral
 } from 'acorn';
-import { defineOwn } from '../support/own-property.ts';
-import { toString } from '../values/coercion.ts';
-import { assertAllowedKey, ownEntries } from '../values/members.ts';
-import { guardHostErrors } from '../values/native.ts';
-import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
-import { describe } from './describe.ts';
-import type { Interpreter } from './interpreter.ts';
+import { defineOwn } from '../../support/own-property.ts';
+import { toString } from '../../values/coercion.ts';
+import { assertAllowedKey, ownEntries } from '../../values/members.ts';
+import { guardHostErrors } from '../../values/native.ts';
+import { RegExpWrapper } from '../../values/wrappers/regexp-wrapper.ts';
+import { describe } from '../describe.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { Scope } from '../scope.ts';
 import { propertyKey } from './member-access.ts';
 import { iterateOrThrow } from './patterns.ts';
-import type { Scope } from './scope.ts';
 
 /*
  * Literals: the syntax that writes a value down directly in the source.

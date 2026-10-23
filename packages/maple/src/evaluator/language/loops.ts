@@ -8,16 +8,16 @@ import type {
   VariableDeclaration,
   WhileStatement
 } from 'acorn';
-import { assertNever } from '../support/assert-never.ts';
-import { toBoolean } from '../values/coercion.ts';
-import { enumerableKeys } from '../values/iteration.ts';
+import { assertNever } from '../../support/assert-never.ts';
+import { toBoolean } from '../../values/coercion.ts';
+import { enumerableKeys } from '../../values/iteration.ts';
+import { type Completion, NORMAL } from '../completion.ts';
+import { describe } from '../describe.ts';
+import type { Interpreter } from '../interpreter.ts';
+import { Scope } from '../scope.ts';
 import { evaluateDeclaration } from './blocks.ts';
-import { type Completion, NORMAL } from './completion.ts';
-import { describe } from './describe.ts';
 import { hoistLexicalDeclarations } from './hoisting.ts';
-import type { Interpreter } from './interpreter.ts';
 import { bindPattern, iterateOrThrow } from './patterns.ts';
-import { Scope } from './scope.ts';
 
 /*
  * Loops: `while`, `do...while`, `for`, `for...of` and `for...in`.

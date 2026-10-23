@@ -9,15 +9,15 @@ import type {
   UnaryExpression,
   UnaryOperator
 } from 'acorn';
-import { hasMethod } from '../builtins/method-dispatch.ts';
-import { assertNever } from '../support/assert-never.ts';
-import { Builtin } from '../values/builtin.ts';
-import { add, lessThan, looseEquals, toBoolean, toNumber, typeOf } from '../values/coercion.ts';
-import { hasMember, toPropertyKey } from '../values/members.ts';
-import { guardHostErrors } from '../values/native.ts';
-import type { Interpreter } from './interpreter.ts';
+import { hasMethod } from '../../builtins/method-dispatch.ts';
+import { assertNever } from '../../support/assert-never.ts';
+import { Builtin } from '../../values/builtin.ts';
+import { add, lessThan, looseEquals, toBoolean, toNumber, typeOf } from '../../values/coercion.ts';
+import { hasMember, toPropertyKey } from '../../values/members.ts';
+import { guardHostErrors } from '../../values/native.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { Scope } from '../scope.ts';
 import { evaluateDelete } from './member-access.ts';
-import type { Scope } from './scope.ts';
 
 /*
  * Operators: unary (`-x`, `!x`, `typeof x`), binary (`a + b`, `a < b`, `a in b`), logical

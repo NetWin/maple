@@ -1,11 +1,18 @@
 import type { Expression, ModuleDeclaration, Program, Statement } from 'acorn';
 import { UnplacedError } from '../values/sandbox-error.ts';
-import { evaluateAssignment, evaluateUpdate } from './assignments.ts';
-import { evaluateBlock, evaluateDeclaration, evaluateFunctionBody } from './blocks.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
-import { callFunction, evaluateCall, evaluateNew, evaluateTaggedTemplate } from './calls.ts';
-import { createClosure } from './closures.ts';
 import { type Completion, NORMAL } from './completion.ts';
+import { HostBridge, type NestedRun } from './host-bridge.ts';
+import type { Interpreter } from './interpreter.ts';
+import { evaluateAssignment, evaluateUpdate } from './language/assignments.ts';
+import { evaluateBlock, evaluateDeclaration, evaluateFunctionBody } from './language/blocks.ts';
+import {
+  callFunction,
+  evaluateCall,
+  evaluateNew,
+  evaluateTaggedTemplate
+} from './language/calls.ts';
+import { createClosure } from './language/closures.ts';
 import {
   evaluateBreak,
   evaluateContinue,
@@ -15,10 +22,13 @@ import {
   evaluateSwitch,
   evaluateThrow,
   evaluateTry
-} from './control-flow.ts';
-import { HostBridge, type NestedRun } from './host-bridge.ts';
-import type { Interpreter } from './interpreter.ts';
-import { evaluateArray, evaluateLiteral, evaluateObject, evaluateTemplate } from './literals.ts';
+} from './language/control-flow.ts';
+import {
+  evaluateArray,
+  evaluateLiteral,
+  evaluateObject,
+  evaluateTemplate
+} from './language/literals.ts';
 import {
   evaluateDoWhile,
   evaluateFor,
@@ -27,16 +37,16 @@ import {
   evaluateWhile,
   type Labels,
   NO_LABELS
-} from './loops.ts';
-import { evaluateChain, evaluateMember } from './member-access.ts';
+} from './language/loops.ts';
+import { evaluateChain, evaluateMember } from './language/member-access.ts';
 import {
   evaluateBinary,
   evaluateConditional,
   evaluateLogical,
   evaluateSequence,
   evaluateUnary
-} from './operators.ts';
-import { readIdentifier } from './references.ts';
+} from './language/operators.ts';
+import { readIdentifier } from './language/references.ts';
 import { RunContext } from './run-context.ts';
 import { Scope } from './scope.ts';
 
@@ -45,20 +55,22 @@ import { Scope } from './scope.ts';
  * means, the way a JavaScript engine would, without ever handing the script to the host's engine.
  *
  * This class is the switchboard. `evaluateStatement` and `evaluateExpression` look at a node's type
- * and hand it to the file that implements that part of JavaScript, the "chapters":
+ * and hand it to the file in `language/` that implements that part of JavaScript:
  *
+ *     hoisting.ts       the names a block or function declares, before its statements run
  *     blocks.ts         statement lists, hoisting, `var` / `let` / `const`
  *     loops.ts          `while`, `do`, `for`, `for...of`, `for...in`
- *     control-flow.ts   labels, `switch`, `throw`, `try`
+ *     control-flow.ts   `if`, `return`, `break`, `continue`, labels, `switch`, `throw`, `try`
  *     literals.ts       `1`, `'a'`, `/re/`, templates, `{ ... }`, `[ ... ]`
  *     member-access.ts  `a.b`, `a[b]`, `a?.b`, `delete a.b`
  *     references.ts     reading and assigning variables
  *     patterns.ts       destructuring `{ a, b: [c] }` into names
- *     operators.ts      `-a`, `a + b`, `a in b`, `a && b`
+ *     operators.ts      `-a`, `a + b`, `a in b`, `a && b`, `a ? b : c`, `a, b`
  *     assignments.ts    `a = b`, `a += b`, `a++`
+ *     closures.ts       creating function values from `function` and `=>`
  *     calls.ts          `f()`, `new Map()`, ``tag`...` ``, running a function's body
  *
- * The chapters call back into evaluation only through this class, as the `Interpreter` they
+ * The language files call back into evaluation only through this class, as the `Interpreter` they
  * receive, which also hands them the run's bookkeeping (`context`, see `run-context.ts`) and the
  * way out to host functions (`host`, see `host-bridge.ts`). Anything a script uses that Maple does
  * not implement, such as `class` or `async`, ends the run as unsupported syntax when it is
@@ -97,9 +109,9 @@ export class Evaluator implements Interpreter {
 
   /**
    * Runs one statement: charges an operation for it, then hands it, by its AST node type, to the
-   * chapter that implements it (`blocks.ts`, `loops.ts`, `control-flow.ts`), or handles it right
-   * here when it takes a line or two. A statement type that is not listed, such as `class` or
-   * `import`, ends the run as unsupported syntax.
+   * file in `language/` that implements it (`blocks.ts`, `loops.ts`, `control-flow.ts`), or
+   * handles it right here when it takes a line or two. A statement type that is not listed, such
+   * as `class` or `import`, ends the run as unsupported syntax.
    *
    * `labels` are the labels written directly in front of this statement, which only a loop has a
    * use for (see `Labels`).
@@ -171,7 +183,7 @@ export class Evaluator implements Interpreter {
 
   /**
    * Evaluates one expression to its value: charges an operation for it, then hands it, by its AST
-   * node type, to the chapter that implements it (`literals.ts`, `member-access.ts`,
+   * node type, to the file in `language/` that implements it (`literals.ts`, `member-access.ts`,
    * `assignments.ts`, `operators.ts`, ...), or handles it right here when it takes a line or two.
    * An expression type that is not listed, such as `class` or `await`, ends the run as
    * unsupported syntax.

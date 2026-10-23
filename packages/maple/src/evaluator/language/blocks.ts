@@ -1,16 +1,16 @@
 import type { VariableDeclaration } from 'acorn';
+import { type Completion, NORMAL } from '../completion.ts';
+import { describe, patternName } from '../describe.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { Scope } from '../scope.ts';
 import { createClosure } from './closures.ts';
-import { type Completion, NORMAL } from './completion.ts';
-import { describe, patternName } from './describe.ts';
 import {
   collectFunctionDeclarations,
   hoistLexicalDeclarations,
   hoistVarDeclarations,
   type StatementList
 } from './hoisting.ts';
-import type { Interpreter } from './interpreter.ts';
 import { bindPattern } from './patterns.ts';
-import type { Scope } from './scope.ts';
 
 /*
  * Blocks: running a list of statements, and the declarations in it.

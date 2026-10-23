@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { intrinsic } from '../boundary/host.ts';
-import { Maple } from '../maple.ts';
-import { errorMessage, runAndCatch } from '../spec-helpers.ts';
+import { intrinsic } from '../../boundary/host.ts';
+import { Maple } from '../../maple.ts';
+import { errorMessage, runAndCatch } from '../../spec-helpers.ts';
 
 const maple = new Maple();
 

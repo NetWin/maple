@@ -1,12 +1,12 @@
 import type { AssignmentExpression, UpdateExpression } from 'acorn';
-import { toBoolean, toNumber } from '../values/coercion.ts';
-import { guardHostErrors } from '../values/native.ts';
-import { describe, patternName } from './describe.ts';
-import type { Interpreter } from './interpreter.ts';
+import { toBoolean, toNumber } from '../../values/coercion.ts';
+import { guardHostErrors } from '../../values/native.ts';
+import { describe, patternName } from '../describe.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { Scope } from '../scope.ts';
 import { applyBinary, COMPOUND_OPERATORS } from './operators.ts';
 import { bindPattern } from './patterns.ts';
 import { resolveTarget } from './references.ts';
-import type { Scope } from './scope.ts';
 
 /*
  * Assignments: the expressions that write to a variable or a property.

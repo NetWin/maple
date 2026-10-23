@@ -1,15 +1,15 @@
 import type { Identifier, Node, Pattern } from 'acorn';
-import { getMember } from '../builtins/method-dispatch.ts';
-import { assertNever } from '../support/assert-never.ts';
-import { defineOwn } from '../support/own-property.ts';
-import { iterate } from '../values/iteration.ts';
-import { ownEntries } from '../values/members.ts';
-import { patternName } from './describe.ts';
-import type { Interpreter } from './interpreter.ts';
+import { getMember } from '../../builtins/method-dispatch.ts';
+import { assertNever } from '../../support/assert-never.ts';
+import { defineOwn } from '../../support/own-property.ts';
+import { iterate } from '../../values/iteration.ts';
+import { ownEntries } from '../../values/members.ts';
+import { patternName } from '../describe.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { RunContext } from '../run-context.ts';
+import type { Scope } from '../scope.ts';
 import { propertyKey } from './member-access.ts';
 import { assignIdentifier, resolveMember } from './references.ts';
-import type { RunContext } from './run-context.ts';
-import type { Scope } from './scope.ts';
 
 /*
  * Patterns: the left-hand side of anything that stores a value under one or more names.

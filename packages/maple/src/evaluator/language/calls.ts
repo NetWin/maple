@@ -8,17 +8,17 @@ import type {
   Super,
   TaggedTemplateExpression
 } from 'acorn';
-import { createArgumentsObject } from '../values/arguments-object.ts';
-import { Builtin } from '../values/builtin.ts';
-import { Closure } from '../values/closure.ts';
-import { type CallContext, NativeFunction } from '../values/native.ts';
+import { createArgumentsObject } from '../../values/arguments-object.ts';
+import { Builtin } from '../../values/builtin.ts';
+import { Closure } from '../../values/closure.ts';
+import { type CallContext, NativeFunction } from '../../values/native.ts';
+import { describe } from '../describe.ts';
+import type { Interpreter } from '../interpreter.ts';
+import { Scope } from '../scope.ts';
 import { evaluateFunctionBody } from './blocks.ts';
-import { describe } from './describe.ts';
-import type { Interpreter } from './interpreter.ts';
 import { spreadInto, templateObject } from './literals.ts';
 import { accessMember, SHORT_CIRCUIT } from './member-access.ts';
 import { bindPattern } from './patterns.ts';
-import { Scope } from './scope.ts';
 
 /*
  * Calls: `f(x)`, `obj.method(x)`, `new Map()`, ``tag`text` ``, and everything that happens when a

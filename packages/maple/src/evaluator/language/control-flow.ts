@@ -9,15 +9,15 @@ import type {
   ThrowStatement,
   TryStatement
 } from 'acorn';
-import { toBoolean } from '../values/coercion.ts';
-import { SandboxError, SandboxThrow } from '../values/sandbox-error.ts';
+import { toBoolean } from '../../values/coercion.ts';
+import { SandboxError, SandboxThrow } from '../../values/sandbox-error.ts';
+import { BREAK, type Completion, CONTINUE, NORMAL } from '../completion.ts';
+import type { Interpreter } from '../interpreter.ts';
+import { Scope } from '../scope.ts';
 import { evaluateStatements, hoistBlock } from './blocks.ts';
-import { BREAK, type Completion, CONTINUE, NORMAL } from './completion.ts';
 import { collectPatternNames } from './hoisting.ts';
-import type { Interpreter } from './interpreter.ts';
 import type { Labels } from './loops.ts';
 import { bindPattern } from './patterns.ts';
-import { Scope } from './scope.ts';
 
 /*
  * Control flow besides loops: `if`, `return`, `break`, `continue`, labelled statements, `switch`,

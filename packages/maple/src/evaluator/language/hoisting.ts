@@ -1,6 +1,6 @@
 import type { FunctionDeclaration, ModuleDeclaration, Pattern, Statement } from 'acorn';
-import { assertNever } from '../support/assert-never.ts';
-import type { Scope } from './scope.ts';
+import { assertNever } from '../../support/assert-never.ts';
+import type { Scope } from '../scope.ts';
 
 /** The statements of a block, a function body or a whole script. */
 export type StatementList = ReadonlyArray<Statement | ModuleDeclaration>;

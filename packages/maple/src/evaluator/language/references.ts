@@ -1,12 +1,12 @@
 import type { Identifier, MemberExpression } from 'acorn';
-import { UnsupportedInputError } from '../boundary/from-host.ts';
-import { MapleErrorCode } from '../boundary/maple-error.ts';
-import { getMember } from '../builtins/method-dispatch.ts';
-import { setMember } from '../values/members.ts';
-import type { Interpreter } from './interpreter.ts';
+import { UnsupportedInputError } from '../../boundary/from-host.ts';
+import { MapleErrorCode } from '../../boundary/maple-error.ts';
+import { getMember } from '../../builtins/method-dispatch.ts';
+import { setMember } from '../../values/members.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { RunContext } from '../run-context.ts';
+import type { Scope } from '../scope.ts';
 import { propertyKey } from './member-access.ts';
-import type { RunContext } from './run-context.ts';
-import type { Scope } from './scope.ts';
 
 /*
  * References: reading and writing the places a script names.

@@ -5,11 +5,11 @@ import type {
   PrivateIdentifier,
   UnaryExpression
 } from 'acorn';
-import { getMember } from '../builtins/method-dispatch.ts';
-import { toString } from '../values/coercion.ts';
-import { deleteMember, toPropertyKey } from '../values/members.ts';
-import type { Interpreter } from './interpreter.ts';
-import type { Scope } from './scope.ts';
+import { getMember } from '../../builtins/method-dispatch.ts';
+import { toString } from '../../values/coercion.ts';
+import { deleteMember, toPropertyKey } from '../../values/members.ts';
+import type { Interpreter } from '../interpreter.ts';
+import type { Scope } from '../scope.ts';
 
 /*
  * Member access: reading and deleting properties of values, as in `user.name`, `list[0]`,

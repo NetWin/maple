@@ -1,6 +1,6 @@
-import { Closure, type FunctionNode } from '../values/closure.ts';
-import type { RunContext } from './run-context.ts';
-import type { Scope } from './scope.ts';
+import { Closure, type FunctionNode } from '../../values/closure.ts';
+import type { RunContext } from '../run-context.ts';
+import type { Scope } from '../scope.ts';
 
 /**
  * Turns the syntax of a script function into a function value, a `Closure`. It is what
