@@ -2,12 +2,7 @@ import type {
   ArrayExpression,
   AssignmentExpression,
   CallExpression,
-  CatchClause,
-  DoWhileStatement,
   Expression,
-  ForInStatement,
-  ForOfStatement,
-  ForStatement,
   LogicalExpression,
   MemberExpression,
   ModuleDeclaration,
@@ -19,23 +14,18 @@ import type {
   SpreadElement,
   Statement,
   Super,
-  SwitchStatement,
   TaggedTemplateExpression,
   TemplateLiteral,
-  TryStatement,
   UnaryExpression,
-  UpdateExpression,
-  VariableDeclaration,
-  WhileStatement
+  UpdateExpression
 } from 'acorn';
 import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
 import { assertNever } from '../support/assert-never.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { createArgumentsObject } from '../values/arguments-object.ts';
 import { Builtin } from '../values/builtin.ts';
-import { Closure, type FunctionNode } from '../values/closure.ts';
+import { Closure } from '../values/closure.ts';
 import { toBoolean, toNumber, toString, typeOf } from '../values/coercion.ts';
-import { enumerableKeys } from '../values/iteration.ts';
 import {
   assertAllowedKey,
   deleteMember,
@@ -44,19 +34,34 @@ import {
   toPropertyKey
 } from '../values/members.ts';
 import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
-import { SandboxError, SandboxThrow, UnplacedError } from '../values/sandbox-error.ts';
+import { UnplacedError } from '../values/sandbox-error.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
+import { evaluateBlock, evaluateDeclaration, evaluateFunctionBody } from './blocks.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
-import { BREAK, type Completion, CONTINUE, NORMAL } from './completion.ts';
-import { describe, patternName } from './describe.ts';
+import { createClosure } from './closures.ts';
+import { type Completion, NORMAL } from './completion.ts';
 import {
-  collectFunctionDeclarations,
-  collectPatternNames,
-  hoistLexicalDeclarations,
-  hoistVarDeclarations
-} from './hoisting.ts';
+  evaluateBreak,
+  evaluateContinue,
+  evaluateIf,
+  evaluateLabeled,
+  evaluateReturn,
+  evaluateSwitch,
+  evaluateThrow,
+  evaluateTry
+} from './control-flow.ts';
+import { describe, patternName } from './describe.ts';
 import { HostBridge, type NestedRun } from './host-bridge.ts';
 import type { Interpreter } from './interpreter.ts';
+import {
+  evaluateDoWhile,
+  evaluateFor,
+  evaluateForIn,
+  evaluateForOf,
+  evaluateWhile,
+  type Labels,
+  NO_LABELS
+} from './loops.ts';
 import { propertyKey } from './member-access.ts';
 import { applyBinary, applyUnary, COMPOUND_OPERATORS } from './operators.ts';
 import { bindPattern, iterateOrThrow } from './patterns.ts';
@@ -69,13 +74,6 @@ import { Scope } from './scope.ts';
  * undefined.
  */
 const SHORT_CIRCUIT: unique symbol = Symbol('short-circuit');
-
-type StatementList = ReadonlyArray<Statement | ModuleDeclaration>;
-
-/** The labels a loop bears, which a labelled `continue` may name. */
-type Labels = ReadonlyArray<string>;
-
-const NO_LABELS: Labels = [];
 
 /** Evaluates a parsed program under a budget; anything it does not implement throws when reached. */
 export class Evaluator implements Interpreter {
@@ -101,46 +99,30 @@ export class Evaluator implements Interpreter {
   public run(program: Program, globals: Scope): unknown {
     const scope = new Scope(globals);
     scope.bindReceiver(undefined);
-    const completion = this.evaluateFunctionBody(program.body, scope);
+    const completion = evaluateFunctionBody(this, program.body, scope);
     return completion.type === 'return' ? completion.value : undefined;
   }
 
-  /** A function body hoists its `var`s on top of what every block hoists. */
-  private evaluateFunctionBody(body: StatementList, scope: Scope): Completion {
-    hoistVarDeclarations(body, scope);
-    return this.evaluateBlock(body, scope);
-  }
-
-  private evaluateBlock(statements: StatementList, scope: Scope): Completion {
-    this.hoistBlock(statements, scope);
-    return this.evaluateStatements(statements, scope);
-  }
-
-  private hoistBlock(statements: StatementList, scope: Scope): void {
-    hoistLexicalDeclarations(statements, scope);
-    for (const declaration of collectFunctionDeclarations(statements)) {
-      scope.define(declaration.id.name, 'var', this.createClosure(declaration, scope));
-    }
-  }
-
-  private evaluateStatements(statements: StatementList, scope: Scope): Completion {
-    for (const statement of statements) {
-      const completion = this.evaluateStatement(statement, scope);
-      if (completion.type !== 'normal') {
-        return completion;
-      }
-    }
-    return NORMAL;
-  }
-
-  /** `labels` are the labels directly on this statement, which only a loop has a use for. */
-  private evaluateStatement(
+  /**
+   * Runs one statement: charges an operation for it, then hands it, by its AST node type, to the
+   * chapter that implements it (`blocks.ts`, `loops.ts`, `control-flow.ts`), or handles it right
+   * here when it takes a line or two. A statement type that is not listed, such as `class` or
+   * `import`, ends the run as unsupported syntax.
+   *
+   * `labels` are the labels written directly in front of this statement, which only a loop has a
+   * use for (see `Labels`).
+   *
+   * Some errors are raised by code that knows nothing about the script's positions, such as a
+   * value conversion deep inside a built-in. It throws an `UnplacedError`, and the nearest
+   * statement or expression that sees it turns it into a script error at its own position. This
+   * is the net for those that happen outside any expression, such as a computed key in a pattern.
+   */
+  public evaluateStatement(
     node: Statement | ModuleDeclaration,
     scope: Scope,
     labels: Labels = NO_LABELS
   ): Completion {
     this.context.tick(node);
-    // The net for conversions outside any expression, such as a computed key in a pattern
     try {
       switch (node.type) {
         case 'EmptyStatement':
@@ -151,55 +133,39 @@ export class Evaluator implements Interpreter {
           this.evaluateExpression(node.expression, scope);
           return NORMAL;
         case 'BlockStatement':
-          return this.evaluateBlock(node.body, new Scope(scope));
+          return evaluateBlock(this, node.body, new Scope(scope));
         case 'VariableDeclaration':
-          this.evaluateDeclaration(node, scope);
+          evaluateDeclaration(this, node, scope);
           return NORMAL;
         case 'FunctionDeclaration':
           // Already bound when the enclosing block was entered
           return NORMAL;
         case 'ReturnStatement':
-          return {
-            type: 'return',
-            value: node.argument ? this.evaluateExpression(node.argument, scope) : undefined
-          };
+          return evaluateReturn(this, node, scope);
         case 'IfStatement':
-          if (toBoolean(this.evaluateExpression(node.test, scope))) {
-            return this.evaluateStatement(node.consequent, scope);
-          }
-          return node.alternate ? this.evaluateStatement(node.alternate, scope) : NORMAL;
+          return evaluateIf(this, node, scope);
         case 'WhileStatement':
-          return this.evaluateWhile(node, scope, labels);
+          return evaluateWhile(this, node, scope, labels);
         case 'DoWhileStatement':
-          return this.evaluateDoWhile(node, scope, labels);
+          return evaluateDoWhile(this, node, scope, labels);
         case 'ForStatement':
-          return this.evaluateFor(node, scope, labels);
+          return evaluateFor(this, node, scope, labels);
         case 'ForOfStatement':
-          return this.evaluateForOf(node, scope, labels);
+          return evaluateForOf(this, node, scope, labels);
         case 'ForInStatement':
-          return this.evaluateForIn(node, scope, labels);
-        case 'LabeledStatement': {
-          const name = node.label.name;
-          const completion = this.evaluateStatement(node.body, scope, [...labels, name]);
-          // A break to this label ends here; anything else travels on to its own target
-          return completion.type === 'break' && completion.label === name ? NORMAL : completion;
-        }
+          return evaluateForIn(this, node, scope, labels);
+        case 'LabeledStatement':
+          return evaluateLabeled(this, node, scope, labels);
         case 'BreakStatement':
-          return node.label ? { type: 'break', label: node.label.name } : BREAK;
+          return evaluateBreak(node);
         case 'ContinueStatement':
-          return node.label ? { type: 'continue', label: node.label.name } : CONTINUE;
+          return evaluateContinue(node);
         case 'SwitchStatement':
-          return this.evaluateSwitch(node, scope);
-        case 'ThrowStatement': {
-          const value = this.evaluateExpression(node.argument, scope);
-          throw new SandboxThrow(
-            value,
-            node,
-            value instanceof SandboxError ? '' : this.context.stackTrace(node)
-          );
-        }
+          return evaluateSwitch(this, node, scope);
+        case 'ThrowStatement':
+          return evaluateThrow(this, node, scope);
         case 'TryStatement':
-          return this.evaluateTry(node, scope);
+          return evaluateTry(this, node, scope);
         default:
           return this.context.unsupported(node);
       }
@@ -209,242 +175,6 @@ export class Evaluator implements Interpreter {
       }
       throw error;
     }
-  }
-
-  /**
-   * Only script throws are caught here. A limit error or an unsupported construct is a
-   * `MapleError`, which passes through untouched and skips `finally` as well.
-   */
-  private evaluateTry(node: TryStatement, scope: Scope): Completion {
-    let completion: Completion = NORMAL;
-    let pending: SandboxThrow | undefined;
-    try {
-      completion = this.evaluateStatement(node.block, scope);
-    } catch (error) {
-      if (!(error instanceof SandboxThrow)) {
-        throw error;
-      }
-      if (!node.handler) {
-        pending = error;
-      } else {
-        try {
-          completion = this.evaluateCatch(node.handler, error.value, scope);
-        } catch (inner) {
-          if (!(inner instanceof SandboxThrow)) {
-            throw inner;
-          }
-          pending = inner;
-        }
-      }
-    }
-    if (node.finalizer) {
-      const final = this.evaluateStatement(node.finalizer, scope);
-      // A return, break or continue in finally wins over both the result and a pending throw
-      if (final.type !== 'normal') {
-        return final;
-      }
-    }
-    if (pending) {
-      throw pending;
-    }
-    return completion;
-  }
-
-  private evaluateCatch(handler: CatchClause, thrown: unknown, scope: Scope): Completion {
-    const catchScope = new Scope(scope);
-    if (handler.param) {
-      const names: Array<string> = [];
-      collectPatternNames(handler.param, names);
-      for (const name of names) {
-        catchScope.define(name, 'let');
-      }
-      bindPattern(this, handler.param, thrown, catchScope, 'initialize');
-    }
-    return this.evaluateStatement(handler.body, catchScope);
-  }
-
-  private evaluateDeclaration(node: VariableDeclaration, scope: Scope): void {
-    const kind = node.kind;
-    if (kind !== 'var' && kind !== 'let' && kind !== 'const') {
-      return this.context.unsupported(node, kind);
-    }
-    for (const declarator of node.declarations) {
-      // A bare `var a;` must not reset a value the hoisted binding already holds
-      if (!declarator.init && kind === 'var') {
-        continue;
-      }
-      const value = declarator.init
-        ? this.evaluateNamed(declarator.init, scope, patternName(declarator.id))
-        : undefined;
-      const source = declarator.init ? describe(declarator.init) : 'undefined';
-      bindPattern(this, declarator.id, value, scope, 'initialize', source);
-    }
-  }
-
-  private evaluateWhile(node: WhileStatement, scope: Scope, labels: Labels): Completion {
-    while (toBoolean(this.evaluateExpression(node.test, scope))) {
-      this.context.tick(node);
-      const exit = this.evaluateLoopBody(node.body, scope, labels);
-      if (exit) {
-        return exit;
-      }
-    }
-    return NORMAL;
-  }
-
-  private evaluateDoWhile(node: DoWhileStatement, scope: Scope, labels: Labels): Completion {
-    do {
-      this.context.tick(node);
-      const exit = this.evaluateLoopBody(node.body, scope, labels);
-      if (exit) {
-        return exit;
-      }
-    } while (toBoolean(this.evaluateExpression(node.test, scope)));
-    return NORMAL;
-  }
-
-  /**
-   * A `let` or `const` in the head gets a fresh binding per iteration, so closures see their own
-   * `i`.
-   */
-  private evaluateFor(node: ForStatement, scope: Scope, labels: Labels): Completion {
-    const loopScope = new Scope(scope);
-    let perIteration = false;
-    if (node.init?.type === 'VariableDeclaration') {
-      hoistLexicalDeclarations([node.init], loopScope);
-      this.evaluateDeclaration(node.init, loopScope);
-      perIteration = node.init.kind !== 'var';
-    } else if (node.init) {
-      this.evaluateExpression(node.init, loopScope);
-    }
-    let iterationScope = perIteration ? loopScope.copy() : loopScope;
-    for (;;) {
-      this.context.tick(node);
-      if (node.test && !toBoolean(this.evaluateExpression(node.test, iterationScope))) {
-        break;
-      }
-      const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
-      if (exit) {
-        return exit;
-      }
-      if (perIteration) {
-        iterationScope = iterationScope.copy();
-      }
-      if (node.update) {
-        this.evaluateExpression(node.update, iterationScope);
-      }
-    }
-    return NORMAL;
-  }
-
-  private evaluateForOf(node: ForOfStatement, scope: Scope, labels: Labels): Completion {
-    if (node.await) {
-      return this.context.unsupported(node, 'for await');
-    }
-    const iterable = this.evaluateExpression(node.right, scope);
-    const iterator = iterateOrThrow(this.context, iterable, node.right, describe(node.right));
-    for (let step = iterator.next(); !step.done; step = iterator.next()) {
-      this.context.tick(node);
-      const iterationScope = this.bindLoopTarget(node.left, step.value, scope);
-      const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
-      if (exit) {
-        return exit;
-      }
-    }
-    return NORMAL;
-  }
-
-  private evaluateForIn(node: ForInStatement, scope: Scope, labels: Labels): Completion {
-    const keys = enumerableKeys(this.evaluateExpression(node.right, scope), this.context.runState);
-    for (const key of keys) {
-      this.context.tick(node);
-      const iterationScope = this.bindLoopTarget(node.left, key, scope);
-      const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
-      if (exit) {
-        return exit;
-      }
-    }
-    return NORMAL;
-  }
-
-  /** Binds the head of a `for...of` / `for...in`; `let` and `const` get a scope per iteration. */
-  private bindLoopTarget(left: VariableDeclaration | Pattern, value: unknown, scope: Scope): Scope {
-    if (left.type !== 'VariableDeclaration') {
-      bindPattern(this, left, value, scope, 'assign');
-      return scope;
-    }
-    const [declarator] = left.declarations;
-    if (!declarator) {
-      throw new Error('A loop declaration without a declarator');
-    }
-    if (left.kind === 'var') {
-      bindPattern(this, declarator.id, value, scope, 'initialize');
-      return scope;
-    }
-    if (left.kind !== 'let' && left.kind !== 'const') {
-      return this.context.unsupported(left, left.kind);
-    }
-    const iterationScope = new Scope(scope);
-    hoistLexicalDeclarations([left], iterationScope);
-    bindPattern(this, declarator.id, value, iterationScope, 'initialize');
-    return iterationScope;
-  }
-
-  /**
-   * Runs one iteration of a loop's body and says how the loop goes on: `undefined` to the next
-   * iteration, `NORMAL` once a `break` ended it, or the completion itself for the loop to hand
-   * up: a `return`, a `continue` to an outer loop, or a labelled `break`, which the labelled
-   * statement it names turns back into a normal completion.
-   */
-  private evaluateLoopBody(body: Statement, scope: Scope, labels: Labels): Completion | undefined {
-    const completion = this.evaluateStatement(body, scope);
-    switch (completion.type) {
-      case 'normal':
-        return undefined;
-      case 'continue':
-        return completion.label === undefined || labels.includes(completion.label)
-          ? undefined
-          : completion;
-      case 'break':
-        return completion.label === undefined ? NORMAL : completion;
-      case 'return':
-        return completion;
-      default:
-        return assertNever(completion, 'completion');
-    }
-  }
-
-  /** The whole switch body is one block, so a `let` in one case is visible in the next. */
-  private evaluateSwitch(node: SwitchStatement, scope: Scope): Completion {
-    const discriminant = this.evaluateExpression(node.discriminant, scope);
-    const switchScope = new Scope(scope);
-    this.hoistBlock(
-      node.cases.flatMap((switchCase) => switchCase.consequent),
-      switchScope
-    );
-    let start = node.cases.findIndex((switchCase) => !switchCase.test);
-    for (const [index, switchCase] of node.cases.entries()) {
-      if (
-        switchCase.test &&
-        this.evaluateExpression(switchCase.test, switchScope) === discriminant
-      ) {
-        start = index;
-        break;
-      }
-    }
-    if (start === -1) {
-      return NORMAL;
-    }
-    for (const switchCase of node.cases.slice(start)) {
-      const completion = this.evaluateStatements(switchCase.consequent, switchScope);
-      if (completion.type === 'break' && completion.label === undefined) {
-        return NORMAL;
-      }
-      if (completion.type !== 'normal') {
-        return completion;
-      }
-    }
-    return NORMAL;
   }
 
   public evaluateExpression(node: Expression, scope: Scope): unknown {
@@ -521,7 +251,7 @@ export class Evaluator implements Interpreter {
         }
         case 'FunctionExpression':
         case 'ArrowFunctionExpression':
-          return this.createClosure(node, scope);
+          return createClosure(this.context, node, scope);
         case 'CallExpression':
           return this.evaluateCall(node, scope);
         case 'NewExpression':
@@ -785,17 +515,6 @@ export class Evaluator implements Interpreter {
     }
   }
 
-  /** Async and generator functions fail here, at creation, even if they are never called. */
-  private createClosure(node: FunctionNode, scope: Scope, name?: string): Closure {
-    if (node.async) {
-      return this.context.unsupported(node, 'async');
-    }
-    if (node.generator) {
-      return this.context.unsupportedFeature(node, 'generators');
-    }
-    return new Closure(node, scope, name);
-  }
-
   /**
    * Evaluates the value of a binding, property or default; an anonymous function there takes
    * `name` as its own, as `var f = function () {}` names `f` in JavaScript.
@@ -806,7 +525,7 @@ export class Evaluator implements Interpreter {
       (node.type === 'ArrowFunctionExpression' || (node.type === 'FunctionExpression' && !node.id))
     ) {
       this.context.tick(node);
-      return this.createClosure(node, scope, name);
+      return createClosure(this.context, node, scope, name);
     }
     return this.evaluateExpression(node, scope);
   }
@@ -956,7 +675,7 @@ export class Evaluator implements Interpreter {
       if (body.type !== 'BlockStatement') {
         return this.evaluateExpression(body, scope);
       }
-      const completion = this.evaluateFunctionBody(body.body, scope);
+      const completion = evaluateFunctionBody(this, body.body, scope);
       return completion.type === 'return' ? completion.value : undefined;
     } finally {
       this.context.leaveFrame();

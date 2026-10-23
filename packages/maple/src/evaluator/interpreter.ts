@@ -1,4 +1,6 @@
-import type { Expression } from 'acorn';
+import type { Expression, ModuleDeclaration, Statement } from 'acorn';
+import type { Completion } from './completion.ts';
+import type { Labels } from './loops.ts';
 import type { RunContext } from './run-context.ts';
 import type { Scope } from './scope.ts';
 
@@ -28,6 +30,12 @@ export interface Interpreter {
 
   /** The value of any expression, from `1` to `items.filter((item) => item.done).length`. */
   evaluateExpression(node: Expression, scope: Scope): unknown;
+
+  /**
+   * Runs one statement and says how it completed (see `completion.ts`). `labels` are the labels
+   * written directly in front of it, which only a loop has a use for (see `loops.ts`).
+   */
+  evaluateStatement(node: Statement | ModuleDeclaration, scope: Scope, labels?: Labels): Completion;
 
   /** Evaluates the value of a binding, where an anonymous function takes `name` as its own. */
   evaluateNamed(node: Expression, scope: Scope, name: string | undefined): unknown;
