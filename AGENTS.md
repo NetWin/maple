@@ -28,8 +28,9 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
 - Use the `.ts` extension in relative imports (`./scope.ts`).
 - Put tests next to the code as `*.spec.ts` (Vitest). Every interpreter feature and every rejected escape needs a test.
   Specs that exercise a whole language chapter through `Maple.run` live in the directory whose behaviour they cover.
-- `docs/` is the contract, indexed in `docs/README.md`; change it in the same commit as the behaviour. Contributor
-  notes such as adding a built-in are in the root `CONTRIBUTING.md`.
+- `docs/` is the contract, indexed in `docs/README.md`; change it in the same commit as the behaviour.
+- Contributor notes are in the root `CONTRIBUTING.md`: read "Adding a built-in" before adding one, and "Evaluator
+  layout" before changing anything in `src/evaluator`.
 
 ## Playground (`apps/maple-playground`)
 
