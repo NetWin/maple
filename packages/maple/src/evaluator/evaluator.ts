@@ -30,20 +30,10 @@ import type {
   VariableDeclaration,
   WhileStatement
 } from 'acorn';
-import { fromHost, UnsupportedInputError } from '../boundary/from-host.ts';
-import { type HostFunction, type Intrinsic, isExposed, type Sandbox } from '../boundary/host.ts';
-import {
-  asMapleError,
-  capHostError,
-  hostErrorText,
-  MapleError,
-  MapleErrorCode
-} from '../boundary/maple-error.ts';
-import { NestingLimitError, toHost, UnconvertibleValueError } from '../boundary/to-host.ts';
+import { UnsupportedInputError } from '../boundary/from-host.ts';
+import { MapleErrorCode } from '../boundary/maple-error.ts';
 import { getMember, hasMethod } from '../builtins/method-dispatch.ts';
-import type { MapleRunResult, RunOptions } from '../maple.ts';
 import { assertNever } from '../support/assert-never.ts';
-import { MAX_NESTING } from '../support/nesting-limit.ts';
 import { defineOwn } from '../support/own-property.ts';
 import { createArgumentsObject } from '../values/arguments-object.ts';
 import { Builtin } from '../values/builtin.ts';
@@ -59,7 +49,6 @@ import {
   toPropertyKey
 } from '../values/members.ts';
 import { type CallContext, guardHostErrors, NativeFunction } from '../values/native.ts';
-import { RunState } from '../values/run-state.ts';
 import { SandboxError, SandboxThrow, UnplacedError } from '../values/sandbox-error.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
@@ -71,6 +60,7 @@ import {
   hoistLexicalDeclarations,
   hoistVarDeclarations
 } from './hoisting.ts';
+import { HostBridge, type NestedRun } from './host-bridge.ts';
 import { applyBinary, applyUnary, COMPOUND_OPERATORS } from './operators.ts';
 import { RunContext } from './run-context.ts';
 import { Scope } from './scope.ts';
@@ -128,9 +118,6 @@ const HOST_ONLY_NAMES: ReadonlySet<string> = new Set([
   'requestAnimationFrame'
 ]);
 
-/** What the script sees of a host exception that is not marked with `exposed`. */
-const HOST_FAILURE_MESSAGE = 'A host function failed';
-
 /**
  * Travels up an optional chain once a `?.` met null or undefined; `ChainExpression` turns it into
  * undefined.
@@ -147,9 +134,6 @@ const NO_LABELS: Labels = [];
 /** How a pattern binds its names: a declaration, a parameter, or an assignment to existing targets. */
 type BindMode = 'initialize' | 'parameter' | 'assign';
 
-/** Runs one more program on the current budget; `Maple` supplies it because it owns the globals. */
-type NestedRun = (code: string, data: unknown, options: RunOptions) => MapleRunResult;
-
 /** A resolved assignment target, read and written in place for compound operators. */
 interface Reference {
   get(): unknown;
@@ -160,15 +144,13 @@ interface Reference {
 export class Evaluator {
   readonly #context: RunContext;
 
-  /** Runs another program on this budget; supplied by `Maple`, which owns the globals. */
-  readonly #nestedRun: NestedRun;
-
-  /** Script throws handed to an intrinsic as `MapleError`s, so they can be restored on the way out. */
-  readonly #wrapped = new WeakMap<MapleError, SandboxThrow>();
+  readonly #host: HostBridge;
 
   constructor(budget: Budget, nestedRun: NestedRun) {
     this.#context = new RunContext(budget);
-    this.#nestedRun = nestedRun;
+    this.#host = new HostBridge(this.#context, nestedRun, (callee, args, node) =>
+      this.call(undefined, callee, args, node)
+    );
   }
 
   public stats(): MapleRunStats {
@@ -1103,63 +1085,8 @@ export class Evaluator {
       ...this.#context.memberContext(node),
       call: (receiver, callee, args) => this.call(receiver, callee, args, node),
       stackTrace: () => this.#context.stackTrace(node),
-      invokeHost: (fn, args) => this.invokeHost(fn, args, node),
-      invokeIntrinsic: (fn, args) => this.invokeIntrinsic(fn, args, node)
-    };
-  }
-
-  /** Arguments go out as copies and the result comes in as a copy, so no reference crosses. */
-  private invokeHost(fn: HostFunction, args: ReadonlyArray<unknown>, node: Node): unknown {
-    const hostArgs = args.map((arg) => this.toHostArgument(arg, node));
-    let result: unknown;
-    try {
-      result = fn(...hostArgs);
-    } catch (error) {
-      return this.throwHostError(error, node);
-    }
-    return this.fromHostResult(result, node, fn.name);
-  }
-
-  /**
-   * An intrinsic sees raw sandbox values; a script error it lets through stays catchable by the
-   * script.
-   */
-  private invokeIntrinsic(fn: Intrinsic, args: ReadonlyArray<unknown>, node: Node): unknown {
-    const { handle, revoke } = this.sandboxHandle(node);
-    try {
-      return fn(args, handle);
-    } catch (error) {
-      if (error instanceof MapleError) {
-        throw this.#wrapped.get(error) ?? error;
-      }
-      return this.throwHostError(error, node);
-    } finally {
-      revoke();
-    }
-  }
-
-  /**
-   * The handle an intrinsic works with, and the switch that revokes it once the intrinsic has
-   * returned, so a handle it kept cannot run script code outside the call it was made for.
-   */
-  private sandboxHandle(node: Node): { handle: Sandbox; revoke: () => void } {
-    let revoked = false;
-    const guard = <T>(action: () => T): T => {
-      if (revoked) {
-        throw new Error('The sandbox handle is only usable while the intrinsic runs');
-      }
-      return this.forIntrinsic(action);
-    };
-    return {
-      handle: {
-        toHost: (value) => guard(() => this.toHostArgument(value, node)),
-        fromHost: (value) => guard(() => this.fromHostResult(value, node, 'intrinsic')),
-        call: (callee, args) => guard(() => this.call(undefined, callee, args, node)),
-        run: (code, data, options = {}) => guard(() => this.runNested(code, data, options, node))
-      },
-      revoke: () => {
-        revoked = true;
-      }
+      invokeHost: (fn, args) => this.#host.invokeHost(fn, args, node),
+      invokeIntrinsic: (fn, args) => this.#host.invokeIntrinsic(fn, args, node)
     };
   }
 
@@ -1203,96 +1130,6 @@ export class Evaluator {
       return callee.call(args, this.callContext(node));
     }
     return this.#context.throwError('TypeError', `${description} is not a function`, node);
-  }
-
-  /**
-   * A nested program is one more call level and one more frame on the same budget. It starts from
-   * the shared values as they were, like any run, with strings arrays of its own for its template
-   * sites, and what it changes on the shared values is gone when it returns.
-   */
-  private runNested(code: string, data: unknown, options: RunOptions, node: Node): MapleRunResult {
-    this.#context.enterFrame({ name: '<nested>', calledFrom: node });
-    try {
-      return this.#context.withRunState(new RunState(), () => this.#nestedRun(code, data, options));
-    } finally {
-      this.#context.leaveFrame();
-    }
-  }
-
-  /** Errors reach an intrinsic as `MapleError`s; the original throw is kept to restore it later. */
-  private forIntrinsic<T>(action: () => T): T {
-    try {
-      return action();
-    } catch (error) {
-      if (error instanceof SandboxThrow) {
-        const wrapped = asMapleError(error, this.#context.stats());
-        this.#wrapped.set(wrapped, error);
-        throw wrapped;
-      }
-      throw error;
-    }
-  }
-
-  private toHostArgument(value: unknown, node: Node): unknown {
-    try {
-      return toHost(value, true);
-    } catch (error) {
-      if (error instanceof UnconvertibleValueError) {
-        return this.#context.throwError(
-          'TypeError',
-          `${error.kind === 'iterator' ? 'An' : 'A'} ${error.kind} cannot be passed to the host`,
-          node
-        );
-      }
-      if (error instanceof NestingLimitError) {
-        return this.#context.throwError(
-          'RangeError',
-          `A value nested deeper than ${MAX_NESTING} levels cannot be passed to the host`,
-          node
-        );
-      }
-      throw error;
-    }
-  }
-
-  /** A host return value the model cannot hold is the host's bug, so it is never catchable. */
-  private fromHostResult(value: unknown, node: Node, name: string): unknown {
-    try {
-      return fromHost(value, `${name}()`, { freeze: false, functions: false });
-    } catch (error) {
-      if (error instanceof TypeError) {
-        return this.#context.fail(
-          MapleErrorCode.INTERNAL_ERROR,
-          `${name} returned a value the sandbox cannot hold: ${error.message}`,
-          node,
-          error
-        );
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * What the host threw becomes a sandbox error that says only that the host failed, unless the
-   * host marked it with `exposed`; the host gets it back as `cause`. Maple's own errors pass.
-   */
-  private throwHostError(error: unknown, node: Node): never {
-    if (
-      error instanceof MapleError ||
-      error instanceof SandboxThrow ||
-      error instanceof UnplacedError
-    ) {
-      throw error;
-    }
-    const sandboxError = isExposed(error)
-      ? this.#context.createError(
-          hostErrorText(error, 'name'),
-          hostErrorText(error, 'message'),
-          node
-        )
-      : this.#context.createError('Error', HOST_FAILURE_MESSAGE, node);
-    sandboxError.hostError = capHostError(error);
-    throw new SandboxThrow(sandboxError, node);
   }
 
   private evaluateArguments(
