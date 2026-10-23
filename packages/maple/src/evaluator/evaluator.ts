@@ -66,6 +66,7 @@ import { SandboxError, SandboxThrow, UnplacedError } from '../values/sandbox-err
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
 import { BREAK, type Completion, CONTINUE, NORMAL } from './completion.ts';
+import { describe, NODE_NAMES, patternName } from './describe.ts';
 import {
   collectFunctionDeclarations,
   collectPatternNames,
@@ -130,21 +131,6 @@ const HOST_ONLY_NAMES: ReadonlySet<string> = new Set([
 
 /** What the script sees of a host exception that is not marked with `exposed`. */
 const HOST_FAILURE_MESSAGE = 'A host function failed';
-
-/** Keywords for the error message where the node type alone would read badly. */
-const NODE_NAMES: Partial<Record<Node['type'], string>> = {
-  ClassDeclaration: 'class',
-  ClassExpression: 'class',
-  Super: 'super',
-  AwaitExpression: 'await',
-  YieldExpression: 'yield',
-  ImportDeclaration: 'import',
-  ImportExpression: 'import',
-  ExportNamedDeclaration: 'export',
-  ExportDefaultDeclaration: 'export',
-  ExportAllDeclaration: 'export',
-  PrivateIdentifier: '#private'
-};
 
 /**
  * Travels up an optional chain once a `?.` met null or undefined; `ChainExpression` turns it into
@@ -387,7 +373,7 @@ export class Evaluator {
       const value = declarator.init
         ? this.evaluateNamed(declarator.init, scope, patternName(declarator.id))
         : undefined;
-      const source = declarator.init ? this.describe(declarator.init) : 'undefined';
+      const source = declarator.init ? describe(declarator.init) : 'undefined';
       this.bindPattern(declarator.id, value, scope, 'initialize', source);
     }
   }
@@ -566,7 +552,7 @@ export class Evaluator {
       return this.unsupported(node, 'for await');
     }
     const iterable = this.evaluateExpression(node.right, scope);
-    const iterator = this.iterateOrThrow(iterable, node.right, this.describe(node.right));
+    const iterator = this.iterateOrThrow(iterable, node.right, describe(node.right));
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
       this.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, step.value, scope);
@@ -768,7 +754,7 @@ export class Evaluator {
   private evaluateNew(node: NewExpression, scope: Scope): unknown {
     const callee = this.evaluateExpression(node.callee, scope);
     if (!(callee instanceof Builtin) || !callee.construct) {
-      return this.unsupported(node, `new ${this.describe(node.callee)}`);
+      return this.unsupported(node, `new ${describe(node.callee)}`);
     }
     return callee.construct(this.evaluateArguments(node.arguments, scope), this.callContext(node));
   }
@@ -807,13 +793,7 @@ export class Evaluator {
       this.evaluateExpression(expression, scope)
     );
     // acorn refuses an optional chain in a tag, so the target cannot be a short circuit here
-    return this.invoke(
-      receiver,
-      target,
-      [strings, ...substitutions],
-      node,
-      this.describe(node.tag)
-    );
+    return this.invoke(receiver, target, [strings, ...substitutions], node, describe(node.tag));
   }
 
   /**
@@ -887,7 +867,7 @@ export class Evaluator {
 
   private spreadInto(target: Array<unknown>, element: SpreadElement, scope: Scope): void {
     const value = this.evaluateExpression(element.argument, scope);
-    const iterator = this.iterateOrThrow(value, element.argument, this.describe(element.argument));
+    const iterator = this.iterateOrThrow(value, element.argument, describe(element.argument));
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
       this.tick(element);
       target.push(step.value);
@@ -964,7 +944,7 @@ export class Evaluator {
     const target = node.left;
     if (target.type !== 'Identifier' && target.type !== 'MemberExpression') {
       const value = this.evaluateExpression(node.right, scope);
-      this.bindPattern(target, value, scope, 'assign', this.describe(node.right));
+      this.bindPattern(target, value, scope, 'assign', describe(node.right));
       return value;
     }
     const reference = this.resolveTarget(target, scope);
@@ -1090,7 +1070,7 @@ export class Evaluator {
     }
 
     const args = this.evaluateArguments(node.arguments, scope);
-    return this.invoke(receiver, target, args, node, this.describe(node.callee));
+    return this.invoke(receiver, target, args, node, describe(node.callee));
   }
 
   /**
@@ -1503,35 +1483,6 @@ export class Evaluator {
     return iterator;
   }
 
-  /** How an error message refers to an expression: its name, its literal, or just `value`. */
-  private describe(node: Expression | Super | PrivateIdentifier): string {
-    switch (node.type) {
-      case 'Identifier':
-        return node.name;
-      case 'Super':
-        return 'super';
-      case 'Literal':
-        // The literal as written, so a message reads `"a".foo is not a function`
-        return node.raw ?? String(node.value);
-      case 'MemberExpression':
-        return node.computed
-          ? `${this.describe(node.object)}[${this.describe(node.property)}]`
-          : `${this.describe(node.object)}.${this.describe(node.property)}`;
-      case 'CallExpression':
-        return `${this.describe(node.callee)}(...)`;
-      case 'TaggedTemplateExpression':
-        return `${this.describe(node.tag)}(...)`;
-      case 'ArrayExpression':
-        return '[...]';
-      case 'ObjectExpression':
-        return '{...}';
-      case 'ParenthesizedExpression':
-        return this.describe(node.expression);
-      default:
-        return 'value';
-    }
-  }
-
   private tick(node: Node): void {
     if (!this.#budget.tick()) {
       this.operationLimitExceeded(node);
@@ -1582,9 +1533,4 @@ export class Evaluator {
       cause
     });
   }
-}
-
-/** The name a function assigned to `pattern` takes: only a plain identifier gives one. */
-function patternName(pattern: Pattern): string | undefined {
-  return pattern.type === 'Identifier' ? pattern.name : undefined;
 }
