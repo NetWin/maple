@@ -53,9 +53,7 @@ import { enumerableKeys, iterate } from '../values/iteration.ts';
 import {
   assertAllowedKey,
   deleteMember,
-  type Fail,
   hasMember,
-  type MemberContext,
   ownEntries,
   setMember,
   toPropertyKey
@@ -66,7 +64,7 @@ import { SandboxError, SandboxThrow, UnplacedError } from '../values/sandbox-err
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
 import { BREAK, type Completion, CONTINUE, NORMAL } from './completion.ts';
-import { describe, NODE_NAMES, patternName } from './describe.ts';
+import { describe, patternName } from './describe.ts';
 import {
   collectFunctionDeclarations,
   collectPatternNames,
@@ -74,6 +72,7 @@ import {
   hoistVarDeclarations
 } from './hoisting.ts';
 import { applyBinary, applyUnary, COMPOUND_OPERATORS } from './operators.ts';
+import { RunContext } from './run-context.ts';
 import { Scope } from './scope.ts';
 
 /**
@@ -151,12 +150,6 @@ type BindMode = 'initialize' | 'parameter' | 'assign';
 /** Runs one more program on the current budget; `Maple` supplies it because it owns the globals. */
 type NestedRun = (code: string, data: unknown, options: RunOptions) => MapleRunResult;
 
-/** A script function on the call stack and the call expression that entered it. */
-interface Frame {
-  name: string;
-  calledFrom: Node;
-}
-
 /** A resolved assignment target, read and written in place for compound operators. */
 interface Reference {
   get(): unknown;
@@ -165,30 +158,21 @@ interface Reference {
 
 /** Evaluates a parsed program under a budget; anything it does not implement throws when reached. */
 export class Evaluator {
-  readonly #budget: Budget;
+  readonly #context: RunContext;
 
   /** Runs another program on this budget; supplied by `Maple`, which owns the globals. */
   readonly #nestedRun: NestedRun;
-
-  /** The active script calls, outermost first; `Error.stack` is rendered from it. */
-  readonly #frames: Array<Frame> = [];
-
-  /**
-   * What this run changed on the values every run shares, and its template strings arrays; a nested
-   * run gets its own for its length.
-   */
-  #runState = new RunState();
 
   /** Script throws handed to an intrinsic as `MapleError`s, so they can be restored on the way out. */
   readonly #wrapped = new WeakMap<MapleError, SandboxThrow>();
 
   constructor(budget: Budget, nestedRun: NestedRun) {
-    this.#budget = budget;
+    this.#context = new RunContext(budget);
     this.#nestedRun = nestedRun;
   }
 
   public stats(): MapleRunStats {
-    return this.#budget.stats();
+    return this.#context.stats();
   }
 
   /**
@@ -236,7 +220,7 @@ export class Evaluator {
     scope: Scope,
     labels: Labels = NO_LABELS
   ): Completion {
-    this.tick(node);
+    this.#context.tick(node);
     // The net for conversions outside any expression, such as a computed key in a pattern
     try {
       switch (node.type) {
@@ -292,17 +276,17 @@ export class Evaluator {
           throw new SandboxThrow(
             value,
             node,
-            value instanceof SandboxError ? '' : this.stackTrace(node)
+            value instanceof SandboxError ? '' : this.#context.stackTrace(node)
           );
         }
         case 'TryStatement':
           return this.evaluateTry(node, scope);
         default:
-          return this.unsupported(node);
+          return this.#context.unsupported(node);
       }
     } catch (error) {
       if (error instanceof UnplacedError) {
-        return this.throwError(error.name, error.message, node);
+        return this.#context.throwError(error.name, error.message, node);
       }
       throw error;
     }
@@ -363,7 +347,7 @@ export class Evaluator {
   private evaluateDeclaration(node: VariableDeclaration, scope: Scope): void {
     const kind = node.kind;
     if (kind !== 'var' && kind !== 'let' && kind !== 'const') {
-      return this.unsupported(node, kind);
+      return this.#context.unsupported(node, kind);
     }
     for (const declarator of node.declarations) {
       // A bare `var a;` must not reset a value the hoisted binding already holds
@@ -440,19 +424,19 @@ export class Evaluator {
     mode: BindMode
   ): void {
     if (value === undefined || value === null) {
-      return this.throwError(
+      return this.#context.throwError(
         'TypeError',
         `Cannot destructure '${String(value)}' as it is ${String(value)}.`,
         pattern
       );
     }
-    const context = this.memberContext(pattern);
+    const context = this.#context.memberContext(pattern);
     const taken = new Set<string>();
     for (const property of pattern.properties) {
       if (property.type === 'RestElement') {
         const rest: Record<string, unknown> = {};
-        for (const [key, entry] of ownEntries(value, this.#runState)) {
-          this.tick(property);
+        for (const [key, entry] of ownEntries(value, this.#context.runState)) {
+          this.#context.tick(property);
           if (!taken.has(key)) {
             defineOwn(rest, key, entry);
           }
@@ -478,7 +462,7 @@ export class Evaluator {
       if (element?.type === 'RestElement') {
         const rest: Array<unknown> = [];
         for (let step = iterator.next(); !step.done; step = iterator.next()) {
-          this.tick(element);
+          this.#context.tick(element);
           rest.push(step.value);
         }
         this.bindPattern(element.argument, rest, scope, mode);
@@ -493,7 +477,7 @@ export class Evaluator {
 
   private evaluateWhile(node: WhileStatement, scope: Scope, labels: Labels): Completion {
     while (toBoolean(this.evaluateExpression(node.test, scope))) {
-      this.tick(node);
+      this.#context.tick(node);
       const exit = this.evaluateLoopBody(node.body, scope, labels);
       if (exit) {
         return exit;
@@ -504,7 +488,7 @@ export class Evaluator {
 
   private evaluateDoWhile(node: DoWhileStatement, scope: Scope, labels: Labels): Completion {
     do {
-      this.tick(node);
+      this.#context.tick(node);
       const exit = this.evaluateLoopBody(node.body, scope, labels);
       if (exit) {
         return exit;
@@ -529,7 +513,7 @@ export class Evaluator {
     }
     let iterationScope = perIteration ? loopScope.copy() : loopScope;
     for (;;) {
-      this.tick(node);
+      this.#context.tick(node);
       if (node.test && !toBoolean(this.evaluateExpression(node.test, iterationScope))) {
         break;
       }
@@ -549,12 +533,12 @@ export class Evaluator {
 
   private evaluateForOf(node: ForOfStatement, scope: Scope, labels: Labels): Completion {
     if (node.await) {
-      return this.unsupported(node, 'for await');
+      return this.#context.unsupported(node, 'for await');
     }
     const iterable = this.evaluateExpression(node.right, scope);
     const iterator = this.iterateOrThrow(iterable, node.right, describe(node.right));
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
-      this.tick(node);
+      this.#context.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, step.value, scope);
       const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
       if (exit) {
@@ -565,9 +549,9 @@ export class Evaluator {
   }
 
   private evaluateForIn(node: ForInStatement, scope: Scope, labels: Labels): Completion {
-    const keys = enumerableKeys(this.evaluateExpression(node.right, scope), this.#runState);
+    const keys = enumerableKeys(this.evaluateExpression(node.right, scope), this.#context.runState);
     for (const key of keys) {
-      this.tick(node);
+      this.#context.tick(node);
       const iterationScope = this.bindLoopTarget(node.left, key, scope);
       const exit = this.evaluateLoopBody(node.body, iterationScope, labels);
       if (exit) {
@@ -592,7 +576,7 @@ export class Evaluator {
       return scope;
     }
     if (left.kind !== 'let' && left.kind !== 'const') {
-      return this.unsupported(left, left.kind);
+      return this.#context.unsupported(left, left.kind);
     }
     const iterationScope = new Scope(scope);
     hoistLexicalDeclarations([left], iterationScope);
@@ -658,7 +642,7 @@ export class Evaluator {
   }
 
   private evaluateExpression(node: Expression, scope: Scope): unknown {
-    this.tick(node);
+    this.#context.tick(node);
     // An error from a conversion gets the position of the innermost expression it surfaces from
     try {
       switch (node.type) {
@@ -667,11 +651,11 @@ export class Evaluator {
             // Every evaluation creates a new regexp, as the spec requires for literals
             const { pattern, flags } = node.regex;
             return new RegExpWrapper(
-              guardHostErrors(this.failAt(node), () => new RegExp(pattern, flags))
+              guardHostErrors(this.#context.failAt(node), () => new RegExp(pattern, flags))
             );
           }
           if (typeof node.value === 'bigint') {
-            return this.unsupportedFeature(node, 'bigint literals');
+            return this.#context.unsupportedFeature(node, 'bigint literals');
           }
           return node.value;
         case 'Identifier':
@@ -700,14 +684,14 @@ export class Evaluator {
           return this.evaluateUnary(node, scope);
         case 'BinaryExpression': {
           if (node.left.type === 'PrivateIdentifier') {
-            return this.unsupported(node.left);
+            return this.#context.unsupported(node.left);
           }
           const left = this.evaluateExpression(node.left, scope);
           const right = this.evaluateExpression(node.right, scope);
           if (node.operator === 'in') {
             const propertyKey = toPropertyKey(left);
             return (
-              hasMember(right, propertyKey, this.memberContext(node)) ||
+              hasMember(right, propertyKey, this.#context.memberContext(node)) ||
               hasMethod(right, propertyKey)
             );
           }
@@ -715,7 +699,9 @@ export class Evaluator {
             return this.instanceOf(left, right, node);
           }
           const operator = node.operator;
-          return guardHostErrors(this.failAt(node), () => applyBinary(operator, left, right));
+          return guardHostErrors(this.#context.failAt(node), () =>
+            applyBinary(operator, left, right)
+          );
         }
         case 'LogicalExpression':
           return this.evaluateLogical(node, scope);
@@ -738,13 +724,13 @@ export class Evaluator {
         case 'NewExpression':
           return this.evaluateNew(node, scope);
         case 'MetaProperty':
-          return this.unsupported(node, `${node.meta.name}.${node.property.name}`);
+          return this.#context.unsupported(node, `${node.meta.name}.${node.property.name}`);
         default:
-          return this.unsupported(node);
+          return this.#context.unsupported(node);
       }
     } catch (error) {
       if (error instanceof UnplacedError) {
-        return this.throwError(error.name, error.message, node);
+        return this.#context.throwError(error.name, error.message, node);
       }
       throw error;
     }
@@ -754,14 +740,14 @@ export class Evaluator {
   private evaluateNew(node: NewExpression, scope: Scope): unknown {
     const callee = this.evaluateExpression(node.callee, scope);
     if (!(callee instanceof Builtin) || !callee.construct) {
-      return this.unsupported(node, `new ${describe(node.callee)}`);
+      return this.#context.unsupported(node, `new ${describe(node.callee)}`);
     }
     return callee.construct(this.evaluateArguments(node.arguments, scope), this.callContext(node));
   }
 
   private instanceOf(value: unknown, constructor: unknown, node: Node): boolean {
     if (!(constructor instanceof Builtin) || !constructor.isInstance) {
-      return this.throwError(
+      return this.#context.throwError(
         'TypeError',
         "Right-hand side of 'instanceof' is not a constructor",
         node
@@ -779,7 +765,7 @@ export class Evaluator {
         parts.push(toString(this.evaluateExpression(expression, scope)));
       }
     }
-    return guardHostErrors(this.failAt(node), () => parts.join(''));
+    return guardHostErrors(this.#context.failAt(node), () => parts.join(''));
   }
 
   /**
@@ -802,12 +788,12 @@ export class Evaluator {
    * strings, as in JavaScript.
    */
   private templateObject(quasi: TemplateLiteral, node: Node): ReadonlyArray<string | undefined> {
-    const cached = this.#runState.getTemplateObject(quasi);
+    const cached = this.#context.runState.getTemplateObject(quasi);
     if (cached) {
       return cached;
     }
 
-    this.charge(quasi.quasis.length, node);
+    this.#context.charge(quasi.quasis.length, node);
     const cooked: Array<string | undefined> = quasi.quasis.map(
       (element) => element.value.cooked ?? undefined
     );
@@ -823,7 +809,7 @@ export class Evaluator {
     });
     Object.freeze(cooked);
 
-    this.#runState.setTemplateObject(quasi, cooked);
+    this.#context.runState.setTemplateObject(quasi, cooked);
     return cooked;
   }
 
@@ -833,18 +819,18 @@ export class Evaluator {
       if (property.type === 'SpreadElement') {
         for (const [key, value] of ownEntries(
           this.evaluateExpression(property.argument, scope),
-          this.#runState
+          this.#context.runState
         )) {
-          this.tick(property);
+          this.#context.tick(property);
           defineOwn(object, key, value);
         }
         continue;
       }
       if (property.kind !== 'init') {
-        return this.unsupportedFeature(property, 'getters and setters');
+        return this.#context.unsupportedFeature(property, 'getters and setters');
       }
       const key = this.propertyKey(property.key, property.computed, scope);
-      assertAllowedKey(key, this.failAt(property));
+      assertAllowedKey(key, this.#context.failAt(property));
       defineOwn(object, key, this.evaluateNamed(property.value, scope, key));
     }
     return object;
@@ -869,7 +855,7 @@ export class Evaluator {
     const value = this.evaluateExpression(element.argument, scope);
     const iterator = this.iterateOrThrow(value, element.argument, describe(element.argument));
     for (let step = iterator.next(); !step.done; step = iterator.next()) {
-      this.tick(element);
+      this.#context.tick(element);
       target.push(step.value);
     }
   }
@@ -885,14 +871,14 @@ export class Evaluator {
     scope: Scope
   ): { object: unknown; value: unknown } | typeof SHORT_CIRCUIT {
     if (node.object.type === 'Super') {
-      return this.unsupported(node.object);
+      return this.#context.unsupported(node.object);
     }
     const object = this.evaluateExpression(node.object, scope);
     if (object === SHORT_CIRCUIT || (node.optional && (object === null || object === undefined))) {
       return SHORT_CIRCUIT;
     }
     const key = this.propertyKey(node.property, node.computed, scope);
-    return { object, value: getMember(object, key, this.memberContext(node)) };
+    return { object, value: getMember(object, key, this.#context.memberContext(node)) };
   }
 
   /** The key of a member access or a literal property; computed keys go through ToPropertyKey. */
@@ -902,7 +888,7 @@ export class Evaluator {
     scope: Scope
   ): string {
     if (key.type === 'PrivateIdentifier') {
-      return this.unsupported(key);
+      return this.#context.unsupported(key);
     }
     if (computed) {
       return toPropertyKey(this.evaluateExpression(key, scope));
@@ -913,7 +899,7 @@ export class Evaluator {
     if (key.type === 'Literal' && typeof key.value !== 'bigint' && !key.regex) {
       return toString(key.value);
     }
-    return this.unsupported(key);
+    return this.#context.unsupported(key);
   }
 
   /** Resolves an assignment target once, so compound operators read and write the same place. */
@@ -929,11 +915,11 @@ export class Evaluator {
 
   private resolveMember(target: MemberExpression, scope: Scope): Reference {
     if (target.object.type === 'Super') {
-      return this.unsupported(target.object);
+      return this.#context.unsupported(target.object);
     }
     const object = this.evaluateExpression(target.object, scope);
     const key = this.propertyKey(target.property, target.computed, scope);
-    const context = this.memberContext(target);
+    const context = this.#context.memberContext(target);
     return {
       get: () => getMember(object, key, context),
       set: (value) => setMember(object, key, value, context)
@@ -977,7 +963,7 @@ export class Evaluator {
         break;
       default:
         const right = this.evaluateExpression(node.right, scope);
-        value = guardHostErrors(this.failAt(node), () =>
+        value = guardHostErrors(this.#context.failAt(node), () =>
           applyBinary(COMPOUND_OPERATORS[operator], current, right)
         );
     }
@@ -988,7 +974,7 @@ export class Evaluator {
   private evaluateUpdate(node: UpdateExpression, scope: Scope): number {
     const target = node.argument;
     if (target.type !== 'Identifier' && target.type !== 'MemberExpression') {
-      return this.unsupported(target);
+      return this.#context.unsupported(target);
     }
     const reference = this.resolveTarget(target, scope);
     const previous = toNumber(reference.get());
@@ -1005,11 +991,11 @@ export class Evaluator {
           return true;
         }
         if (node.argument.object.type === 'Super') {
-          return this.unsupported(node.argument.object);
+          return this.#context.unsupported(node.argument.object);
         }
         const object = this.evaluateExpression(node.argument.object, scope);
         const key = this.propertyKey(node.argument.property, node.argument.computed, scope);
-        return deleteMember(object, key, this.memberContext(node.argument));
+        return deleteMember(object, key, this.#context.memberContext(node.argument));
       }
       case 'typeof':
         // `typeof undeclared` is the one read of an unknown name that does not throw
@@ -1039,10 +1025,10 @@ export class Evaluator {
   /** Async and generator functions fail here, at creation, even if they are never called. */
   private createClosure(node: FunctionNode, scope: Scope, name?: string): Closure {
     if (node.async) {
-      return this.unsupported(node, 'async');
+      return this.#context.unsupported(node, 'async');
     }
     if (node.generator) {
-      return this.unsupportedFeature(node, 'generators');
+      return this.#context.unsupportedFeature(node, 'generators');
     }
     return new Closure(node, scope, name);
   }
@@ -1056,7 +1042,7 @@ export class Evaluator {
       name !== undefined &&
       (node.type === 'ArrowFunctionExpression' || (node.type === 'FunctionExpression' && !node.id))
     ) {
-      this.tick(node);
+      this.#context.tick(node);
       return this.createClosure(node, scope, name);
     }
     return this.evaluateExpression(node, scope);
@@ -1083,12 +1069,12 @@ export class Evaluator {
     scope: Scope
   ): { receiver: unknown; target: unknown } {
     if (callee.type === 'Super') {
-      return this.unsupported(callee);
+      return this.#context.unsupported(callee);
     }
 
     if (callee.type === 'MemberExpression') {
       // Not routed through evaluateExpression so a short-circuited object is seen here
-      this.tick(callee);
+      this.#context.tick(callee);
       const access = this.accessMember(callee, scope);
       if (access === SHORT_CIRCUIT) {
         return { receiver: undefined, target: SHORT_CIRCUIT };
@@ -1099,8 +1085,8 @@ export class Evaluator {
 
     if (callee.type === 'ChainExpression' && callee.expression.type === 'MemberExpression') {
       // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
-      this.tick(callee);
-      this.tick(callee.expression);
+      this.#context.tick(callee);
+      this.#context.tick(callee.expression);
       const access = this.accessMember(callee.expression, scope);
       if (access === SHORT_CIRCUIT) {
         return { receiver: undefined, target: SHORT_CIRCUIT };
@@ -1111,21 +1097,12 @@ export class Evaluator {
     return { receiver: undefined, target: this.evaluateExpression(callee, scope) };
   }
 
-  /** What a member operation at `node` needs from the run. */
-  private memberContext(node: Node): MemberContext {
-    return {
-      fail: this.failAt(node),
-      charge: (count) => this.charge(count, node),
-      runState: this.#runState
-    };
-  }
-
   /** What a built-in gets to reach back into the run; `node` is the call it was invoked from. */
   private callContext(node: Node): CallContext {
     return {
-      ...this.memberContext(node),
+      ...this.#context.memberContext(node),
       call: (receiver, callee, args) => this.call(receiver, callee, args, node),
-      stackTrace: () => this.stackTrace(node),
+      stackTrace: () => this.#context.stackTrace(node),
       invokeHost: (fn, args) => this.invokeHost(fn, args, node),
       invokeIntrinsic: (fn, args) => this.invokeIntrinsic(fn, args, node)
     };
@@ -1196,15 +1173,15 @@ export class Evaluator {
     args: ReadonlyArray<unknown>,
     node: Node
   ): unknown {
-    this.tick(node);
+    this.#context.tick(node);
     if (callee instanceof Closure) {
       return this.callClosure(receiver, callee, args, node);
     }
-    this.enterCall(node);
+    this.#context.enterCall(node);
     try {
       return this.invoke(receiver, callee, args, node, 'callback');
     } finally {
-      this.#budget.leave();
+      this.#context.leaveCall();
     }
   }
 
@@ -1225,7 +1202,7 @@ export class Evaluator {
     if (callee instanceof Builtin && callee.call) {
       return callee.call(args, this.callContext(node));
     }
-    return this.throwError('TypeError', `${description} is not a function`, node);
+    return this.#context.throwError('TypeError', `${description} is not a function`, node);
   }
 
   /**
@@ -1234,16 +1211,11 @@ export class Evaluator {
    * sites, and what it changes on the shared values is gone when it returns.
    */
   private runNested(code: string, data: unknown, options: RunOptions, node: Node): MapleRunResult {
-    this.enterCall(node);
-    this.#frames.push({ name: '<nested>', calledFrom: node });
-    const outer = this.#runState;
-    this.#runState = new RunState();
+    this.#context.enterFrame({ name: '<nested>', calledFrom: node });
     try {
-      return this.#nestedRun(code, data, options);
+      return this.#context.withRunState(new RunState(), () => this.#nestedRun(code, data, options));
     } finally {
-      this.#runState = outer;
-      this.#frames.pop();
-      this.#budget.leave();
+      this.#context.leaveFrame();
     }
   }
 
@@ -1253,7 +1225,7 @@ export class Evaluator {
       return action();
     } catch (error) {
       if (error instanceof SandboxThrow) {
-        const wrapped = asMapleError(error, this.#budget.stats());
+        const wrapped = asMapleError(error, this.#context.stats());
         this.#wrapped.set(wrapped, error);
         throw wrapped;
       }
@@ -1266,14 +1238,14 @@ export class Evaluator {
       return toHost(value, true);
     } catch (error) {
       if (error instanceof UnconvertibleValueError) {
-        return this.throwError(
+        return this.#context.throwError(
           'TypeError',
           `${error.kind === 'iterator' ? 'An' : 'A'} ${error.kind} cannot be passed to the host`,
           node
         );
       }
       if (error instanceof NestingLimitError) {
-        return this.throwError(
+        return this.#context.throwError(
           'RangeError',
           `A value nested deeper than ${MAX_NESTING} levels cannot be passed to the host`,
           node
@@ -1289,7 +1261,7 @@ export class Evaluator {
       return fromHost(value, `${name}()`, { freeze: false, functions: false });
     } catch (error) {
       if (error instanceof TypeError) {
-        return this.fail(
+        return this.#context.fail(
           MapleErrorCode.INTERNAL_ERROR,
           `${name} returned a value the sandbox cannot hold: ${error.message}`,
           node,
@@ -1313,30 +1285,14 @@ export class Evaluator {
       throw error;
     }
     const sandboxError = isExposed(error)
-      ? this.createError(hostErrorText(error, 'name'), hostErrorText(error, 'message'), node)
-      : this.createError('Error', HOST_FAILURE_MESSAGE, node);
+      ? this.#context.createError(
+          hostErrorText(error, 'name'),
+          hostErrorText(error, 'message'),
+          node
+        )
+      : this.#context.createError('Error', HOST_FAILURE_MESSAGE, node);
     sandboxError.hostError = capHostError(error);
     throw new SandboxThrow(sandboxError, node);
-  }
-
-  /** One line per active script frame, innermost first, with the position each frame is at. */
-  private stackTrace(node: Node): string {
-    const lines: Array<string> = [];
-    let site: Node = node;
-    for (let index = this.#frames.length - 1; index >= 0; index--) {
-      const frame = this.#frames[index];
-      if (!frame) {
-        break;
-      }
-      lines.push(`    at ${frame.name} (${this.position(site)})`);
-      site = frame.calledFrom;
-    }
-    lines.push(`    at <script> (${this.position(site)})`);
-    return lines.join('\n');
-  }
-
-  private position(node: Node): string {
-    return node.loc ? `${node.loc.start.line}:${node.loc.start.column}` : '?';
   }
 
   private evaluateArguments(
@@ -1354,17 +1310,6 @@ export class Evaluator {
     return args;
   }
 
-  /** Enters one call level, or ends the run once the depth limit is reached. */
-  private enterCall(node: Node): void {
-    if (!this.#budget.enter()) {
-      this.fail(
-        MapleErrorCode.LIMIT_EXCEEDED,
-        `Call depth limit of ${this.#budget.maxDepth} exceeded`,
-        node
-      );
-    }
-  }
-
   /**
    * `node` is where the call happened, which is what a depth error points at. An arrow ignores
    * `receiver` and sees the `this` of the scope it closed over.
@@ -1375,9 +1320,8 @@ export class Evaluator {
     args: ReadonlyArray<unknown>,
     node: Node
   ): unknown {
-    this.enterCall(node);
     const { node: fn } = closure;
-    this.#frames.push({ name: closure.name || '<anonymous>', calledFrom: node });
+    this.#context.enterFrame({ name: closure.name || '<anonymous>', calledFrom: node });
     try {
       const scope = new Scope(this.scopeForNamedFunction(closure));
       if (fn.type !== 'ArrowFunctionExpression') {
@@ -1385,7 +1329,7 @@ export class Evaluator {
         scope.bindReceiver(receiver);
         // Built on the first read only; copying the arguments costs one operation per argument
         scope.defineLazy('arguments', 'var', () => {
-          this.charge(args.length, node);
+          this.#context.charge(args.length, node);
           return createArgumentsObject(args);
         });
       }
@@ -1397,8 +1341,7 @@ export class Evaluator {
       const completion = this.evaluateFunctionBody(body.body, scope);
       return completion.type === 'return' ? completion.value : undefined;
     } finally {
-      this.#frames.pop();
-      this.#budget.leave();
+      this.#context.leaveFrame();
     }
   }
 
@@ -1432,12 +1375,12 @@ export class Evaluator {
     const binding = scope.lookup(node.name);
     if (!binding) {
       if (HOST_ONLY_NAMES.has(node.name)) {
-        return this.unsupported(node, node.name);
+        return this.#context.unsupported(node, node.name);
       }
-      return this.throwError('ReferenceError', `${node.name} is not defined`, node);
+      return this.#context.throwError('ReferenceError', `${node.name} is not defined`, node);
     }
     if (!binding.initialized) {
-      return this.throwError(
+      return this.#context.throwError(
         'ReferenceError',
         `Cannot access '${node.name}' before initialization`,
         node
@@ -1447,7 +1390,7 @@ export class Evaluator {
       return binding.value;
     } catch (error) {
       if (error instanceof UnsupportedInputError) {
-        return this.fail(MapleErrorCode.INTERNAL_ERROR, error.message, node, error.cause);
+        return this.#context.fail(MapleErrorCode.INTERNAL_ERROR, error.message, node, error.cause);
       }
       throw error;
     }
@@ -1456,20 +1399,24 @@ export class Evaluator {
   private assignIdentifier(node: Identifier, value: unknown, scope: Scope): void {
     const binding = scope.lookup(node.name);
     if (!binding) {
-      return this.throwError('ReferenceError', `${node.name} is not defined`, node);
+      return this.#context.throwError('ReferenceError', `${node.name} is not defined`, node);
     }
     if (!binding.initialized) {
-      return this.throwError(
+      return this.#context.throwError(
         'ReferenceError',
         `Cannot access '${node.name}' before initialization`,
         node
       );
     }
     if (binding.kind === 'const') {
-      return this.throwError('TypeError', 'Assignment to constant variable.', node);
+      return this.#context.throwError('TypeError', 'Assignment to constant variable.', node);
     }
     if (binding.kind === 'global') {
-      return this.throwError('TypeError', `Cannot assign to read-only global '${node.name}'`, node);
+      return this.#context.throwError(
+        'TypeError',
+        `Cannot assign to read-only global '${node.name}'`,
+        node
+      );
     }
     binding.value = value;
   }
@@ -1478,59 +1425,8 @@ export class Evaluator {
   private iterateOrThrow(value: unknown, node: Node, what: string): Iterator<unknown> {
     const iterator = iterate(value);
     if (!iterator) {
-      return this.throwError('TypeError', `${what} is not iterable`, node);
+      return this.#context.throwError('TypeError', `${what} is not iterable`, node);
     }
     return iterator;
-  }
-
-  private tick(node: Node): void {
-    if (!this.#budget.tick()) {
-      this.operationLimitExceeded(node);
-    }
-  }
-
-  private charge(count: number, node: Node): void {
-    if (!this.#budget.charge(count)) {
-      this.operationLimitExceeded(node);
-    }
-  }
-
-  private operationLimitExceeded(node: Node): never {
-    return this.fail(
-      MapleErrorCode.LIMIT_EXCEEDED,
-      `Operation limit of ${this.#budget.maxOps} exceeded`,
-      node
-    );
-  }
-
-  /** Raises an error the script can catch, with the position of the node that caused it. */
-  private throwError(name: string, message: string, node: Node): never {
-    throw new SandboxThrow(this.createError(name, message, node), node);
-  }
-
-  private createError(name: string, message: string, node: Node): SandboxError {
-    return new SandboxError(name, message, name, this.stackTrace(node));
-  }
-
-  private failAt(node: Node): Fail {
-    return (name, message) => this.throwError(name, message, node);
-  }
-
-  private unsupported(node: Node, keyword: string = NODE_NAMES[node.type] ?? node.type): never {
-    return this.fail(MapleErrorCode.DISALLOWED_SYNTAX, `'${keyword}' is not supported`, node);
-  }
-
-  /** For plural features such as `bigint literals`, where a quoted keyword would read badly. */
-  private unsupportedFeature(node: Node, feature: string): never {
-    return this.fail(MapleErrorCode.DISALLOWED_SYNTAX, `${feature} are not supported`, node);
-  }
-
-  private fail(code: MapleErrorCode, message: string, node: Node, cause?: unknown): never {
-    throw new MapleError(code, message, {
-      line: node.loc?.start.line,
-      column: node.loc?.start.column,
-      stats: this.#budget.stats(),
-      cause
-    });
   }
 }
