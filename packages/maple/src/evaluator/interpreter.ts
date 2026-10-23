@@ -1,5 +1,6 @@
 import type { Expression, ModuleDeclaration, Statement } from 'acorn';
 import type { Completion } from './completion.ts';
+import type { HostBridge } from './host-bridge.ts';
 import type { Labels } from './loops.ts';
 import type { RunContext } from './run-context.ts';
 import type { Scope } from './scope.ts';
@@ -27,6 +28,9 @@ import type { Scope } from './scope.ts';
 export interface Interpreter {
   /** The budget, call stack and error raising of the current run. */
   readonly context: RunContext;
+
+  /** Where calls to host functions and intrinsics go (see `host-bridge.ts`). */
+  readonly host: HostBridge;
 
   /** The value of any expression, from `1` to `items.filter((item) => item.done).length`. */
   evaluateExpression(node: Expression, scope: Scope): unknown;

@@ -1,24 +1,9 @@
-import type {
-  CallExpression,
-  Expression,
-  ModuleDeclaration,
-  NewExpression,
-  Node,
-  Pattern,
-  Program,
-  SpreadElement,
-  Statement,
-  Super,
-  TaggedTemplateExpression
-} from 'acorn';
-import { createArgumentsObject } from '../values/arguments-object.ts';
-import { Builtin } from '../values/builtin.ts';
-import { Closure } from '../values/closure.ts';
-import { type CallContext, NativeFunction } from '../values/native.ts';
+import type { Expression, ModuleDeclaration, Program, Statement } from 'acorn';
 import { UnplacedError } from '../values/sandbox-error.ts';
 import { evaluateAssignment, evaluateUpdate } from './assignments.ts';
 import { evaluateBlock, evaluateDeclaration, evaluateFunctionBody } from './blocks.ts';
 import type { Budget, MapleRunStats } from './budget.ts';
+import { callFunction, evaluateCall, evaluateNew, evaluateTaggedTemplate } from './calls.ts';
 import { createClosure } from './closures.ts';
 import { type Completion, NORMAL } from './completion.ts';
 import {
@@ -31,17 +16,9 @@ import {
   evaluateThrow,
   evaluateTry
 } from './control-flow.ts';
-import { describe } from './describe.ts';
 import { HostBridge, type NestedRun } from './host-bridge.ts';
 import type { Interpreter } from './interpreter.ts';
-import {
-  evaluateArray,
-  evaluateLiteral,
-  evaluateObject,
-  evaluateTemplate,
-  spreadInto,
-  templateObject
-} from './literals.ts';
+import { evaluateArray, evaluateLiteral, evaluateObject, evaluateTemplate } from './literals.ts';
 import {
   evaluateDoWhile,
   evaluateFor,
@@ -51,7 +28,7 @@ import {
   type Labels,
   NO_LABELS
 } from './loops.ts';
-import { accessMember, evaluateChain, evaluateMember, SHORT_CIRCUIT } from './member-access.ts';
+import { evaluateChain, evaluateMember } from './member-access.ts';
 import {
   evaluateBinary,
   evaluateConditional,
@@ -59,31 +36,57 @@ import {
   evaluateSequence,
   evaluateUnary
 } from './operators.ts';
-import { bindPattern } from './patterns.ts';
 import { readIdentifier } from './references.ts';
 import { RunContext } from './run-context.ts';
 import { Scope } from './scope.ts';
 
-/** Evaluates a parsed program under a budget; anything it does not implement throws when reached. */
+/**
+ * Runs a script: walks the syntax tree acorn parsed from it (the AST) and computes what each node
+ * means, the way a JavaScript engine would, without ever handing the script to the host's engine.
+ *
+ * This class is the switchboard. `evaluateStatement` and `evaluateExpression` look at a node's type
+ * and hand it to the file that implements that part of JavaScript, the "chapters":
+ *
+ *     blocks.ts         statement lists, hoisting, `var` / `let` / `const`
+ *     loops.ts          `while`, `do`, `for`, `for...of`, `for...in`
+ *     control-flow.ts   labels, `switch`, `throw`, `try`
+ *     literals.ts       `1`, `'a'`, `/re/`, templates, `{ ... }`, `[ ... ]`
+ *     member-access.ts  `a.b`, `a[b]`, `a?.b`, `delete a.b`
+ *     references.ts     reading and assigning variables
+ *     patterns.ts       destructuring `{ a, b: [c] }` into names
+ *     operators.ts      `-a`, `a + b`, `a in b`, `a && b`
+ *     assignments.ts    `a = b`, `a += b`, `a++`
+ *     calls.ts          `f()`, `new Map()`, ``tag`...` ``, running a function's body
+ *
+ * The chapters call back into evaluation only through this class, as the `Interpreter` they
+ * receive, which also hands them the run's bookkeeping (`context`, see `run-context.ts`) and the
+ * way out to host functions (`host`, see `host-bridge.ts`). Anything a script uses that Maple does
+ * not implement, such as `class` or `async`, ends the run as unsupported syntax when it is
+ * reached.
+ */
 export class Evaluator implements Interpreter {
   public readonly context: RunContext;
 
-  readonly #host: HostBridge;
+  public readonly host: HostBridge;
 
   constructor(budget: Budget, nestedRun: NestedRun) {
     this.context = new RunContext(budget);
-    this.#host = new HostBridge(this.context, nestedRun, (callee, args, node) =>
-      this.call(undefined, callee, args, node)
+    this.host = new HostBridge(this.context, nestedRun, (callee, args, node) =>
+      callFunction(this, undefined, callee, args, node)
     );
   }
 
+  /** Operations, call depth and time the run has used so far, which `Maple` reports with it. */
   public stats(): MapleRunStats {
     return this.context.stats();
   }
 
   /**
-   * Evaluates the program as a function body below `globals` and returns what the script returned.
-   * Like the body of a strict function called plainly, it has `undefined` as `this`.
+   * Runs a whole script and gives back what it returned with `return`; a script that ends without
+   * one gives `undefined` (the value of the last expression is not used). The script runs like the
+   * body of a strict-mode function called plainly: in a scope of its own below `globals` (the
+   * built-ins, the instance's and the run's globals, and the run's `data`), with `undefined` as
+   * `this`.
    */
   public run(program: Program, globals: Scope): unknown {
     const scope = new Scope(globals);
@@ -193,7 +196,7 @@ export class Evaluator implements Interpreter {
         case 'TemplateLiteral':
           return evaluateTemplate(this, node, scope);
         case 'TaggedTemplateExpression':
-          return this.evaluateTaggedTemplate(node, scope);
+          return evaluateTaggedTemplate(this, node, scope);
         case 'ObjectExpression':
           return evaluateObject(this, node, scope);
         case 'ArrayExpression':
@@ -221,9 +224,9 @@ export class Evaluator implements Interpreter {
           // Creating a function evaluates nothing inside it yet; its body runs when it is called
           return createClosure(this.context, node, scope);
         case 'CallExpression':
-          return this.evaluateCall(node, scope);
+          return evaluateCall(this, node, scope);
         case 'NewExpression':
-          return this.evaluateNew(node, scope);
+          return evaluateNew(this, node, scope);
         case 'MetaProperty':
           // `new.target` and `import.meta`
           return this.context.unsupported(node, `${node.meta.name}.${node.property.name}`);
@@ -238,32 +241,12 @@ export class Evaluator implements Interpreter {
     }
   }
 
-  /** `new` works for the built-in constructors only; a script function cannot be constructed. */
-  private evaluateNew(node: NewExpression, scope: Scope): unknown {
-    const callee = this.evaluateExpression(node.callee, scope);
-    if (!(callee instanceof Builtin) || !callee.construct) {
-      return this.context.unsupported(node, `new ${describe(node.callee)}`);
-    }
-    return callee.construct(this.evaluateArguments(node.arguments, scope), this.callContext(node));
-  }
-
   /**
-   * Calls the tag with the site's strings array and the substitutions as values, in JavaScript's
-   * order: the tag, then the strings, then the substitutions.
-   */
-  private evaluateTaggedTemplate(node: TaggedTemplateExpression, scope: Scope): unknown {
-    const { receiver, target } = this.resolveCallee(node.tag, scope);
-    const strings = templateObject(this, node.quasi, node);
-    const substitutions = node.quasi.expressions.map((expression) =>
-      this.evaluateExpression(expression, scope)
-    );
-    // acorn refuses an optional chain in a tag, so the target cannot be a short circuit here
-    return this.invoke(receiver, target, [strings, ...substitutions], node, describe(node.tag));
-  }
-
-  /**
-   * Evaluates the value of a binding, property or default; an anonymous function there takes
-   * `name` as its own, as `var f = function () {}` names `f` in JavaScript.
+   * Evaluates a value that is about to be stored under `name`: the initializer of a declaration,
+   * the value of an object literal property, a default, or the right side of an assignment. An
+   * anonymous function there takes `name` as its own, as JavaScript names it:
+   * `const add = (a, b) => a + b` gives `add.name === 'add'`. Any other expression evaluates as
+   * usual; `name` is `undefined` where nothing gives a name (see `patternName`).
    */
   public evaluateNamed(node: Expression, scope: Scope, name: string | undefined): unknown {
     if (
@@ -274,183 +257,5 @@ export class Evaluator implements Interpreter {
       return createClosure(this.context, node, scope, name);
     }
     return this.evaluateExpression(node, scope);
-  }
-
-  private evaluateCall(node: CallExpression, scope: Scope): unknown {
-    const { receiver, target } = this.resolveCallee(node.callee, scope);
-
-    if (target === SHORT_CIRCUIT || (node.optional && (target === null || target === undefined))) {
-      return SHORT_CIRCUIT;
-    }
-
-    const args = this.evaluateArguments(node.arguments, scope);
-    return this.invoke(receiver, target, args, node, describe(node.callee));
-  }
-
-  /**
-   * What a call or a tagged template invokes and with which `this`: a member callee binds its
-   * object, any other leaves the receiver `undefined`. The target is `SHORT_CIRCUIT` when an
-   * optional chain in a member callee short-circuited.
-   */
-  private resolveCallee(
-    callee: Expression | Super,
-    scope: Scope
-  ): { receiver: unknown; target: unknown } {
-    if (callee.type === 'Super') {
-      return this.context.unsupported(callee);
-    }
-
-    if (callee.type === 'MemberExpression') {
-      // Not routed through evaluateExpression so a short-circuited object is seen here
-      this.context.tick(callee);
-      const access = accessMember(this, callee, scope);
-      if (access === SHORT_CIRCUIT) {
-        return { receiver: undefined, target: SHORT_CIRCUIT };
-      } else {
-        return { receiver: access.object, target: access.value };
-      }
-    }
-
-    if (callee.type === 'ChainExpression' && callee.expression.type === 'MemberExpression') {
-      // `(a?.b)()` keeps `a` as the receiver; a short circuit ends at the parenthesis
-      this.context.tick(callee);
-      this.context.tick(callee.expression);
-      const access = accessMember(this, callee.expression, scope);
-      if (access === SHORT_CIRCUIT) {
-        return { receiver: undefined, target: SHORT_CIRCUIT };
-      } else {
-        return { receiver: access.object, target: access.value };
-      }
-    }
-    return { receiver: undefined, target: this.evaluateExpression(callee, scope) };
-  }
-
-  /** What a built-in gets to reach back into the run; `node` is the call it was invoked from. */
-  private callContext(node: Node): CallContext {
-    return {
-      ...this.context.memberContext(node),
-      call: (receiver, callee, args) => this.call(receiver, callee, args, node),
-      stackTrace: () => this.context.stackTrace(node),
-      invokeHost: (fn, args) => this.#host.invokeHost(fn, args, node),
-      invokeIntrinsic: (fn, args) => this.#host.invokeIntrinsic(fn, args, node)
-    };
-  }
-
-  /**
-   * Calls a function for a built-in or an intrinsic. A closure counts its own level; any other
-   * callee counts one here, so built-ins calling each other, as `apply` can, stay under `maxDepth`.
-   */
-  private call(
-    receiver: unknown,
-    callee: unknown,
-    args: ReadonlyArray<unknown>,
-    node: Node
-  ): unknown {
-    this.context.tick(node);
-    if (callee instanceof Closure) {
-      return this.callClosure(receiver, callee, args, node);
-    }
-    this.context.enterCall(node);
-    try {
-      return this.invoke(receiver, callee, args, node, 'callback');
-    } finally {
-      this.context.leaveCall();
-    }
-  }
-
-  /** Calls any callable sandbox value; `description` names it in the error when it is not one. */
-  private invoke(
-    receiver: unknown,
-    callee: unknown,
-    args: ReadonlyArray<unknown>,
-    node: Node,
-    description: string
-  ): unknown {
-    if (callee instanceof Closure) {
-      return this.callClosure(receiver, callee, args, node);
-    }
-    if (callee instanceof NativeFunction) {
-      return callee.invoke(receiver, args, this.callContext(node));
-    }
-    if (callee instanceof Builtin && callee.call) {
-      return callee.call(args, this.callContext(node));
-    }
-    return this.context.throwError('TypeError', `${description} is not a function`, node);
-  }
-
-  private evaluateArguments(
-    nodes: ReadonlyArray<Expression | SpreadElement>,
-    scope: Scope
-  ): Array<unknown> {
-    const args: Array<unknown> = [];
-    for (const argument of nodes) {
-      if (argument.type === 'SpreadElement') {
-        spreadInto(this, args, argument, scope);
-      } else {
-        args.push(this.evaluateExpression(argument, scope));
-      }
-    }
-    return args;
-  }
-
-  /**
-   * `node` is where the call happened, which is what a depth error points at. An arrow ignores
-   * `receiver` and sees the `this` of the scope it closed over.
-   */
-  private callClosure(
-    receiver: unknown,
-    closure: Closure,
-    args: ReadonlyArray<unknown>,
-    node: Node
-  ): unknown {
-    const { node: fn } = closure;
-    this.context.enterFrame({ name: closure.name || '<anonymous>', calledFrom: node });
-    try {
-      const scope = new Scope(this.scopeForNamedFunction(closure));
-      if (fn.type !== 'ArrowFunctionExpression') {
-        // Strict mode: the receiver as it is, never boxed or replaced by a global object
-        scope.bindReceiver(receiver);
-        // Built on the first read only; copying the arguments costs one operation per argument
-        scope.defineLazy('arguments', 'var', () => {
-          this.context.charge(args.length, node);
-          return createArgumentsObject(args);
-        });
-      }
-      this.bindParameters(fn.params, args, scope);
-      const { body } = fn;
-      if (body.type !== 'BlockStatement') {
-        return this.evaluateExpression(body, scope);
-      }
-      const completion = evaluateFunctionBody(this, body.body, scope);
-      return completion.type === 'return' ? completion.value : undefined;
-    } finally {
-      this.context.leaveFrame();
-    }
-  }
-
-  /** A named function expression sees its own name in a scope of its own, as the spec requires. */
-  private scopeForNamedFunction(closure: Closure): Scope {
-    const { node } = closure;
-    if (node.type !== 'FunctionExpression' || !node.id) {
-      return closure.scope;
-    }
-    const scope = new Scope(closure.scope);
-    scope.define(node.id.name, 'const', closure);
-    scope.initialize(node.id.name, closure);
-    return scope;
-  }
-
-  private bindParameters(
-    params: ReadonlyArray<Pattern>,
-    args: ReadonlyArray<unknown>,
-    scope: Scope
-  ): void {
-    for (const [index, param] of params.entries()) {
-      if (param.type === 'RestElement') {
-        bindPattern(this, param.argument, args.slice(index), scope, 'parameter');
-        return;
-      }
-      bindPattern(this, param, args[index], scope, 'parameter');
-    }
   }
 }
