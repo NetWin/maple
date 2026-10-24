@@ -56,6 +56,18 @@ describe('Map', () => {
     expect(run(`${setup} const [[k]] = m; return k;`)).toBe('b');
   });
 
+  it('reads each entry like entry[0] and entry[1], so any object is a pair', () => {
+    expect(run('return new Map([{ 0: "a", 1: 1 }]).get("a");')).toBe(1);
+    expect(run('return new Map([{}]).get(undefined);')).toBeUndefined();
+    expect(run('return new Map([{}]).has(undefined);')).toBe(true);
+    expect(
+      run('const pair = new Set(); pair[0] = "k"; pair[1] = 7; return new Map([pair]).get("k");')
+    ).toBe(7);
+    expect(run('try { new Map([1]); } catch (e) { return e.message; }')).toBe(
+      'Iterator value 1 is not an entry object'
+    );
+  });
+
   it('forEach calls its callback with the thisArg as this', () => {
     expect(
       run(
