@@ -1,0 +1,47 @@
+<button
+  type="button"
+  title="Load an example"
+  popovertarget="maple-examples"
+  class="flex h-7 items-center gap-1 rounded-full border border-neutral-200 px-2.5 text-xs font-medium text-neutral-500 transition-colors [anchor-name:--maple-examples] hover:bg-neutral-100 hover:text-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    class="size-3.5">
+    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+  </svg>
+  <span class="hidden md:inline">Examples</span>
+</button>
+
+<div
+  #popover
+  id="maple-examples"
+  popover="auto"
+  class="inset-auto top-[anchor(bottom)] right-[anchor(right)] m-0 mt-2 w-80 rounded-xl border border-neutral-200 bg-white p-1.5 text-neutral-700 shadow-lg [position-anchor:--maple-examples] max-sm:right-auto max-sm:left-2 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
+  <h2
+    class="px-2 pt-1 pb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
+    Examples
+  </h2>
+  <ul>
+    @for (example of EXAMPLES; track example.title) {
+      <li>
+        <button
+          type="button"
+          class="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          (click)="choose(example)">
+          <span class="block text-sm font-medium">{{ example.title }}</span>
+          <span class="block text-xs text-neutral-500 dark:text-neutral-400">
+            {{ example.summary }}
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+  <p class="px-2 pt-1.5 pb-1 text-xs text-neutral-400 dark:text-neutral-500">
+    Replaces the host context and the script.
+  </p>
+</div>

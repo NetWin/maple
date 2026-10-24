@@ -7,7 +7,7 @@
     {{ status() === 'running' ? 'Running…' : 'Run benchmark' }}
   </button>
   <p class="text-xs text-neutral-400 dark:text-neutral-500">
-    Same code and context in both engines, each timed end to end
+    Same script and host context in both engines, each timed end to end
     @if (response(); as last) {
       · median of {{ last.runs }} runs after warm-up
     }

@@ -5,10 +5,10 @@ export const ENGINES = ['maple', 'js-interpreter'] as const;
 
 export type Engine = (typeof ENGINES)[number];
 
-/** Asks the worker to time `code` against the JSON `context` in both engines. */
+/** Asks the worker to time `code` against the host module at `hostModuleUrl` in both engines. */
 export interface BenchmarkRequest {
   code: string;
-  context: string;
+  hostModuleUrl: string;
   limits: RunLimits;
   /** Measured runs per engine, after a few unmeasured warm-up runs. */
   runs: number;

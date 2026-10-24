@@ -1,19 +1,15 @@
 import { effect, Service, signal, type WritableSignal } from '@angular/core';
-
-/** Default JSON context for the Maple code execution. */
-const DEFAULT_CONTEXT = JSON.stringify({ name: 'Maple' }, null, 2);
-
-/** Default code to be loaded into the editor. */
-const DEFAULT_CODE = ['const greeting = "Hello, " + name;', 'return greeting;'].join('\n');
+import { DEFAULT_EXAMPLE, type Example } from './examples';
 
 /** Maple's own defaults, repeated here so the settings form can show and restore them. */
 export const DEFAULT_MAX_OPS = 1_000_000;
 export const DEFAULT_MAX_DEPTH = 100;
 
-const CONTEXT_STORAGE_KEY = 'maple-playground-context';
+const HOST_CONTEXT_STORAGE_KEY = 'maple-playground-host-context';
 const CODE_STORAGE_KEY = 'maple-playground-code';
 const MAX_OPS_STORAGE_KEY = 'maple-playground-max-ops';
 const MAX_DEPTH_STORAGE_KEY = 'maple-playground-max-depth';
+const WELCOME_SEEN_STORAGE_KEY = 'maple-playground-welcome-seen';
 
 /** How a persisted value is written to and read back from storage. */
 interface Codec<T> {
@@ -26,6 +22,11 @@ const TEXT: Codec<string> = {
   format: (value) => value
 };
 
+const FLAG: Codec<boolean> = {
+  parse: (text) => text === 'true',
+  format: (value) => String(value)
+};
+
 const POSITIVE_INTEGER: Codec<number> = {
   parse: (text) => {
     const value = Number(text);
@@ -35,14 +36,19 @@ const POSITIVE_INTEGER: Codec<number> = {
 };
 
 /**
- * The playground's context, code and run limits, persisted across reloads. A value equal to its
- * default isn't stored, so a later change to the defaults reaches everyone who never edited it.
+ * The playground's host context, code and run limits, persisted across reloads. A value equal to
+ * its default isn't stored, so a later change to the defaults reaches everyone who never edited
+ * it.
  */
 @Service()
 export class Playground {
-  public readonly contextString = persistedSignal(CONTEXT_STORAGE_KEY, DEFAULT_CONTEXT, TEXT);
+  public readonly hostContext = persistedSignal(
+    HOST_CONTEXT_STORAGE_KEY,
+    DEFAULT_EXAMPLE.hostContext,
+    TEXT
+  );
 
-  public readonly codeString = persistedSignal(CODE_STORAGE_KEY, DEFAULT_CODE, TEXT);
+  public readonly codeString = persistedSignal(CODE_STORAGE_KEY, DEFAULT_EXAMPLE.code, TEXT);
 
   public readonly maxOps = persistedSignal(MAX_OPS_STORAGE_KEY, DEFAULT_MAX_OPS, POSITIVE_INTEGER);
 
@@ -52,10 +58,18 @@ export class Playground {
     POSITIVE_INTEGER
   );
 
-  /** Restores every default, which also clears the values from storage. */
+  /** Whether the visitor has closed the welcome dialog once; Reset leaves it alone. */
+  public readonly welcomeSeen = persistedSignal(WELCOME_SEEN_STORAGE_KEY, false, FLAG);
+
+  /** Replaces the host context and the script with an example's. */
+  public load(example: Example): void {
+    this.hostContext.set(example.hostContext);
+    this.codeString.set(example.code);
+  }
+
+  /** Restores every default but the welcome flag, which also clears the values from storage. */
   public reset(): void {
-    this.contextString.set(DEFAULT_CONTEXT);
-    this.codeString.set(DEFAULT_CODE);
+    this.load(DEFAULT_EXAMPLE);
     this.maxOps.set(DEFAULT_MAX_OPS);
     this.maxDepth.set(DEFAULT_MAX_DEPTH);
   }
