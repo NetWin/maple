@@ -246,7 +246,7 @@ describe('escape attempts', () => {
       expect(frozenErrorName('when.setTime(1);', data)).toBe('TypeError');
       expect(frozenErrorName('lookup.set("x", 1);', data)).toBe('TypeError');
       expect(frozenErrorName('obj = {};', data)).toBe('TypeError');
-      expect(errorName('Math.max = 1;')).toBe('TypeError');
+      expect(errorName('Number.EPSILON = 1;')).toBe('TypeError');
       expect(errorName('Math.PI = 3;')).toBe('TypeError');
       expect(errorName('undefined = 1;')).toBe('TypeError');
       expect(data.obj.a).toEqual([1]);
@@ -527,7 +527,7 @@ describe('escape attempts', () => {
       expect(new Maple().run('return [].push.x;').value).toBeUndefined();
     });
 
-    it('keep what a run and its nested runs add to a shared value apart', () => {
+    it('keep what a run and its nested runs add to, replace on or delete from a shared value apart', () => {
       const nesting = new Maple({
         globals: {
           exec: intrinsic(([code], sandbox) => sandbox.run(String(sandbox.toHost(code))).value)
@@ -545,6 +545,20 @@ describe('escape attempts', () => {
           '[].push.planted = 1; const inner = exec("[].push.planted = 2; return [].push.planted;"); return [inner, [].push.planted];'
         ).value
       ).toEqual([2, 1]);
+      expect(nesting.run('Math.max = 1; return exec("return typeof Math.max;");').value).toBe(
+        'function'
+      );
+      expect(nesting.run('exec("delete Math.max;"); return typeof Math.max;').value).toBe(
+        'function'
+      );
+      expect(
+        nesting.run('delete [].push.name; return [exec("return [].push.name;"), [].push.name];')
+          .value
+      ).toEqual(['push', '']);
+      expect(new Maple().run('return [typeof Math.max, [].push.name];').value).toEqual([
+        'function',
+        'push'
+      ]);
     });
 
     it('keep a shared value frozen only for the run that froze it', () => {

@@ -41,6 +41,22 @@ describe('Error.prototype.message', () => {
   });
 });
 
+describe('delete:error.message', () => {
+  it('leaves the empty message of the prototype', () => {
+    expect(
+      parity('var e = new TypeError("m"); return [delete e.message, e.message, String(e)];')
+    ).toEqual([true, '', 'TypeError']);
+  });
+
+  it('takes a later assignment as a new own property', () => {
+    expect(
+      parity(
+        'var e = new Error("m"); delete e.message; e.message = "n"; return [String(e), Object.keys(e)];'
+      )
+    ).toEqual(['Error: n', ['message']]);
+  });
+});
+
 describe('instance:error.message', () => {
   it('Error message is converted to a string', () => {
     expect(parity('return [new Error(42).message, new Error(true).message];')).toEqual([

@@ -68,8 +68,9 @@ side, a script function, a bound function or `String` included, throws a `TypeEr
 
 ## Functions
 
-Script functions and built-in functions have JavaScript's read-only `length` and `name`, names
-inferred from bindings included. Host functions, and functions bound from them, have no properties
+Script functions and built-in functions have JavaScript's `length` and `name`, names inferred from
+bindings included. Neither can be written, but both can be deleted, which leaves what
+`Function.prototype` has: `0` and `''`, which cannot be written either. Host functions, and functions bound from them, have no properties
 at all. Every function answers to `toString`, which gives `[function]`, `valueOf`, `call`, `apply`
 and `bind` ([Functions](builtins.md#functions)). The receiver these pass on reaches a built-in
 method, which checks it as for any method call, so `''.trim.call('  b ')` is `'b'`, and a script
@@ -84,8 +85,10 @@ At the top level of the script `this` is `undefined`, since there is no global o
 function still cannot be constructed ([Constructors](#constructors)).
 
 Every function, and every namespace such as `Math`, takes the properties a script adds, as in
-`fn.cache = {}`. Built-ins, host functions and namespaces are shared by every run, so what a run
-adds to one, or `freeze`s on it, is gone when the next run starts.
+`fn.cache = {}`. As in JavaScript, the methods of a built-in can be replaced and deleted, as in
+`Math.max = fn`, while its constants, such as `Math.PI` or `Number.EPSILON`, can be neither.
+Built-ins, host functions and namespaces are shared by every run, so what a run adds to one,
+replaces on it, deletes from it or `freeze`s on it is gone when the next run starts.
 
 A tagged template `` tag`a${x}b` `` calls `tag` with the strings array and then each substitution as
 a value, not converted to a string, with `this` bound as for a call of the same form. The strings

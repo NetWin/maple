@@ -792,3 +792,30 @@ describe('errors from conversions', () => {
     expect(error.line).toBeUndefined();
   });
 });
+
+describe('deleting the properties of an error', () => {
+  it('leaves what the prototype has, as JavaScript does', () => {
+    expect(
+      run(
+        'const e = new TypeError("m"); return [delete e.message, e.message, "message" in e, Object.hasOwn(e, "message"), String(e)];'
+      )
+    ).toEqual([true, '', true, false, 'TypeError']);
+    expect(
+      run('const e = new TypeError("m"); e.name = "X"; delete e.name; return [e.name, String(e)];')
+    ).toEqual(['TypeError', 'TypeError: m']);
+    expect(
+      run('const e = new Error("m"); return [delete e.stack, e.stack, "stack" in e];')
+    ).toEqual([true, undefined, false]);
+  });
+
+  it('takes an assignment after the delete as a new own property, listed last', () => {
+    expect(
+      run(
+        'const e = new Error("m"); delete e.message; e.message = "n"; return [String(e), Object.keys(e), Object.getOwnPropertyNames(e)];'
+      )
+    ).toEqual(['Error: n', ['message'], ['name', 'stack', 'message']]);
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); delete e.message; e.message = "n"; throw e;')
+    ).toMatchObject({ message: 'n', sandboxError: { name: 'Error', message: 'n' } });
+  });
+});

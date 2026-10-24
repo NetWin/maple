@@ -297,6 +297,13 @@ describe('instance:function.length', () => {
       )
     ).toStrictEqual([0, 2, 3]);
   });
+
+  it('can be deleted, leaving 0', () => {
+    expect(parity('function two(a, b) {} return [delete two.length, two.length];')).toEqual([
+      true,
+      0
+    ]);
+  });
 });
 
 describe('length and name of built-in functions', () => {

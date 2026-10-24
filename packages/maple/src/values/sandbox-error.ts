@@ -1,30 +1,45 @@
 import type { Node } from 'acorn';
-import { Conversion, type Primitive, type PrimitiveHint, toString } from './coercion.ts';
+import { NOOP_CALLBACK } from '../support/noop.ts';
+import {
+  Conversion,
+  describeValue,
+  type Primitive,
+  type PrimitiveHint,
+  toString
+} from './coercion.ts';
 import { type FixedProperties, SandboxObject } from './sandbox-object.ts';
 
-/** `name` and `message` keep any value, as in JavaScript; converting the error reads them. */
+/**
+ * `name` and `message` keep any value, as in JavaScript; converting the error reads them. Once
+ * deleted, they read what the error's prototype has: its kind's name, such as `'TypeError'`, and
+ * an empty message.
+ */
 const ERROR_PROPERTIES: FixedProperties<SandboxError> = new Map([
   [
     'name',
     {
       get: (error) => error.name,
-      configurable: true,
       set: (error, value) => {
         error.name = value;
-      }
+      },
+      writable: true,
+      configurable: true,
+      inherited: { get: (error) => error.kind, writable: true }
     }
   ],
   [
     'message',
     {
       get: (error) => error.message,
-      configurable: true,
       set: (error, value) => {
         error.message = value;
-      }
+      },
+      writable: true,
+      configurable: true,
+      inherited: { get: () => '', writable: true }
     }
   ],
-  ['stack', { get: (error) => error.stack, configurable: true }]
+  ['stack', { get: (error) => error.stack, writable: false, configurable: true }]
 ]);
 
 /** An error object as the script sees it: name, message and a stack of script positions. */
@@ -71,8 +86,10 @@ export class SandboxError extends SandboxObject {
     conversion: Conversion = new Conversion()
   ): Primitive {
     return conversion.convertError(() => {
-      const name = this.name === undefined ? 'Error' : toString(this.name, conversion);
-      const message = this.message === undefined ? '' : toString(this.message, conversion);
+      const nameValue = this.read('name');
+      const messageValue = this.read('message');
+      const name = nameValue === undefined ? 'Error' : toString(nameValue, conversion);
+      const message = messageValue === undefined ? '' : toString(messageValue, conversion);
       if (name === '') {
         return message;
       }
@@ -83,13 +100,30 @@ export class SandboxError extends SandboxObject {
     });
   }
 
+  /** An error names itself by its string, as in `Cannot delete property 'x' of Error: oops`. */
+  public override describe(): string {
+    return describeValue(this);
+  }
+
   /** The fixed part of the error as the host receives it; the boundary adds `properties`. */
   public toInfo(): { name: string; message: string; stack: string } {
     return {
-      name: hostText(this.name, 'Error'),
-      message: hostText(this.message, ''),
+      name: hostText(this.read('name'), 'Error'),
+      message: hostText(this.read('message'), ''),
       stack: this.stack
     };
+  }
+
+  /**
+   * `name` or `message` as a script reads it: what it was given or assigned, or after `delete`,
+   * what was assigned again or what the prototype has.
+   */
+  private read(key: 'name' | 'message'): unknown {
+    // The common case, a property the script never deleted, read straight from the field
+    if (this.properties.getFixedChange(key)?.deleted !== true) {
+      return key === 'name' ? this.name : this.message;
+    }
+    return this.readProperty(key, this.properties, NOOP_CALLBACK);
   }
 }
 

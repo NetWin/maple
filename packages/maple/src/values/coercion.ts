@@ -138,16 +138,14 @@ export function describeValue(value: unknown): string {
 
 /**
  * An object as a failed `delete` names it in JavaScript: `#<Object>`, `[object Array]`, `#<Map>`,
- * and a function or an error by its string.
+ * and a function or an error by its string (see {@link SandboxObject.describe}).
  */
 export function describeObject(value: object): string {
   if (Array.isArray(value)) {
     return ARRAY_PLACEHOLDER;
   }
   if (value instanceof SandboxObject) {
-    return value.tag === 'Function' || value.tag === 'Error'
-      ? describeValue(value)
-      : `#<${value.tag}>`;
+    return value.describe();
   }
   return '#<Object>';
 }

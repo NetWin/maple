@@ -294,6 +294,37 @@ describe('Object.getOwnPropertyNames:RegExp', () => {
   });
 });
 
+describe('delete:function.name', () => {
+  it("leaves Function.prototype's empty name", () => {
+    expect(followsJavaScript('function f() {} return [delete f.name, f.name];')).toEqual({
+      maple: [true, ''],
+      jsInterpreter: [true, undefined]
+    });
+  });
+
+  it('leaves a name that cannot be written', () => {
+    expect(
+      followsJavaScript('function f() {} delete f.name; f.name = "g"; return f.name;')
+    ).toEqual({ maple: MapleErrorCode.RUNTIME_ERROR, jsInterpreter: 'g' });
+  });
+});
+
+describe('delete:not configurable', () => {
+  it('throws for a constant of a namespace', () => {
+    expect(followsJavaScript('delete Math.PI;')).toEqual({
+      maple: MapleErrorCode.RUNTIME_ERROR,
+      jsInterpreter: undefined
+    });
+  });
+
+  it('throws for the lastIndex of a regexp', () => {
+    expect(followsJavaScript('var r = /a/g; return [delete r.lastIndex, r.lastIndex];')).toEqual({
+      maple: MapleErrorCode.RUNTIME_ERROR,
+      jsInterpreter: [true, undefined]
+    });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes. An object's behaviour comes from its

@@ -176,6 +176,10 @@ on the right-hand side of `instanceof`, and it adds no frame to `stack`.
 with or without `new`. Errors Maple raises itself are the same kind of object, so a script can
 catch and inspect them.
 
+`name`, `message` and `stack` can be deleted. Deleting `message` leaves `''` and deleting `name`
+leaves the constructor's name, as the prototype has them in JavaScript; deleting `stack` leaves
+nothing. Assigning one of them afterwards adds an own property, which `Object.keys` lists.
+
 `stack` is read-only and fixed when the error is created. It lists the script's own frames and
 nothing of the host, innermost first:
 

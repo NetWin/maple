@@ -6,7 +6,7 @@ import { type FixedProperties, SandboxObject } from '../sandbox-object.ts';
  * `m.size = 1` is a TypeError.
  */
 const MAP_PROPERTIES: FixedProperties<MapWrapper> = new Map([
-  ['size', { get: (wrapper) => wrapper.map.size, configurable: true, own: false }]
+  ['size', { get: (wrapper) => wrapper.map.size, writable: false, configurable: true, own: false }]
 ]);
 
 export class MapWrapper extends SandboxObject {

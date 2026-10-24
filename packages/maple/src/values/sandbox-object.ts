@@ -1,5 +1,11 @@
-import { type Conversion, describeObject, type Primitive, type PrimitiveHint } from './coercion.ts';
-import type { MemberContext, MethodLookup } from './members.ts';
+import {
+  type Conversion,
+  describeObject,
+  describeValue,
+  type Primitive,
+  type PrimitiveHint
+} from './coercion.ts';
+import type { Fail, MemberContext, MethodLookup } from './members.ts';
 import {
   type Attributes,
   type FixedChange,
@@ -38,12 +44,17 @@ import type { RunState } from './run-state.ts';
 export interface FixedProperty<T> {
   /** Reads the current value off `target`, as `(wrapper) => wrapper.map.size` does. */
   get(target: T): unknown;
-  /** Writes it, as `r.lastIndex = 0` does; absent for a read-only property such as `size`. */
+  /**
+   * Writes it to `target`, as `r.lastIndex = 0` does. A writable property without one, such as
+   * `Math.max`, keeps what the script writes in the value's {@link OwnProperties} instead.
+   */
   set?(target: T, value: unknown): void;
   /**
-   * Its `configurable` attribute as the kind starts it. `seal` and `freeze` can turn it off for a
-   * single value, which that value's {@link OwnProperties} records, not this shared table.
+   * Its `writable` and `configurable` attributes as the kind starts it. `seal` and `freeze` can
+   * turn them off for a single value, which that value's {@link OwnProperties} records, not this
+   * shared table.
    */
+  readonly writable: boolean;
   readonly configurable: boolean;
   /**
    * `false` for a property JavaScript keeps as an accessor on the prototype instead of on each
@@ -57,6 +68,22 @@ export interface FixedProperty<T> {
    * Absent for an own property such as a RegExp's `lastIndex`.
    */
   readonly own?: false;
+  /**
+   * What a read finds once `delete` removed the property, which in JavaScript comes from the
+   * prototype: `delete fn.name` leaves `''`, as `Function.prototype.name` is. Absent where the
+   * prototype has nothing, so `delete Math.max` leaves `undefined`.
+   */
+  readonly inherited?: InheritedProperty<T>;
+}
+
+/** What JavaScript keeps on the prototype under the name of a fixed property. */
+export interface InheritedProperty<T> {
+  get(target: T): unknown;
+  /**
+   * Whether the script can write it. If not, as for a function's `name`, assigning to the deleted
+   * property fails; if so, as for an error's `message`, the assignment adds an own property.
+   */
+  readonly writable: boolean;
 }
 
 /** The fixed properties of a kind by name, in the order `Object.getOwnPropertyNames` lists them. */
@@ -77,8 +104,24 @@ export const FUNCTION_PROPERTIES: FixedProperties<{
   readonly length: number | undefined;
   readonly name: string;
 }> = new Map([
-  ['length', { get: (target) => target.length, configurable: true }],
-  ['name', { get: (target) => target.name, configurable: true }]
+  [
+    'length',
+    {
+      get: (target) => target.length,
+      writable: false,
+      configurable: true,
+      inherited: { get: () => 0, writable: false }
+    }
+  ],
+  [
+    'name',
+    {
+      get: (target) => target.name,
+      writable: false,
+      configurable: true,
+      inherited: { get: () => '', writable: false }
+    }
+  ]
 ]);
 
 /**
@@ -115,8 +158,8 @@ export abstract class SandboxObject {
   public readonly isShared: boolean;
 
   /**
-   * What the script added to a value that is not shared, and what `seal` or `freeze` changed on it.
-   * A shared value has the empty {@link SHARED_STAND_IN} here;
+   * What the script added to a value that is not shared, and how it changed the value's fixed
+   * properties ({@link FixedChange}). A shared value has the empty {@link SHARED_STAND_IN} here;
    * {@link SandboxObject.getOwnProperties} works for both.
    */
   public readonly properties: OwnProperties;
@@ -143,11 +186,20 @@ export abstract class SandboxObject {
   }
 
   /**
-   * What the script added to this value, and what `seal` or `freeze` changed on it. For a shared
-   * value that is what `runState`'s run did, so two runs never see each other's changes.
+   * What the script added to this value, and how it changed the value's fixed properties
+   * ({@link FixedChange}). For a shared value that is what `runState`'s run did, so two runs never
+   * see each other's changes. Writes use it, as it makes the run's entry on first use.
    */
   public getOwnProperties(runState: RunState): OwnProperties {
     return this.isShared ? runState.getOwnPropertiesOf(this) : this.properties;
+  }
+
+  /**
+   * What the script changed on this value, or `undefined` while a run changed nothing on a shared
+   * value. Reads use it, so reading `Math.max` makes no entry in the run.
+   */
+  public peekOwnProperties(runState: RunState): OwnProperties | undefined {
+    return this.isShared ? runState.peekOwnPropertiesOf(this) : this.properties;
   }
 
   /**
@@ -162,62 +214,76 @@ export abstract class SandboxObject {
   }
 
   /**
+   * How a failed `delete` names the value in JavaScript, as in
+   * `Cannot delete property 'x' of #<Map>`: a function by its string, anything else by its tag.
+   */
+  public describe(): string {
+    return this.isCallable ? describeValue(this) : `#<${this.tag}>`;
+  }
+
+  /**
    * The attributes (writable, enumerable, configurable) of the own property under `key`, or
    * `undefined` when the value has no such own property. A fixed property that is not own, such as
-   * a Map's `size`, has none either.
+   * a Map's `size`, has none, and neither has one that `delete` removed.
    */
   public getOwnPropertyAttributes(key: string, runState: RunState): Attributes | undefined {
-    const properties = this.getOwnProperties(runState);
+    const properties = this.peekOwnProperties(runState);
     const fixed = this.fixed.get(key);
-    if (fixed?.own === false) {
-      return undefined;
+    if (fixed !== undefined && fixed.own !== false) {
+      const change = properties?.getFixedChange(key);
+      if (change?.deleted !== true) {
+        return fixedAttributes(fixed, change);
+      }
     }
 
-    if (fixed) {
-      return fixedAttributes(key, fixed, properties);
-    }
-
-    return properties.getAdded(key);
+    return properties?.getAdded(key);
   }
 
   /**
    * Reads `value[key]`, looking in this order:
    *
-   * 1. A fixed property;
+   * 1. A fixed property, unless `delete` removed it;
    * 2. One the script added;
-   * 3. A method of the value's type, which `methodLookup` finds.
+   * 3. What a removed fixed property inherits, such as `''` for a function's `name`;
+   * 4. A method of the value's type, which `methodLookup` finds.
    */
   public getProperty(key: string, runState: RunState, methodLookup: MethodLookup): unknown {
-    const fixed = this.fixed.get(key);
-    if (fixed) {
-      return fixed.get(this);
-    }
-    const added = this.getOwnProperties(runState).getAdded(key);
-    return added ? added.value : methodLookup(this, key);
+    return this.readProperty(key, this.peekOwnProperties(runState), methodLookup);
   }
 
   /**
    * Assigns `value` to the property under `key`, as `obj[key] = value` does in strict mode. It is a
    * TypeError to:
    *
-   * - Write a read-only property, such as `m.size = 1` or one that `freeze` locked, or
+   * - Write a read-only property, such as `m.size = 1` or one that `freeze` locked;
+   * - Write a property that `delete` removed where what it inherits is read-only, as `delete fn.name;
+   *   fn.name = 'x'` does;
    * - Add a property to a value that takes no new ones.
    *
    * Anything else overwrites the property or adds it.
    */
   public setProperty(key: string, value: unknown, { fail, runState }: MemberContext): void {
-    const properties = this.getOwnProperties(runState);
     const fixed = this.fixed.get(key);
-    if (fixed) {
-      if (!fixed.set || !fixedAttributes(key, fixed, properties).writable) {
-        const article = /^[AEIOU]/.test(this.tag) ? 'an' : 'a';
-        return fail(
-          'TypeError',
-          `Cannot assign to read-only property '${key}' of ${article} ${this.tag}`
-        );
+    if (fixed !== undefined) {
+      const change = this.peekOwnProperties(runState)?.getFixedChange(key);
+      if (change?.deleted !== true) {
+        if (!fixedAttributes(fixed, change).writable) {
+          return this.failReadOnly(key, fail);
+        }
+        if (fixed.set) {
+          return fixed.set(this, value);
+        }
+        return this.getOwnProperties(runState).changeFixed(key, { replaced: { value } });
       }
-      return fixed.set(this, value);
+      if (
+        fixed.inherited?.writable === false &&
+        this.getOwnProperties(runState).getAdded(key) === undefined
+      ) {
+        return this.failReadOnly(key, fail);
+      }
     }
+
+    const properties = this.getOwnProperties(runState);
     const added = properties.getAdded(key);
     if (added && !added.writable) {
       return fail('TypeError', `Cannot assign to read-only property '${key}'`);
@@ -236,70 +302,88 @@ export abstract class SandboxObject {
   /**
    * `delete value[key]`, which gives `true`:
    *
-   * - A property the script added is removed;
-   * - A fixed property stays, so deleting it changes nothing;
+   * - A configurable property is removed, whether the kind gives it, as `fn.name`, or the script
+   *   added it;
    * - One that is not own, such as `size`, was never there to delete.
    *
-   * As in JavaScript, deleting a property that `seal` or `freeze` locked is a TypeError:
-   * `Object.freeze(e); delete e.message` throws.
+   * As in JavaScript, deleting a property that is not configurable is a TypeError: a RegExp's
+   * `lastIndex`, `Math.PI`, or anything `seal` or `freeze` locked.
    */
   public deleteProperty(key: string, { fail, runState }: MemberContext): boolean {
-    const properties = this.getOwnProperties(runState);
     const fixed = this.fixed.get(key);
-
-    let locked: boolean;
-    if (fixed) {
-      locked =
-        fixed.own !== false &&
-        fixed.configurable &&
-        !fixedAttributes(key, fixed, properties).configurable;
-    } else {
-      locked = properties.getAdded(key)?.configurable === false;
+    if (fixed !== undefined && fixed.own !== false) {
+      const change = this.peekOwnProperties(runState)?.getFixedChange(key);
+      if (change?.deleted !== true) {
+        if (!fixedAttributes(fixed, change).configurable) {
+          return this.failDelete(key, fail);
+        }
+        this.getOwnProperties(runState).changeFixed(key, { deleted: true, replaced: undefined });
+        return true;
+      }
     }
 
-    if (locked) {
-      return fail('TypeError', `Cannot delete property '${key}' of ${describeObject(this)}`);
+    const properties = this.peekOwnProperties(runState);
+    const added = properties?.getAdded(key);
+    if (properties === undefined || added === undefined) {
+      return true;
     }
-
+    if (!added.configurable) {
+      return this.failDelete(key, fail);
+    }
     properties.deleteAdded(key);
     return true;
   }
 
   /**
-   * What `key in value` answers for a property: a fixed one counts even when it is not own, so
-   * `'size' in new Map()` is `true`, and so does one the script added.
+   * What `key in value` answers for a property:
+   *
+   * - A fixed one counts even when it is not own, so `'size' in new Map()` is `true`;
+   * - So does one the script added;
+   * - And one that `delete` removed still counts when it inherits a value, as `'name' in fn` does.
    */
   public hasProperty(key: string, runState: RunState): boolean {
-    return this.fixed.has(key) || this.getOwnProperties(runState).getAdded(key) !== undefined;
+    const properties = this.peekOwnProperties(runState);
+    const fixed = this.fixed.get(key);
+    if (fixed !== undefined && properties?.getFixedChange(key)?.deleted !== true) {
+      return true;
+    }
+    return properties?.getAdded(key) !== undefined || fixed?.inherited !== undefined;
   }
 
   /**
    * What `Object.hasOwn(value, key)` answers: like {@link SandboxObject.hasProperty}, except that a
-   * fixed property that is not own does not count, so `Object.hasOwn(new Map(), 'size')` is
-   * `false`.
+   * fixed property that is not own, or was deleted, does not count, so
+   * `Object.hasOwn(new Map(), 'size')` is `false`.
    */
   public hasOwnProperty(key: string, runState: RunState): boolean {
+    const properties = this.peekOwnProperties(runState);
     const fixed = this.fixed.get(key);
-    if (fixed) {
-      return fixed.own !== false;
+    if (
+      fixed !== undefined &&
+      fixed.own !== false &&
+      properties?.getFixedChange(key)?.deleted !== true
+    ) {
+      return true;
     }
-    return this.getOwnProperties(runState).getAdded(key) !== undefined;
+    return properties?.getAdded(key) !== undefined;
   }
 
   /**
    * The own property names, in the order `Object.getOwnPropertyNames` lists them in JavaScript:
    *
    * 1. Array indices such as `'0'`;
-   * 2. The own fixed properties, which exist from the moment the value is made;
+   * 2. The own fixed properties, which exist from the moment the value is made, unless deleted;
    * 3. The other names the script added, in the order it added them.
    *
-   * After `fn.extra = 1`, a function lists `['length', 'name', 'extra']`.
+   * After `fn.extra = 1`, a function lists `['length', 'name', 'extra']`. A fixed property deleted
+   * and then assigned again counts as added, so it moves to the end, as in JavaScript.
    */
   public ownKeys(runState: RunState): Array<string> {
-    const added = this.getOwnProperties(runState).addedKeys();
+    const properties = this.peekOwnProperties(runState);
+    const added = properties?.addedKeys() ?? [];
     const keys = added.filter(isArrayIndex);
     for (const [key, fixed] of this.fixed) {
-      if (fixed.own !== false) {
+      if (fixed.own !== false && properties?.getFixedChange(key)?.deleted !== true) {
         keys.push(key);
       }
     }
@@ -321,7 +405,7 @@ export abstract class SandboxObject {
 
   /** `Object.isExtensible(value)`: whether the value still takes new properties. */
   public isExtensible(runState: RunState): boolean {
-    return this.getOwnProperties(runState).isExtensible;
+    return this.peekOwnProperties(runState)?.isExtensible ?? true;
   }
 
   /**
@@ -338,8 +422,7 @@ export abstract class SandboxObject {
    * can be deleted (or, for frozen, written) counts as sealed (or frozen).
    */
   public testIntegrityLevel(level: IntegrityLevel, runState: RunState): boolean {
-    const properties = this.getOwnProperties(runState);
-    if (properties.isExtensible) {
+    if (this.isExtensible(runState)) {
       return false;
     }
     return this.ownKeys(runState).every((key) => {
@@ -358,6 +441,45 @@ export abstract class SandboxObject {
   }
 
   /**
+   * {@link SandboxObject.getProperty} with the value's own properties at hand, for an error, which
+   * converts itself by reading its `name` and `message` the way a script does.
+   */
+  protected readProperty(
+    key: string,
+    properties: OwnProperties | undefined,
+    methodLookup: MethodLookup
+  ): unknown {
+    const fixed = this.fixed.get(key);
+    if (fixed !== undefined) {
+      const change = properties?.getFixedChange(key);
+      // The common case, a fixed property the script left as it is
+      if (change === undefined) {
+        return fixed.get(this);
+      }
+      if (change.deleted !== true) {
+        return change.replaced ? change.replaced.value : fixed.get(this);
+      }
+    }
+    const added = properties?.getAdded(key);
+    if (added !== undefined) {
+      return added.value;
+    }
+    return fixed?.inherited ? fixed.inherited.get(this) : methodLookup(this, key);
+  }
+
+  private failReadOnly(key: string, fail: Fail): never {
+    const article = /^[AEIOU]/.test(this.tag) ? 'an' : 'a';
+    return fail(
+      'TypeError',
+      `Cannot assign to read-only property '${key}' of ${article} ${this.tag}`
+    );
+  }
+
+  private failDelete(key: string, fail: Fail): never {
+    return fail('TypeError', `Cannot delete property '${key}' of ${describeObject(this)}`);
+  }
+
+  /**
    * What `seal` and `freeze` do to `properties`:
    *
    * - No new properties;
@@ -366,14 +488,15 @@ export abstract class SandboxObject {
    *
    * The kind's table of fixed properties is shared by every value of the kind, so what changes for
    * a fixed property on this one value is recorded in `properties`
-   * ({@link OwnProperties.changeFixed}).
+   * ({@link OwnProperties.changeFixed}). A fixed property that is not own, or was deleted, is left
+   * alone.
    */
   private lockDown(level: IntegrityLevel, properties: OwnProperties): void {
     properties.preventExtensions();
     const change: FixedChange =
       level === 'frozen' ? { writable: false, configurable: false } : { configurable: false };
     for (const [key, fixed] of this.fixed) {
-      if (fixed.own !== false) {
+      if (fixed.own !== false && properties.getFixedChange(key)?.deleted !== true) {
         properties.changeFixed(key, change);
       }
     }
@@ -389,17 +512,11 @@ export abstract class SandboxObject {
 
 /**
  * A fixed property's attributes on one value: what its kind starts it with, less what `seal` or
- * `freeze` took away on this value. It is writable only if it has a {@link FixedProperty.set}, and
- * never enumerable.
+ * `freeze` took away on this value (`change`). It is never enumerable.
  */
-function fixedAttributes(
-  key: string,
-  fixed: FixedProperty<never>,
-  properties: OwnProperties
-): Attributes {
-  const change = properties.getFixedChange(key);
+function fixedAttributes(fixed: FixedProperty<never>, change: FixedChange | undefined): Attributes {
   return {
-    writable: fixed.set !== undefined && change?.writable !== false,
+    writable: fixed.writable && change?.writable !== false,
     enumerable: false,
     configurable: fixed.configurable && change?.configurable !== false
   };

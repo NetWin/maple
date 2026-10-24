@@ -18,22 +18,35 @@ const REGEXP_PROPERTIES: FixedProperties<RegExpWrapper> = new Map([
     'lastIndex',
     {
       get: (r) => r.regexp.lastIndex,
+      writable: true,
       configurable: false,
       set: (r, value) => {
         r.regexp.lastIndex = toNumber(value);
       }
     }
   ],
-  ['source', { get: (r) => r.regexp.source, configurable: true, own: false }],
-  ['flags', { get: (r) => r.regexp.flags, configurable: true, own: false }],
-  ['global', { get: (r) => r.regexp.global, configurable: true, own: false }],
-  ['ignoreCase', { get: (r) => r.regexp.ignoreCase, configurable: true, own: false }],
-  ['multiline', { get: (r) => r.regexp.multiline, configurable: true, own: false }],
-  ['sticky', { get: (r) => r.regexp.sticky, configurable: true, own: false }],
-  ['unicode', { get: (r) => r.regexp.unicode, configurable: true, own: false }],
-  ['dotAll', { get: (r) => r.regexp.dotAll, configurable: true, own: false }],
-  ['hasIndices', { get: (r) => r.regexp.hasIndices, configurable: true, own: false }],
-  ['unicodeSets', { get: (r) => r.regexp.unicodeSets, configurable: true, own: false }]
+  ['source', { get: (r) => r.regexp.source, writable: false, configurable: true, own: false }],
+  ['flags', { get: (r) => r.regexp.flags, writable: false, configurable: true, own: false }],
+  ['global', { get: (r) => r.regexp.global, writable: false, configurable: true, own: false }],
+  [
+    'ignoreCase',
+    { get: (r) => r.regexp.ignoreCase, writable: false, configurable: true, own: false }
+  ],
+  [
+    'multiline',
+    { get: (r) => r.regexp.multiline, writable: false, configurable: true, own: false }
+  ],
+  ['sticky', { get: (r) => r.regexp.sticky, writable: false, configurable: true, own: false }],
+  ['unicode', { get: (r) => r.regexp.unicode, writable: false, configurable: true, own: false }],
+  ['dotAll', { get: (r) => r.regexp.dotAll, writable: false, configurable: true, own: false }],
+  [
+    'hasIndices',
+    { get: (r) => r.regexp.hasIndices, writable: false, configurable: true, own: false }
+  ],
+  [
+    'unicodeSets',
+    { get: (r) => r.regexp.unicodeSets, writable: false, configurable: true, own: false }
+  ]
 ]);
 
 export class RegExpWrapper extends SandboxObject {
@@ -53,6 +66,11 @@ export class RegExpWrapper extends SandboxObject {
     if (readOnly) {
       this.freezeOwnProperties();
     }
+  }
+
+  /** JavaScript names a RegExp as `[object RegExp]` when a `delete` fails on it. */
+  public override describe(): string {
+    return `[object RegExp]`;
   }
 
   public override toPrimitive(): Primitive {
