@@ -18,7 +18,7 @@ This is a pnpm workspace:
 | Path                    | Package                                             | Description                                                                                                                                                         |
 | ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/maple`        | [`@netwin/maple`](packages/maple)                   | The published library (ESM, Node >= 22, peer dep: `acorn`)                                                                                                          |
-| `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Private Angular app for trying out the interpreter                                                                                                                  |
+| `apps/maple-playground` | [`@netwin/maple-playground`](apps/maple-playground) | Angular app for trying out the interpreter, [live on GitHub Pages](https://netwin.github.io/maple/)                                                                 |
 | `packages/maple-parity` | [`@netwin/maple-parity`](packages/maple-parity)     | Private parity tests: Maple adheres to JS standards and (for internal reasons) documents the parity with [JS-Interpreter](https://github.com/NetWin/js-interpreter) |
 
 ## Contributing

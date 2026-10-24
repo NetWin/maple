@@ -1,6 +1,6 @@
 # 🍁 Maple Playground
 
-A private Angular app for trying out Maple. It has editors for a host context and a script and shows the result, the
+An Angular app for trying out Maple. It has editors for a host context and a script and shows the result, the
 AST and the run's statistics live. Maple runs in a web worker, so an endless loop can't freeze the page; a live run is
 stopped after 1 s. It is live at [netwin.github.io/maple](https://netwin.github.io/maple/).
 
