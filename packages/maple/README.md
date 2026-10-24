@@ -8,6 +8,8 @@
 A secure JavaScript interpreter written in TypeScript. Maple parses a string of JavaScript using [acorn](https://github.com/acornjs/acorn) and interprets it itself
 instead of handing it to `eval`, so a script only ever sees the values you pass in.
 
+Try it in the [playground](https://netwin.github.io/maple/), which runs Maple in your browser.
+
 Secure means that a script cannot escape: it cannot reach host globals, `require` or the file system on Node, or
 `localStorage`, cookies or the DOM in a browser. It does not mean that a run's CPU time or memory is capped; run
 untrusted code in a worker you can terminate if you need that.

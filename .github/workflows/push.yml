@@ -78,6 +78,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Publishes the playground to https://netwin.github.io/maple/. It runs after the release
+  pages:
+    name: Deploy playground
+    needs: [release]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write # upload the site
+      id-token: write # prove the deployment comes from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+      - uses: pnpm/setup@v3
+        with:
+          cache: true
+          require-lockfile: true
+      # Pages serves the site below /maple/, so every URL the app builds must start there
+      - run: pnpm --filter @netwin/maple-playground build --base-href /maple/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/maple-playground/dist/maple-playground/browser
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
   # Brings the release commit and tag back to increment, where pull requests branch off, so their
   # changelog preview starts from the latest release
   sync:

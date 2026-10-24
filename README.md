@@ -7,6 +7,7 @@
 
 Maple is a secure JavaScript interpreter written in TypeScript.
 It interprets a script itself instead of handing it to `eval`, so the script only ever sees the values you pass in.
+Try it in the [playground](https://netwin.github.io/maple/), which runs Maple in your browser.
 
 Installation, usage and the API are in the [library's README](packages/maple/README.md), and the full contract is in its [docs](packages/maple/docs/README.md).
 
