@@ -1,3 +1,24 @@
+## [0.5.1](https://github.com/NetWin/maple/compare/0.5.0...0.5.1) (2026-10-24)
+
+### 📖 Documentation
+
+* **evaluator:** describe the evaluator layout for contributors ([a3d21bc](https://github.com/NetWin/maple/commit/a3d21bc1fc264f26a2c0e22a323d454d235da125))
+
+### 🛠️ Code Refactoring
+
+* **evaluator:** bind patterns and resolve references through an Interpreter interface ([2980f8c](https://github.com/NetWin/maple/commit/2980f8caf4d32726d9a121f7459306034e655897))
+* **evaluator:** move budget, frames and error raising into RunContext ([b13e606](https://github.com/NetWin/maple/commit/b13e606582733c7f3aab0fc085b83931bf853ec7))
+* **evaluator:** move calls and closures into calls.ts ([9a2e29d](https://github.com/NetWin/maple/commit/9a2e29d19c8d5f4f36f3a8ec615a32202ce78131))
+* **evaluator:** move error descriptions of nodes into describe.ts ([e0c82ad](https://github.com/NetWin/maple/commit/e0c82ad99904dd0d702ffbbd06e2d972b9e8d62c))
+* **evaluator:** move host and intrinsic calls into HostBridge ([ccd7479](https://github.com/NetWin/maple/commit/ccd7479f39cfa0b00d973bd01ef417e48a022a04))
+* **evaluator:** move the language files into evaluator/language ([c303875](https://github.com/NetWin/maple/commit/c3038750200dd6d46019635ace1331af0aeddd71))
+* **evaluator:** split expressions into member access, literals, operators and assignments ([9a18edb](https://github.com/NetWin/maple/commit/9a18edbb1836ad9029a40c40bb71961a742889ab))
+* **evaluator:** split statements into blocks, loops and control flow ([b2b48c2](https://github.com/NetWin/maple/commit/b2b48c21afaa6ef88191ca0fa69561ed1f3549c5))
+
+### 🔄️ Continuous Integration
+
+* **release:** don't release commits scoped to the playground ([0dd3209](https://github.com/NetWin/maple/commit/0dd3209241ea5aa74d4897187898e41386556855))
+
 ## [0.5.0](https://github.com/NetWin/maple/compare/0.4.0...0.5.0) (2026-10-22)
 
 ### 🚀 Features
