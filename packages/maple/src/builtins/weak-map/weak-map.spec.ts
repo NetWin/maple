@@ -61,10 +61,20 @@ describe('WeakMap', () => {
   it('constructs from an iterable of entries', () => {
     expect(run('const a = {}; const b = {}; return new WeakMap([[a, 1], [b, 2]]).get(b);')).toBe(2);
     expect(run('return new WeakMap(null).has({});')).toBe(false);
+    expect(run('const k = {}; return new WeakMap([{ 0: k, 1: 42 }]).get(k);')).toBe(42);
+    expect(
+      run(
+        'const k = {}; const pair = new Set(); pair[0] = k; pair[1] = 7; return new WeakMap([pair]).get(k);'
+      )
+    ).toBe(7);
     expect(errorOf('new WeakMap(5);')).toEqual(['TypeError', '5 is not iterable']);
     expect(errorOf('new WeakMap([1]);')).toEqual([
       'TypeError',
       'Iterator value 1 is not an entry object'
+    ]);
+    expect(errorOf('new WeakMap([{}]);')).toEqual([
+      'TypeError',
+      'Invalid value used as weak map key'
     ]);
   });
 

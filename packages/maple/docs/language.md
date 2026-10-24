@@ -98,16 +98,16 @@ arrays of its own, even for the same source.
 
 Inside the sandbox exactly these values exist:
 
-| Kind           | Representation                                                            | `typeof`     |
-| -------------- | ------------------------------------------------------------------------- | ------------ |
-| Primitives     | Host primitives: `undefined`, `null`, booleans, numbers, strings          | as in JS     |
-| Plain objects  | Host objects created by Maple or by the input copy; own properties only   | `'object'`   |
-| Arrays         | Host arrays created by Maple or by the input copy                         | `'object'`   |
-| Closures       | Maple's own function objects                                              | `'function'` |
-| Host functions | Branded wrappers; the native function is not reachable                    | `'function'` |
-| Intrinsics     | Branded wrappers, same surface as host functions                          | `'function'` |
-| Wrappers       | Branded wrappers around a native `RegExp`, `Date`, `Map`, `Set`, iterator | `'object'`   |
-| Errors         | Maple's own error objects with `name` and `message`                       | `'object'`   |
+| Kind           | Representation                                                                                  | `typeof`     |
+| -------------- | ----------------------------------------------------------------------------------------------- | ------------ |
+| Primitives     | Host primitives: `undefined`, `null`, booleans, numbers, strings                                | as in JS     |
+| Plain objects  | Host objects created by Maple or by the input copy; own properties only                         | `'object'`   |
+| Arrays         | Host arrays created by Maple or by the input copy                                               | `'object'`   |
+| Closures       | Maple's own function objects                                                                    | `'function'` |
+| Host functions | Branded wrappers; the native function is not reachable                                          | `'function'` |
+| Intrinsics     | Branded wrappers, same surface as host functions                                                | `'function'` |
+| Wrappers       | Branded wrappers around a native `RegExp`, `Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, iterator | `'object'`   |
+| Errors         | Maple's own error objects with `name` and `message`                                             | `'object'`   |
 
 Wrappers are instances of Maple's own classes, which a script cannot construct, so a plain object
 can never pose as one. The native value inside is never exposed; every method goes through a
