@@ -258,9 +258,10 @@ describe('JSON.stringify', () => {
     expect(error.code).toBe('LIMIT_EXCEEDED');
   });
 
-  it('is a read-only namespace', () => {
+  it('is a namespace whose methods a run can replace', () => {
     expect(run('return typeof JSON;')).toBe('object');
     expect(run('return typeof JSON.parse;')).toBe('function');
-    expect(runAndCatch(maple, 'JSON.parse = 1;').sandboxError?.name).toBe('TypeError');
+    expect(run('JSON.parse = 1; return JSON.parse;')).toBe(1);
+    expect(run('return typeof JSON.parse;')).toBe('function');
   });
 });

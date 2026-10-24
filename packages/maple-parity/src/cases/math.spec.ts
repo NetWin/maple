@@ -121,6 +121,27 @@ describe('Math.max', () => {
       )
     ).toEqual(9);
   });
+  it('can be replaced by a script', () => {
+    const max = Object.getOwnPropertyDescriptor(Math, 'max') ?? {};
+    try {
+      expect(
+        parity('Math.max = function () { return 0; }; return [Math.max(1, 2), Object.keys(Math)];')
+      ).toEqual([0, []]);
+    } finally {
+      Object.defineProperty(Math, 'max', max);
+    }
+  });
+  it('can be deleted by a script', () => {
+    const max = Object.getOwnPropertyDescriptor(Math, 'max') ?? {};
+    try {
+      expect(parity('delete Math.max; return [typeof Math.max, "max" in Math];')).toEqual([
+        'undefined',
+        false
+      ]);
+    } finally {
+      Object.defineProperty(Math, 'max', max);
+    }
+  });
 });
 
 describe('Math.min', () => {

@@ -180,8 +180,9 @@ describe('Object statics', () => {
     });
   });
 
-  it('cannot be written to', () => {
-    expect(runAndCatch(maple, 'Object.keys = 1;').sandboxError?.name).toBe('TypeError');
+  it('can be replaced by a run', () => {
+    expect(run('Object.keys = 1; return Object.keys;')).toBe(1);
+    expect(run('return typeof Object.keys;')).toBe('function');
   });
 });
 
@@ -220,7 +221,7 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     ).toEqual([true, false, true, false]);
   });
 
-  it('lists own names the way in answers them', () => {
+  it('lists own names, enumerable or not', () => {
     expect(run('return Object.getOwnPropertyNames({ a: 1, b: 2 });')).toEqual(['a', 'b']);
     expect(run('return Object.getOwnPropertyNames([7]);')).toEqual(['0', 'length']);
     expect(run('return Object.getOwnPropertyNames("ab");')).toEqual(['0', '1', 'length']);
@@ -229,12 +230,13 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
       'message',
       'stack'
     ]);
-    expect(run('return Object.getOwnPropertyNames(new Map());')).toEqual(['size']);
+    expect(run('return Object.getOwnPropertyNames(new Map());')).toEqual([]);
+    expect(run('return Object.getOwnPropertyNames(new Set());')).toEqual([]);
     expect(run('return Object.getOwnPropertyNames(() => 1);')).toEqual(['length', 'name']);
     expect(run('return Object.getOwnPropertyNames(Math.max);')).toEqual(['length', 'name']);
     expect(run('return Object.getOwnPropertyNames(host);', { host: () => 1 })).toEqual([]);
     expect(run('return Object.getOwnPropertyNames(5);')).toEqual([]);
-    expect(run('return Object.getOwnPropertyNames(/x/).includes("lastIndex");')).toBe(true);
+    expect(run('return Object.getOwnPropertyNames(/x/g);')).toEqual(['lastIndex']);
     expect(run('return Object.getOwnPropertyNames(Math).includes("max");')).toBe(true);
     expect(run('try { Object.getOwnPropertyNames(null); } catch (e) { return e.name; }')).toBe(
       'TypeError'
@@ -298,6 +300,12 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
       "Cannot delete property 'x' of #<Map>"
     );
     expect(
+      errorMessage(maple, 'const d = new Date(0); d.x = 1; Object.freeze(d); delete d.x;')
+    ).toBe("Cannot delete property 'x' of [object Date]");
+    expect(errorMessage(maple, 'Math.x = 1; Object.freeze(Math); delete Math.x;')).toBe(
+      "Cannot delete property 'x' of #<Object>"
+    );
+    expect(
       errorMessage(maple, 'function f() { Object.freeze(arguments); delete arguments[0]; } f(1);')
     ).toBe("Cannot delete property '0' of #<Object>");
   });
@@ -322,12 +330,18 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     ).toEqual(["Cannot delete property 'x' of [object Error]", 'finally']);
   });
 
-  it('still lets a delete of a fixed property that freeze did not lock change nothing', () => {
-    expect(run('const f = () => 1; return delete f.name;')).toBe(true);
+  it('deletes a configurable fixed property and refuses one that is not configurable', () => {
+    expect(run('const f = () => 1; return [delete f.name, f.name];')).toEqual([true, '']);
     expect(run('return [delete Object.freeze(new Map()).size, delete /a/.source];')).toEqual([
       true,
       true
     ]);
+    expect(errorMessage(maple, 'delete /a/.lastIndex;')).toBe(
+      "Cannot delete property 'lastIndex' of [object RegExp]"
+    );
+    expect(errorMessage(maple, 'delete Number.EPSILON;')).toBe(
+      "Cannot delete property 'EPSILON' of [function]"
+    );
   });
 });
 
@@ -433,6 +447,17 @@ describe('Object.seal and isSealed', () => {
   it('keep a built-in sealed only for the run that sealed it', () => {
     expect(run('Object.seal(Math); return Object.isSealed(Math);')).toBe(true);
     expect(run('Math.x = 1; return [Object.isSealed(Math), Math.x];')).toEqual([false, 1]);
+  });
+
+  it('find a built-in that only takes no new properties neither sealed nor frozen', () => {
+    expect(
+      run('Object.preventExtensions(Math); return [Object.isSealed(Math), Object.isFrozen(Math)];')
+    ).toEqual([false, false]);
+    expect(
+      run(
+        'Object.preventExtensions(Math.max); return [Object.isSealed(Math.max), Object.isFrozen(Math.max)];'
+      )
+    ).toEqual([false, false]);
   });
 });
 

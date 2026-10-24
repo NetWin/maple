@@ -1,5 +1,4 @@
 import { FUNCTION_PLACEHOLDER, type Primitive, type PrimitiveHint } from './coercion.ts';
-import type { MemberContext } from './members.ts';
 import type { CallContext } from './native.ts';
 import type { Prototype } from './prototype.ts';
 import {
@@ -18,7 +17,10 @@ export interface BuiltinOptions {
    * read off the host's own; `Math` has none.
    */
   length?: number;
-  /** Static members such as `Math.max`; read through member access, never written. */
+  /**
+   * Static members such as `Math.max` and `Math.PI`. As in JavaScript, a method can be replaced and
+   * deleted, as in `Math.max = fn`, and a constant can be neither.
+   */
   members?: Record<string, unknown>;
   /** What a plain call does, as in `Error('x')` or `String(1)`. */
   call?: BuiltinCall;
@@ -31,8 +33,8 @@ export interface BuiltinOptions {
 }
 
 /**
- * A standard global such as `Error`, `Array` or `Math`, whose members the script can only read. It
- * is shared between runs, so what a script adds to one is kept by the run.
+ * A standard global such as `Error`, `Array` or `Math`. It is shared between runs, so what a script
+ * adds to one, replaces on it or deletes from it is kept by the run.
  */
 export class Builtin extends SandboxObject {
   public readonly name: string;
@@ -60,10 +62,7 @@ export class Builtin extends SandboxObject {
     this.name = options.name;
     this.length = options.length;
     const members = Object.entries(options.members ?? {}).map(
-      ([key, member]): [string, FixedProperty<Builtin>] => [
-        key,
-        { get: () => member, configurable: false }
-      ]
+      ([key, member]): [string, FixedProperty<Builtin>] => [key, memberProperty(member)]
     );
     this.fixed = new Map([
       ...(options.length === undefined ? [] : FUNCTION_PROPERTIES),
@@ -77,16 +76,22 @@ export class Builtin extends SandboxObject {
     this.tag = this.isCallable ? 'Function' : options.name;
   }
 
-  /** Its members cannot be deleted, so `Math.PI` stays; what the run added to it can. */
-  public override deleteProperty(key: string, context: MemberContext): boolean {
-    if (this.fixed.has(key)) {
-      return context.fail('TypeError', `Cannot delete property '${key}' of a read-only object`);
-    }
-    return super.deleteProperty(key, context);
+  /** A namespace such as `Math` is a plain object in JavaScript, so it is named `#<Object>`. */
+  public override describe(): string {
+    return this.isCallable ? super.describe() : '#<Object>';
   }
 
   /** A namespace converts as in JavaScript, `[object Math]`. */
   public override toPrimitive(hint: PrimitiveHint): Primitive {
     return this.isCallable ? FUNCTION_PLACEHOLDER : super.toPrimitive(hint);
   }
+}
+
+/**
+ * A static member with the attributes JavaScript gives it: a method, such as `Math.max`, is
+ * writable and configurable, and a constant, such as `Math.PI` or `Number.EPSILON`, is neither.
+ */
+function memberProperty(member: unknown): FixedProperty<Builtin> {
+  const isMethod = member instanceof SandboxObject && member.isCallable;
+  return { get: () => member, writable: isMethod, configurable: isMethod };
 }

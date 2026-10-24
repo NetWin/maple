@@ -1,7 +1,12 @@
 import { type FixedProperties, SandboxObject } from '../sandbox-object.ts';
 
+/**
+ * A Map's one fixed property, `size`, its number of entries. JavaScript keeps it as an accessor on
+ * `Map.prototype`, not on each Map, so its entry says `own: false`. It has no setter, so
+ * `m.size = 1` is a TypeError.
+ */
 const MAP_PROPERTIES: FixedProperties<MapWrapper> = new Map([
-  ['size', { get: (wrapper) => wrapper.map.size, configurable: false }]
+  ['size', { get: (wrapper) => wrapper.map.size, writable: false, configurable: true, own: false }]
 ]);
 
 export class MapWrapper extends SandboxObject {

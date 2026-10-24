@@ -58,6 +58,18 @@ describe('RegExp', () => {
     expect(run('return /a/g + "";')).toBe('/a/g');
   });
 
+  it('has lastIndex as its one own property, as JavaScript keeps the rest on the prototype', () => {
+    expect(run('return Object.getOwnPropertyNames(/a/gi);')).toEqual(['lastIndex']);
+    expect(run('return [Object.hasOwn(/a/, "lastIndex"), Object.hasOwn(/a/, "source")];')).toEqual([
+      true,
+      false
+    ]);
+    expect(
+      run('const r = /a/g; return [delete r.source, r.source, delete r.global, r.global];')
+    ).toEqual([true, 'a', true, true]);
+    expect(run('const r = /a/; Object.freeze(r); return Object.isFrozen(r);')).toBe(true);
+  });
+
   it('is read-only when it came from frozen input', () => {
     const data = { pattern: /a/g };
 

@@ -275,6 +275,56 @@ describe('JSON.parse', () => {
   });
 });
 
+// A RegExp's source and flags are accessors on the prototype since ES2015, so lastIndex is its one
+// own property; js-interpreter follows ES5, where they are own properties of every regexp.
+
+describe('Object.getOwnPropertyNames:RegExp', () => {
+  it('lists lastIndex only', () => {
+    expect(followsJavaScript('return Object.getOwnPropertyNames(/a/g);')).toEqual({
+      maple: ['lastIndex'],
+      jsInterpreter: ['lastIndex', 'source', 'global', 'ignoreCase', 'multiline']
+    });
+  });
+
+  it('keeps source when a script deletes it', () => {
+    expect(followsJavaScript('var r = /a/g; return [delete r.source, r.source];')).toEqual({
+      maple: [true, 'a'],
+      jsInterpreter: [true, '(?:)']
+    });
+  });
+});
+
+describe('delete:function.name', () => {
+  it("leaves Function.prototype's empty name", () => {
+    expect(followsJavaScript('function f() {} return [delete f.name, f.name];')).toEqual({
+      maple: [true, ''],
+      jsInterpreter: [true, undefined]
+    });
+  });
+
+  it('leaves a name that cannot be written', () => {
+    expect(
+      followsJavaScript('function f() {} delete f.name; f.name = "g"; return f.name;')
+    ).toEqual({ maple: MapleErrorCode.RUNTIME_ERROR, jsInterpreter: 'g' });
+  });
+});
+
+describe('delete:not configurable', () => {
+  it('throws for a constant of a namespace', () => {
+    expect(followsJavaScript('delete Math.PI;')).toEqual({
+      maple: MapleErrorCode.RUNTIME_ERROR,
+      jsInterpreter: undefined
+    });
+  });
+
+  it('throws for the lastIndex of a regexp', () => {
+    expect(followsJavaScript('var r = /a/g; return [delete r.lastIndex, r.lastIndex];')).toEqual({
+      maple: MapleErrorCode.RUNTIME_ERROR,
+      jsInterpreter: [true, undefined]
+    });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes. An object's behaviour comes from its
