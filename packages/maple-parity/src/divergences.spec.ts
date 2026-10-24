@@ -275,6 +275,25 @@ describe('JSON.parse', () => {
   });
 });
 
+// A RegExp's source and flags are accessors on the prototype since ES2015, so lastIndex is its one
+// own property; js-interpreter follows ES5, where they are own properties of every regexp.
+
+describe('Object.getOwnPropertyNames:RegExp', () => {
+  it('lists lastIndex only', () => {
+    expect(followsJavaScript('return Object.getOwnPropertyNames(/a/g);')).toEqual({
+      maple: ['lastIndex'],
+      jsInterpreter: ['lastIndex', 'source', 'global', 'ignoreCase', 'multiline']
+    });
+  });
+
+  it('keeps source when a script deletes it', () => {
+    expect(followsJavaScript('var r = /a/g; return [delete r.source, r.source];')).toEqual({
+      maple: [true, 'a'],
+      jsInterpreter: [true, '(?:)']
+    });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes. An object's behaviour comes from its

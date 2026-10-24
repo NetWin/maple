@@ -220,7 +220,7 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
     ).toEqual([true, false, true, false]);
   });
 
-  it('lists own names the way in answers them', () => {
+  it('lists own names, enumerable or not', () => {
     expect(run('return Object.getOwnPropertyNames({ a: 1, b: 2 });')).toEqual(['a', 'b']);
     expect(run('return Object.getOwnPropertyNames([7]);')).toEqual(['0', 'length']);
     expect(run('return Object.getOwnPropertyNames("ab");')).toEqual(['0', '1', 'length']);
@@ -229,12 +229,13 @@ describe('Object.is, getOwnPropertyNames, freeze and isFrozen', () => {
       'message',
       'stack'
     ]);
-    expect(run('return Object.getOwnPropertyNames(new Map());')).toEqual(['size']);
+    expect(run('return Object.getOwnPropertyNames(new Map());')).toEqual([]);
+    expect(run('return Object.getOwnPropertyNames(new Set());')).toEqual([]);
     expect(run('return Object.getOwnPropertyNames(() => 1);')).toEqual(['length', 'name']);
     expect(run('return Object.getOwnPropertyNames(Math.max);')).toEqual(['length', 'name']);
     expect(run('return Object.getOwnPropertyNames(host);', { host: () => 1 })).toEqual([]);
     expect(run('return Object.getOwnPropertyNames(5);')).toEqual([]);
-    expect(run('return Object.getOwnPropertyNames(/x/).includes("lastIndex");')).toBe(true);
+    expect(run('return Object.getOwnPropertyNames(/x/g);')).toEqual(['lastIndex']);
     expect(run('return Object.getOwnPropertyNames(Math).includes("max");')).toBe(true);
     expect(run('try { Object.getOwnPropertyNames(null); } catch (e) { return e.name; }')).toBe(
       'TypeError'

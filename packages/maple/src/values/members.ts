@@ -159,6 +159,14 @@ export function setMember(
   throw new Error('A value of an unknown kind was written');
 }
 
+/**
+ * `delete target[key]`, which gives `true`, or a TypeError where strict mode has one:
+ *
+ * - Deleting from `null` or `undefined`, or
+ * - Deleting a property that cannot be deleted, such as one of a frozen object.
+ *
+ * Deleting from any other primitive, as in `delete 'abc'.x`, does nothing.
+ */
 export function deleteMember(target: unknown, key: string, context: MemberContext): boolean {
   const fail = context.fail;
 
@@ -183,7 +191,15 @@ export function deleteMember(target: unknown, key: string, context: MemberContex
   return true;
 }
 
-/** The `in` operator over own properties, which is all the sandbox has. */
+/**
+ * `key in target`. Maple walks no prototype chain, so:
+ *
+ * - A plain object or an array answers whether it has `key` as its own property;
+ * - A value Maple made answers itself, and also counts what its kind has without it being own, so
+ *   `'size' in new Map()` is `true`.
+ *
+ * As in JavaScript, the right-hand side must be an object: `'a' in 'abc'` is a TypeError.
+ */
 export function hasMember(target: unknown, key: string, context: MemberContext): boolean {
   const fail = context.fail;
   const runState = context.runState;
@@ -202,7 +218,24 @@ export function hasMember(target: unknown, key: string, context: MemberContext):
   return Object.hasOwn(target, key);
 }
 
-/** The own property names `in` answers `true` for, enumerable or not, for `getOwnPropertyNames`. */
+/**
+ * `Object.hasOwn(target, key)` for an object. It differs from `in` for a value Maple made, whose
+ * kind can have a property that is not its own: `'size' in m` is `true`, but
+ * `Object.hasOwn(m, 'size')` is `false` (see {@link SandboxObject.hasOwnProperty}).
+ */
+export function hasOwnMember(target: object, key: string, runState: RunState): boolean {
+  return target instanceof SandboxObject
+    ? target.hasOwnProperty(key, runState)
+    : Object.hasOwn(target, key);
+}
+
+/**
+ * `Object.getOwnPropertyNames(target)`: every own property name, enumerable or not.
+ *
+ * - An object lists its own names, so `[7]` gives `['0', 'length']`.
+ * - A string lists its indices and `length`.
+ * - Any other primitive has none.
+ */
 export function ownPropertyNames(target: unknown, runState: RunState): Array<string> {
   if (typeof target === 'string') {
     return [...Object.keys(target), 'length'];

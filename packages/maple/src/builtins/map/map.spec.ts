@@ -87,7 +87,7 @@ describe('Map', () => {
     expect(run('return new Map().forEach.length;')).toBe(1);
   });
 
-  it('has no own properties besides size but takes the ones a script adds', () => {
+  it('has no own properties but takes the ones a script adds', () => {
     expect(run('return ["size" in new Map(), "get" in new Map()];')).toEqual([true, true]);
     expect(run('return new Map().foo;')).toBeUndefined();
     expect(run('return Object.keys(new Map([[1, 2]]));')).toEqual([]);
@@ -104,6 +104,18 @@ describe('Map', () => {
     );
     expect(run('return new Map() + "";')).toBe('[object Map]');
     expect(run('return JSON.stringify(new Map([[1, 2]]));')).toBe('{}');
+  });
+
+  it('answers to size without having it as its own, as JavaScript keeps it on the prototype', () => {
+    expect(run('return Object.hasOwn(new Map(), "size");')).toBe(false);
+    expect(run('return Object.getOwnPropertyNames(new Map([[1, 2]]));')).toEqual([]);
+    expect(run('const m = new Map([[1, 2]]); return [delete m.size, m.size];')).toEqual([true, 1]);
+    expect(run('const m = new Map(); Object.freeze(m); return Object.isFrozen(m);')).toBe(true);
+    expect(run('const s = new Set([1]); return [Object.hasOwn(s, "size"), "size" in s];')).toEqual([
+      false,
+      true
+    ]);
+    expect(run('const s = new Set([1]); return [delete s.size, s.size];')).toEqual([true, 1]);
   });
 
   it('crosses the boundary as a native Map and is read-only from frozen input', () => {

@@ -111,9 +111,11 @@ Inside the sandbox exactly these values exist:
 
 Wrappers are instances of Maple's own classes, which a script cannot construct, so a plain object
 can never pose as one. The native value inside is never exposed; every method goes through a
-dispatch table. A wrapper has no own properties except the few listed with its type (`size`, the
-RegExp flags and `lastIndex`), plus the ones the script adds, which are kept apart from the native
-value.
+dispatch table. A wrapper's only own property is a RegExp's `lastIndex`, plus the ones the script
+adds, which are kept apart from the native value. `size` and the RegExp flags and `source` are
+properties of the type, as JavaScript keeps them on the prototype: every value answers to them and
+`in` finds them, but `Object.hasOwn` and `Object.getOwnPropertyNames` leave them out, and deleting
+one changes nothing.
 
 ## Methods
 
