@@ -1,7 +1,7 @@
 # 🍁 Maple Playground
 
-A private Angular app for trying out Maple. It has editors for code and a JSON context and shows the result, the AST
-and the run's statistics live. Maple runs in a web worker, so an endless loop can't freeze the page; a live run is
+A private Angular app for trying out Maple. It has editors for a host context and a script and shows the result, the
+AST and the run's statistics live. Maple runs in a web worker, so an endless loop can't freeze the page; a live run is
 stopped after 1 s.
 
 ```sh
@@ -11,26 +11,46 @@ pnpm dev    # from the repository root, serves the playground on :4200
 `@netwin/maple` resolves to the library's sources (`packages/maple/src/index.ts`), so library edits show up without a
 build.
 
+## Host context and script
+
+The two editors stand for the two sides of a Maple integration:
+
+- **Host context** is trusted code, a JavaScript module the playground imports natively in the worker, with the
+  worker's full access, as your application would run. Its two optional named exports are what the script gets:
+
+  ```js
+  export const INSTANCE_DATA = { upperCase: (text) => text.toUpperCase() }; // new Maple({ globals })
+  export const RUN_DATA = { name: 'Steve' }; // maple.run(script, data)
+  ```
+
+  `INSTANCE_DATA` holds read-only bindings shared by every run, host functions included; `RUN_DATA` is the data of one
+  run, which the script gets a copy of and may change. A missing export stands for `{}`. Any other export, a value that
+  is not an object or a module that fails to load shows up as **Host module failed** in the output, apart from Maple's
+  own errors.
+
+- **Script** is the untrusted code Maple runs. It reaches the two exports' keys and nothing else; a key of `RUN_DATA`
+  shadows the same key of `INSTANCE_DATA`.
+
 ## Settings
 
 The **Settings** popover in the header sets the run limits, `maxOps` (default `1000000`) and `maxDepth` (default
-`100`). Like code and context they persist in local storage, and **Reset** restores them.
+`100`). Like the host context and the script they persist in local storage, and **Reset** restores them.
 
 ## Comparing with js-interpreter
 
 [`@netwin/js-interpreter`](https://github.com/netwin/JS-Interpreter) is installed as a dev dependency so Maple can be
 compared with it. Both comparisons call js-interpreter the same way
 (`src/app/data-access/js-interpreter-engine.ts`): the script is wrapped in a function so that `return` works, and each
-top-level key of the context becomes a global.
+key of `INSTANCE_DATA` and `RUN_DATA` becomes a global, run data shadowing instance data as in Maple.
 js-interpreter understands ES5 only, so a script using `let`, `const` or arrow functions shows its parse error in the
 js-interpreter row while Maple still reports its figures.
 
 ### Speed: the Benchmark tab
 
-The **Benchmark** tab in the output pane runs the current code and context in both engines: 3 unmeasured warm-up runs,
+The **Benchmark** tab in the output pane runs the current script and host context in both engines: 3 unmeasured warm-up runs,
 then 20 measured runs each. It shows the median, the min–max range, how much slower js-interpreter is, and a warning
-when the two engines return different results. Each run is timed end to end, including parsing, setting up the
-context and converting the result.
+when the two engines return different results. Each run is timed end to end, including setting up Maple, parsing and
+converting the result; the host module is imported once, before the runs.
 
 The benchmark has its own worker and a 60 s timeout. js-interpreter has no operation limit, so for an endless loop that
 timeout is the only stop.

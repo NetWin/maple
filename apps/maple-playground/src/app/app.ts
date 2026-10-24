@@ -85,7 +85,7 @@ export class App {
 
   protected readonly astDocument = computed(() => this.#runner.ast() ?? '');
 
-  protected readonly contextString = this.#playground.contextString;
+  protected readonly hostContext = this.#playground.hostContext;
 
   protected readonly codeString = this.#playground.codeString;
 
@@ -96,10 +96,32 @@ export class App {
   protected readonly debouncedInput = debounced(
     () => ({
       code: this.codeString(),
-      context: this.contextString(),
+      hostContext: this.hostContext(),
       limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() }
     }),
     RUN_DELAY_MS
+  );
+
+  /**
+   * What the next live run gets. The debounced resource also notifies when only its status changes,
+   * so equal input is dropped here: a rerun would advance state the host module keeps between runs.
+   */
+  protected readonly runInput = computed(
+    () =>
+      this.debouncedInput.hasValue()
+        ? this.debouncedInput.value()
+        : {
+            code: '',
+            hostContext: '',
+            limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() }
+          },
+    {
+      equal: (previous, next) =>
+        previous.code === next.code &&
+        previous.hostContext === next.hostContext &&
+        previous.limits.maxOps === next.limits.maxOps &&
+        previous.limits.maxDepth === next.limits.maxDepth
+    }
   );
 
   protected readonly outputTabs: ReadonlyArray<TabOption<OutputTab>> = [
@@ -111,10 +133,8 @@ export class App {
   constructor() {
     // Re-runs shortly after the last edit to either editor or to the limits.
     effect(() => {
-      const { code, context, limits } = this.debouncedInput.hasValue()
-        ? this.debouncedInput.value()
-        : { code: '', context: '', limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() } };
-      this.#runner.run(code, context, limits);
+      const { code, hostContext, limits } = this.runInput();
+      this.#runner.run(code, hostContext, limits);
     });
   }
 
@@ -122,13 +142,13 @@ export class App {
   protected runBenchmark(): void {
     this.#benchmark.run({
       code: this.codeString(),
-      context: this.contextString(),
+      hostSource: this.hostContext(),
       limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() },
       runs: BENCHMARK_RUNS
     });
   }
 
-  /** Restores the default context, code and pane sizes. */
+  /** Restores the default host context, code and pane sizes. */
   protected reset(): void {
     this.#playground.reset();
     this.split().reset();

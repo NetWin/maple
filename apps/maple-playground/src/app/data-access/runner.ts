@@ -1,4 +1,5 @@
 import { Service, signal } from '@angular/core';
+import { createModuleUrl } from './host-module';
 import type {
   RunError,
   RunLimits,
@@ -32,6 +33,9 @@ export class Runner {
 
   #timeout: ReturnType<typeof setTimeout> | undefined;
 
+  /** The host module of the latest run; an edit replaces its URL and revokes the old one. */
+  #hostModule: { source: string; url: string } | undefined;
+
   readonly #status = signal<RunStatus>('running');
 
   readonly #ast = signal<string | undefined>(undefined);
@@ -57,10 +61,10 @@ export class Runner {
   public readonly stats = this.#stats.asReadonly();
 
   /**
-   * Runs `code` against the JSON `context` within `limits`. The previous output stays visible
-   * until the new run replaces it, so fast runs don't flicker.
+   * Runs `code` within `limits` against the host module written in `hostSource`. The previous
+   * output stays visible until the new run replaces it, so fast runs don't flicker.
    */
-  public run(code: string, context: string, limits: RunLimits): void {
+  public run(code: string, hostSource: string, limits: RunLimits): void {
     if (this.#inFlight) {
       this.stopWorker();
     }
@@ -71,10 +75,29 @@ export class Runner {
     this.#status.set('running');
     this.#timeout = setTimeout(() => this.onTimeout(id), RUN_TIMEOUT_MS);
 
-    const request: RunRequest = { id, code, context, limits };
+    const request: RunRequest = {
+      id,
+      code,
+      hostModuleUrl: this.getHostModuleUrl(hostSource),
+      limits
+    };
     // Worker.postMessage has no targetOrigin; the rule only applies to window.postMessage.
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
     this.getWorker().postMessage(request);
+  }
+
+  /**
+   * No worker needs the old URL any more: a run in flight was stopped, an idle worker imports the
+   * new one.
+   */
+  private getHostModuleUrl(source: string): string {
+    if (this.#hostModule?.source !== source) {
+      if (this.#hostModule) {
+        URL.revokeObjectURL(this.#hostModule.url);
+      }
+      this.#hostModule = { source, url: createModuleUrl(source) };
+    }
+    return this.#hostModule.url;
   }
 
   private getWorker(): Worker {

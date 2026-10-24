@@ -39,18 +39,23 @@
     storageKey="maple-playground-panes">
     <maple-pane
       slot="pane"
-      title="Context">
-      <maple-badge slot="badge">JSON</maple-badge>
+      title="Host context">
+      <maple-badge slot="badge">JS</maple-badge>
       <maple-code-editor
-        language="json"
-        [(value)]="contextString">
+        language="javascript"
+        [(value)]="hostContext">
       </maple-code-editor>
     </maple-pane>
 
     <maple-pane
       slot="pane"
-      title="Code">
-      <maple-badge slot="badge">JS</maple-badge>
+      title="Script">
+      <div
+        slot="badge"
+        class="flex items-center gap-1.5">
+        <maple-badge>Sandboxed</maple-badge>
+        <maple-badge>JS</maple-badge>
+      </div>
       <maple-code-editor
         language="javascript"
         [(value)]="codeString">

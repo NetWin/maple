@@ -1,5 +1,6 @@
 import { Service, signal } from '@angular/core';
 import type { BenchmarkRequest, BenchmarkResponse } from './benchmark-protocol';
+import { createModuleUrl } from './host-module';
 
 /** Js-interpreter has no operation limit, so an endless loop is only stopped by this. */
 export const BENCHMARK_TIMEOUT_MS = 60_000;
@@ -16,6 +17,9 @@ export class Benchmark {
 
   #timeout: ReturnType<typeof setTimeout> | undefined;
 
+  /** The URL of the host module the running benchmark imports, revoked when it stops. */
+  #hostModuleUrl: string | undefined;
+
   readonly #status = signal<BenchmarkStatus>('idle');
 
   readonly #response = signal<BenchmarkResponse | undefined>(undefined);
@@ -25,8 +29,14 @@ export class Benchmark {
   /** The latest finished benchmark; it stays visible while the next one runs. */
   public readonly response = this.#response.asReadonly();
 
-  public run(request: BenchmarkRequest): void {
+  /** Imports the host module written in `hostSource` from a URL of its own, as the live runs do. */
+  public run({
+    hostSource,
+    ...request
+  }: Omit<BenchmarkRequest, 'hostModuleUrl'> & { hostSource: string }): void {
     this.stop();
+    const hostModuleUrl = createModuleUrl(hostSource);
+    this.#hostModuleUrl = hostModuleUrl;
     this.#status.set('running');
     const worker = new Worker(new URL('./benchmark.worker', import.meta.url), { type: 'module' });
     worker.addEventListener('message', (event: MessageEvent<BenchmarkResponse>) => {
@@ -44,14 +54,19 @@ export class Benchmark {
       this.stop();
     }, BENCHMARK_TIMEOUT_MS);
     this.#worker = worker;
+    const message: BenchmarkRequest = { ...request, hostModuleUrl };
     // Worker.postMessage has no targetOrigin; the rule only applies to window.postMessage.
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
-    worker.postMessage(request);
+    worker.postMessage(message);
   }
 
   private stop(): void {
     clearTimeout(this.#timeout);
     this.#worker?.terminate();
     this.#worker = undefined;
+    if (this.#hostModuleUrl) {
+      URL.revokeObjectURL(this.#hostModuleUrl);
+      this.#hostModuleUrl = undefined;
+    }
   }
 }

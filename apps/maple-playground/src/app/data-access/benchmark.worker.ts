@@ -1,46 +1,50 @@
 /// <reference lib="webworker" />
 import { Maple } from '@netwin/maple';
 import type { BenchmarkRequest, BenchmarkResponse, EngineResult } from './benchmark-protocol';
+import { type HostContext, importHostContext } from './host-module';
 import { runJsInterpreter } from './js-interpreter-engine';
-import { parseContext } from './maple-worker-protocol';
 
 /** Unmeasured runs first, so neither engine is timed while the JIT is still cold. */
 const WARM_UP_RUNS = 3;
 
-addEventListener('message', (event: MessageEvent<BenchmarkRequest>) => {
-  const { code, context, limits, runs } = event.data;
+addEventListener('message', async (event: MessageEvent<BenchmarkRequest>) => {
+  const { code, hostModuleUrl, limits, runs } = event.data;
   postMessage({
     runs,
-    results: benchmark(code, context, limits, runs)
+    results: await benchmark(code, hostModuleUrl, limits, runs)
   } satisfies BenchmarkResponse);
 });
 
 /**
- * Parses the context once, outside the timed runs, since a host passes data it already holds;
- * context that is not JSON fails both engines alike.
+ * Imports the host module once, outside the timed runs, since a host holds its data already; a
+ * module that fails to load fails both engines alike.
  */
-function benchmark(
+async function benchmark(
   code: string,
-  context: string,
+  hostModuleUrl: string,
   limits: BenchmarkRequest['limits'],
   runs: number
-): BenchmarkResponse['results'] {
-  let data: object;
+): Promise<BenchmarkResponse['results']> {
+  let host: HostContext;
   try {
-    data = parseContext(context);
+    host = await importHostContext(hostModuleUrl);
   } catch (error) {
     const failed: EngineResult = { ok: false, error: describe(error) };
     return { maple: failed, 'js-interpreter': failed };
   }
+  // js-interpreter has no instances, so both exports become its globals, run data shadowing
+  // instance data as it does in Maple.
+  const globals = { ...host.instanceData, ...host.runData };
   return {
-    maple: measure(runs, () => runMaple(code, data, limits)),
-    'js-interpreter': measure(runs, () => runJsInterpreter(code, data))
+    maple: measure(runs, () => runMaple(code, host, limits)),
+    'js-interpreter': measure(runs, () => runJsInterpreter(code, globals))
   };
 }
 
 /** One complete execution as the host would do it: setup, parse, run and result conversion. */
-function runMaple(code: string, data: object, limits: BenchmarkRequest['limits']): string {
-  return JSON.stringify(new Maple(limits).run(code, data).value) ?? 'undefined';
+function runMaple(code: string, host: HostContext, limits: BenchmarkRequest['limits']): string {
+  const maple = new Maple({ globals: host.instanceData, ...limits });
+  return JSON.stringify(maple.run(code, host.runData).value) ?? 'undefined';
 }
 
 function measure(runs: number, execute: () => string): EngineResult {

@@ -4,24 +4,15 @@ export interface RunLimits {
   maxDepth: number;
 }
 
-/** Asks the worker to parse and run `code` against the JSON `context` within `limits`. */
+/**
+ * Asks the worker to parse `code` and run it within `limits` against the host module at
+ * `hostModuleUrl`.
+ */
 export interface RunRequest {
   id: number;
   code: string;
-  context: string;
+  hostModuleUrl: string;
   limits: RunLimits;
-}
-
-/**
- * Turns the JSON `context` of a request back into the data a run takes. An array is refused here,
- * as Maple would, so that both engines of the Benchmark tab see the same input error.
- */
-export function parseContext(context: string): object {
-  const data: unknown = JSON.parse(context);
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    throw new TypeError('context must be a JSON object');
-  }
-  return data;
 }
 
 /** An error, reduced to what survives `postMessage`. */
