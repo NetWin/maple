@@ -1,0 +1,214 @@
+<dialog
+  #dialog
+  aria-labelledby="maple-welcome-title"
+  class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-4xl scale-95 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-0 text-neutral-700 opacity-0 shadow-2xl transition-[opacity,scale,overlay,display] transition-discrete duration-200 ease-out backdrop:bg-neutral-950/40 backdrop:opacity-0 backdrop:backdrop-blur-sm backdrop:transition-[opacity,overlay,display] backdrop:transition-discrete backdrop:duration-200 open:scale-100 open:opacity-100 open:backdrop:opacity-100 motion-reduce:transition-none motion-reduce:backdrop:transition-none dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 starting:open:scale-95 starting:open:opacity-0 starting:open:backdrop:opacity-0"
+  (click)="closeOnBackdrop($event)"
+  (close)="closed.emit()">
+  <button
+    type="button"
+    autofocus
+    title="Close"
+    aria-label="Close"
+    class="absolute top-4 right-5 flex size-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+    (click)="close()">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      class="size-4">
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  </button>
+  <div
+    #content
+    class="max-h-[calc(100dvh-2rem-2px)] overflow-y-auto p-6 sm:p-8">
+    <header class="mb-6">
+      <p class="mb-1 flex items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500">
+        <span class="text-lg leading-none">🍁</span>
+        Maple {{ VERSION }}
+      </p>
+      <h2
+        id="maple-welcome-title"
+        class="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+        A secure JavaScript interpreter
+      </h2>
+      <p class="mt-2 max-w-2xl text-sm leading-relaxed">
+        Maple runs a script itself instead of handing it to <code class="font-mono">eval</code>, so
+        the script only ever sees the values you pass in. Use it to let users write rules, formulas
+        or automations that run inside your application without reaching anything else.
+      </p>
+    </header>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <section>
+        <h3
+          class="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
+          How it works
+        </h3>
+        <ol class="space-y-3 text-sm">
+          <li class="flex gap-3">
+            <span
+              class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+              >1</span
+            >
+            <p>
+              <strong class="font-medium text-neutral-900 dark:text-neutral-100">Parse.</strong>
+              acorn turns the script into a syntax tree, which the <em>AST</em> tab shows.
+            </p>
+          </li>
+          <li class="flex gap-3">
+            <span
+              class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+              >2</span
+            >
+            <p>
+              <strong class="font-medium text-neutral-900 dark:text-neutral-100">Interpret.</strong>
+              Maple walks that tree node by node. Nothing is ever handed to
+              <code class="font-mono">eval</code> or <code class="font-mono">Function</code>.
+            </p>
+          </li>
+          <li class="flex gap-3">
+            <span
+              class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+              >3</span
+            >
+            <p>
+              <strong class="font-medium text-neutral-900 dark:text-neutral-100">Isolate.</strong>
+              The only names a script can reach are the ones the host passes in. Everything else,
+              from <code class="font-mono">Math</code> to <code class="font-mono">Array</code>, is
+              Maple's own.
+            </p>
+          </li>
+        </ol>
+
+        <h3
+          class="mt-6 mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
+          What a script can't do
+        </h3>
+        <ul class="space-y-1.5 text-sm">
+          <li class="flex gap-2">
+            <span
+              aria-hidden="true"
+              class="text-rose-500"
+              >✕</span
+            >
+            <span
+              >Reach host globals such as <code class="font-mono">window</code>,
+              <code class="font-mono">fetch</code> or <code class="font-mono">process</code></span
+            >
+          </li>
+          <li class="flex gap-2">
+            <span
+              aria-hidden="true"
+              class="text-rose-500"
+              >✕</span
+            >
+            <span
+              >Turn strings into code with <code class="font-mono">eval</code> or
+              <code class="font-mono">Function</code></span
+            >
+          </li>
+          <li class="flex gap-2">
+            <span
+              aria-hidden="true"
+              class="text-rose-500"
+              >✕</span
+            >
+            <span
+              >Climb prototypes through <code class="font-mono">constructor</code> or
+              <code class="font-mono">__proto__</code></span
+            >
+          </li>
+          <li class="flex gap-2">
+            <span
+              aria-hidden="true"
+              class="text-rose-500"
+              >✕</span
+            >
+            <span>Touch the DOM, storage, cookies or the network</span>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3
+          class="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
+          Reading the playground
+        </h3>
+        <dl class="space-y-3 text-sm">
+          <div>
+            <dt class="font-medium text-neutral-900 dark:text-neutral-100">Host context</dt>
+            <dd>
+              Trusted code standing in for your application. It runs natively and exports
+              <code class="font-mono">INSTANCE_DATA</code>, read-only and shared by every run, and
+              <code class="font-mono">RUN_DATA</code>, copied into each run.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-neutral-900 dark:text-neutral-100">Script</dt>
+            <dd>
+              The untrusted code Maple runs. It sees the keys of those two exports and nothing else,
+              and hands back its result with <code class="font-mono">return</code>.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-neutral-900 dark:text-neutral-100">Output</dt>
+            <dd>
+              The result or the error, the syntax tree, and a benchmark against another interpreter.
+              It updates as you type.
+            </dd>
+          </div>
+        </dl>
+
+        <h3
+          class="mt-6 mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
+          Use it in your project
+        </h3>
+        <pre
+          class="rounded-lg bg-neutral-100 px-3 py-2 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200"
+          >{{ INSTALL }}</pre>
+        <p class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <a
+            [href]="LINKS.github"
+            target="_blank"
+            rel="noopener"
+            class="font-medium text-amber-700 hover:underline dark:text-amber-400">
+            GitHub
+          </a>
+          <a
+            [href]="LINKS.npm"
+            target="_blank"
+            rel="noopener"
+            class="font-medium text-amber-700 hover:underline dark:text-amber-400">
+            npm
+          </a>
+          <a
+            [href]="LINKS.docs"
+            target="_blank"
+            rel="noopener"
+            class="font-medium text-amber-700 hover:underline dark:text-amber-400">
+            Documentation
+          </a>
+        </p>
+      </section>
+    </div>
+
+    <footer class="mt-8 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-neutral-400 dark:text-neutral-500">
+        Pick another script under <strong class="font-medium">Examples</strong>, or edit either
+        side.
+      </p>
+      <button
+        type="button"
+        class="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+        (click)="close()">
+        Try it out
+      </button>
+    </footer>
+  </div>
+</dialog>

@@ -1,16 +1,29 @@
-import { Component, computed, debounced, effect, inject, signal, viewChild } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  debounced,
+  effect,
+  inject,
+  signal,
+  viewChild
+} from '@angular/core';
 import { CodeEditor } from './code-editor/code-editor';
 import { Benchmark } from './data-access/benchmark';
+import type { Example } from './data-access/examples';
 import { Playground } from './data-access/playground';
+import { MAPLE_VERSION, PROJECT_LINKS } from './data-access/project';
 import { RUN_TIMEOUT_MS, Runner } from './data-access/runner';
 import { Badge } from './ui/badge';
 import { BenchmarkPanel } from './ui/benchmark-panel';
+import { ExamplesMenu } from './ui/examples-menu';
 import { Pane } from './ui/pane';
 import { SettingsMenu } from './ui/settings-menu';
 import { Split } from './ui/split';
 import { StatusChip } from './ui/status-chip';
 import { type TabOption, Tabs } from './ui/tabs';
 import { ThemePicker } from './ui/theme-picker';
+import { WelcomeDialog } from './ui/welcome-dialog';
 
 /** Rerun the code execution 300ms after the last edit. */
 const RUN_DELAY_MS = 300;
@@ -29,12 +42,14 @@ const BENCHMARK_RUNS = 20;
     Badge,
     BenchmarkPanel,
     CodeEditor,
+    ExamplesMenu,
     Pane,
     SettingsMenu,
     Split,
     StatusChip,
     Tabs,
-    ThemePicker
+    ThemePicker,
+    WelcomeDialog
   ],
   templateUrl: './app.html',
   host: { class: 'flex h-full flex-col' }
@@ -46,7 +61,15 @@ export class App {
 
   readonly #benchmark = inject(Benchmark);
 
+  protected readonly VERSION = MAPLE_VERSION;
+
+  protected readonly LINKS = PROJECT_LINKS;
+
   protected readonly split = viewChild.required(Split);
+
+  protected readonly welcome = viewChild.required(WelcomeDialog);
+
+  protected readonly welcomeSeen = this.#playground.welcomeSeen;
 
   protected readonly outputTab = signal<OutputTab>('result');
 
@@ -85,7 +108,7 @@ export class App {
 
   protected readonly astDocument = computed(() => this.#runner.ast() ?? '');
 
-  protected readonly contextString = this.#playground.contextString;
+  protected readonly hostContext = this.#playground.hostContext;
 
   protected readonly codeString = this.#playground.codeString;
 
@@ -96,10 +119,32 @@ export class App {
   protected readonly debouncedInput = debounced(
     () => ({
       code: this.codeString(),
-      context: this.contextString(),
+      hostContext: this.hostContext(),
       limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() }
     }),
     RUN_DELAY_MS
+  );
+
+  /**
+   * What the next live run gets. The debounced resource also notifies when only its status changes,
+   * so equal input is dropped here: a rerun would advance state the host module keeps between runs.
+   */
+  protected readonly runInput = computed(
+    () =>
+      this.debouncedInput.hasValue()
+        ? this.debouncedInput.value()
+        : {
+            code: '',
+            hostContext: '',
+            limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() }
+          },
+    {
+      equal: (previous, next) =>
+        previous.code === next.code &&
+        previous.hostContext === next.hostContext &&
+        previous.limits.maxOps === next.limits.maxOps &&
+        previous.limits.maxDepth === next.limits.maxDepth
+    }
   );
 
   protected readonly outputTabs: ReadonlyArray<TabOption<OutputTab>> = [
@@ -111,24 +156,33 @@ export class App {
   constructor() {
     // Re-runs shortly after the last edit to either editor or to the limits.
     effect(() => {
-      const { code, context, limits } = this.debouncedInput.hasValue()
-        ? this.debouncedInput.value()
-        : { code: '', context: '', limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() } };
-      this.#runner.run(code, context, limits);
+      const { code, hostContext, limits } = this.runInput();
+      this.#runner.run(code, hostContext, limits);
     });
+
+    // A first visit starts with what Maple is; closing the dialog marks it as seen.
+    afterNextRender(() => {
+      if (!this.welcomeSeen()) {
+        this.welcome().open();
+      }
+    });
+  }
+
+  protected load(example: Example): void {
+    this.#playground.load(example);
   }
 
   /** Times the current editors' content, not the debounced one, so the click is what gets measured. */
   protected runBenchmark(): void {
     this.#benchmark.run({
       code: this.codeString(),
-      context: this.contextString(),
+      hostSource: this.hostContext(),
       limits: { maxOps: this.maxOps(), maxDepth: this.maxDepth() },
       runs: BENCHMARK_RUNS
     });
   }
 
-  /** Restores the default context, code and pane sizes. */
+  /** Restores the default host context, code and pane sizes. */
   protected reset(): void {
     this.#playground.reset();
     this.split().reset();

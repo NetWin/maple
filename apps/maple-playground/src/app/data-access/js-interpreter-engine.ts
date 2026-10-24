@@ -7,7 +7,7 @@ interface InterpreterInternals {
 }
 
 /**
- * Runs `code` against the parsed `data` in js-interpreter and returns the result as JSON text.
+ * Runs `code` against `data` in js-interpreter and returns the result as JSON text.
  * The script is wrapped in a function to allow `return`, and each data key becomes a global;
  * js-interpreter understands ES5 only and has no operation limit. The result is read and
  * serialized on the host, as Maple's is, so the data cannot shadow anything this relies on.
