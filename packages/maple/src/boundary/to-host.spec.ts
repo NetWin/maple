@@ -9,6 +9,8 @@ import { IteratorWrapper } from '../values/wrappers/iterator-wrapper.ts';
 import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
+import { WeakMapWrapper } from '../values/wrappers/weak-map-wrapper.ts';
+import { WeakSetWrapper } from '../values/wrappers/weak-set-wrapper.ts';
 import { fromHost } from './from-host.ts';
 import { toHost, UnconvertibleValueError } from './to-host.ts';
 
@@ -152,6 +154,19 @@ describe('toHost', () => {
     expect(key).toBe(value);
     expect(toHost(new SetWrapper(new Set([1])))).toEqual(new Set([1]));
     expect(toHost(new IteratorWrapper([1].values()))).toBeUndefined();
+  });
+
+  it('drops WeakMaps and WeakSets, and refuses them when strict', () => {
+    expect(toHost({ map: new WeakMapWrapper(), set: new WeakSetWrapper() })).toStrictEqual({
+      map: undefined,
+      set: undefined
+    });
+    expect(() => toHost(new WeakMapWrapper(), true)).toThrow(
+      new UnconvertibleValueError('WeakMap')
+    );
+    expect(() => toHost(new WeakSetWrapper(), true)).toThrow(
+      new UnconvertibleValueError('WeakSet')
+    );
   });
 
   it('refuses values that cannot exist in the sandbox', () => {

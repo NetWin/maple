@@ -13,6 +13,8 @@ import { OBJECT_PROTOTYPE } from './object/object-prototype.ts';
 import { REGEXP_PROTOTYPE } from './regexp/regexp-prototype.ts';
 import { SET_PROTOTYPE } from './set/set-prototype.ts';
 import { STRING_PROTOTYPE } from './string/string-prototype.ts';
+import { WEAK_MAP_PROTOTYPE } from './weak-map/weak-map-prototype.ts';
+import { WEAK_SET_PROTOTYPE } from './weak-set/weak-set-prototype.ts';
 
 /**
  * Every prototype a value can have, tried in order, so arrays find theirs before plain objects
@@ -28,6 +30,8 @@ const PROTOTYPES: ReadonlyArray<Prototype> = [
   DATE_PROTOTYPE,
   MAP_PROTOTYPE,
   SET_PROTOTYPE,
+  WEAK_MAP_PROTOTYPE,
+  WEAK_SET_PROTOTYPE,
   ERROR_PROTOTYPE,
   ITERATOR_PROTOTYPE,
   FUNCTION_PROTOTYPE

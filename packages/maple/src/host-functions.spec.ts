@@ -107,6 +107,19 @@ describe('host functions', () => {
     );
   });
 
+  it('refuse WeakMaps and WeakSets as arguments', () => {
+    const maple = new Maple({ globals: { take: one } });
+
+    expect(sandboxError(maple, 'take({ cache: new WeakMap() });')).toMatchObject({
+      name: 'TypeError',
+      message: 'A WeakMap cannot be passed to the host'
+    });
+    expect(sandboxError(maple, 'take([new WeakSet()]);')).toMatchObject({
+      name: 'TypeError',
+      message: 'A WeakSet cannot be passed to the host'
+    });
+  });
+
   it('refuse cyclic arguments but keep shared references', () => {
     const seen: Array<unknown> = [];
     const take = (value: unknown): void => {

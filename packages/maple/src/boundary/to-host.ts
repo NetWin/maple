@@ -10,6 +10,8 @@ import { IteratorWrapper } from '../values/wrappers/iterator-wrapper.ts';
 import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
+import { WeakMapWrapper } from '../values/wrappers/weak-map-wrapper.ts';
+import { WeakSetWrapper } from '../values/wrappers/weak-set-wrapper.ts';
 import type { SandboxErrorInfo } from './maple-error.ts';
 
 /**
@@ -18,7 +20,7 @@ import type { SandboxErrorInfo } from './maple-error.ts';
  */
 export const MAX_ERROR_PROPERTIES_SIZE = 65_536;
 
-type UnconvertibleKind = 'iterator' | 'cyclic value';
+type UnconvertibleKind = 'iterator' | 'WeakMap' | 'WeakSet' | 'cyclic value';
 
 /**
  * Keys a copy leaves out. Host code that copies by assignment would turn an own `__proto__` into
@@ -49,9 +51,10 @@ export class NestingLimitError extends RangeError {
 
 /**
  * Copies a sandbox value out for the host: a fresh, mutable structure that shares nothing with the
- * run and contains nothing executable. Functions become `undefined`. Iterators become `undefined`
- * and cycles are preserved, or, when `strict` as for host function arguments, both throw an
- * `UnconvertibleValueError`. Throws a plain error for a value the sandbox could not have produced.
+ * run and contains nothing executable. Functions become `undefined`. Iterators, WeakMaps and
+ * WeakSets become `undefined` and cycles are preserved, or, when `strict` as for host function
+ * arguments, all four throw an `UnconvertibleValueError`. Throws a plain error for a value the
+ * sandbox could not have produced.
  */
 export function toHost(value: unknown, strict: boolean = false): unknown {
   return convert(value, { copies: new Map(), open: new Set(), strict, acyclic: false }, 0);
@@ -113,6 +116,12 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
   if (value instanceof IteratorWrapper) {
     if (walk.strict) {
       throw new UnconvertibleValueError('iterator');
+    }
+    return undefined;
+  }
+  if (value instanceof WeakMapWrapper || value instanceof WeakSetWrapper) {
+    if (walk.strict) {
+      throw new UnconvertibleValueError(value.tag);
     }
     return undefined;
   }

@@ -40,8 +40,6 @@ const HOST_ONLY_NAMES: ReadonlySet<string> = new Set([
   'Proxy',
   'Reflect',
   'Symbol',
-  'WeakMap',
-  'WeakSet',
   'Promise',
   'WeakRef',
   'FinalizationRegistry',

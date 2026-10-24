@@ -11,6 +11,7 @@ globals), the arguments of a host function, its return value, and the result of 
 | Sandbox error                  | –                  | plain object       | –                    | plain object    |
 | Function                       | host function      | `undefined`        | `INTERNAL_ERROR`     | `undefined`     |
 | Iterator                       | –                  | `TypeError`        | –                    | `undefined`     |
+| `WeakMap`, `WeakSet`           | `TypeError` before | `TypeError`        | `INTERNAL_ERROR`     | `undefined`     |
 | Anything else                  | `TypeError` before | –                  | `INTERNAL_ERROR`     | –               |
 | Value reached twice            | shared             | shared             | shared               | shared          |
 | Cycle                          | kept               | `TypeError`        | kept                 | kept            |
