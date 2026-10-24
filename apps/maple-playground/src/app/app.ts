@@ -1,16 +1,29 @@
-import { Component, computed, debounced, effect, inject, signal, viewChild } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  debounced,
+  effect,
+  inject,
+  signal,
+  viewChild
+} from '@angular/core';
 import { CodeEditor } from './code-editor/code-editor';
 import { Benchmark } from './data-access/benchmark';
+import type { Example } from './data-access/examples';
 import { Playground } from './data-access/playground';
+import { MAPLE_VERSION, PROJECT_LINKS } from './data-access/project';
 import { RUN_TIMEOUT_MS, Runner } from './data-access/runner';
 import { Badge } from './ui/badge';
 import { BenchmarkPanel } from './ui/benchmark-panel';
+import { ExamplesMenu } from './ui/examples-menu';
 import { Pane } from './ui/pane';
 import { SettingsMenu } from './ui/settings-menu';
 import { Split } from './ui/split';
 import { StatusChip } from './ui/status-chip';
 import { type TabOption, Tabs } from './ui/tabs';
 import { ThemePicker } from './ui/theme-picker';
+import { WelcomeDialog } from './ui/welcome-dialog';
 
 /** Rerun the code execution 300ms after the last edit. */
 const RUN_DELAY_MS = 300;
@@ -29,12 +42,14 @@ const BENCHMARK_RUNS = 20;
     Badge,
     BenchmarkPanel,
     CodeEditor,
+    ExamplesMenu,
     Pane,
     SettingsMenu,
     Split,
     StatusChip,
     Tabs,
-    ThemePicker
+    ThemePicker,
+    WelcomeDialog
   ],
   templateUrl: './app.html',
   host: { class: 'flex h-full flex-col' }
@@ -46,7 +61,15 @@ export class App {
 
   readonly #benchmark = inject(Benchmark);
 
+  protected readonly VERSION = MAPLE_VERSION;
+
+  protected readonly LINKS = PROJECT_LINKS;
+
   protected readonly split = viewChild.required(Split);
+
+  protected readonly welcome = viewChild.required(WelcomeDialog);
+
+  protected readonly welcomeSeen = this.#playground.welcomeSeen;
 
   protected readonly outputTab = signal<OutputTab>('result');
 
@@ -136,6 +159,17 @@ export class App {
       const { code, hostContext, limits } = this.runInput();
       this.#runner.run(code, hostContext, limits);
     });
+
+    // A first visit starts with what Maple is; closing the dialog marks it as seen.
+    afterNextRender(() => {
+      if (!this.welcomeSeen()) {
+        this.welcome().open();
+      }
+    });
+  }
+
+  protected load(example: Example): void {
+    this.#playground.load(example);
   }
 
   /** Times the current editors' content, not the debounced one, so the click is what gets measured. */

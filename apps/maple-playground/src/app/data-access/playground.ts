@@ -1,36 +1,5 @@
 import { effect, Service, signal, type WritableSignal } from '@angular/core';
-
-/** Default host context: the trusted module whose exports the script sees. */
-const DEFAULT_HOST_CONTEXT = `// Host context: trusted code that runs natively in the worker, as your application would.
-// Maple hands INSTANCE_DATA to every run of the instance (read-only), RUN_DATA to one run.
-export const INSTANCE_DATA = {
-  TAX_RATE: 0.19,
-  formatPrice: (amount) => amount.toFixed(2) + ' €'
-};
-
-export const RUN_DATA = {
-  order: {
-    coupon: 'SPRING10',
-    items: [
-      { name: 'Maple syrup', price: 12.5, quantity: 2 },
-      { name: 'Pancake mix', price: 4.2, quantity: 1 }
-    ]
-  }
-};
-`;
-
-/** Default script: untrusted code that only reaches the host context's exports. */
-const DEFAULT_CODE = `// Script: untrusted code. It sees TAX_RATE, formatPrice and order, and nothing else.
-const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-const discount = order.coupon === 'SPRING10' ? subtotal * 0.1 : 0;
-const total = (subtotal - discount) * (1 + TAX_RATE);
-
-return {
-  subtotal: formatPrice(subtotal),
-  discount: formatPrice(discount),
-  total: formatPrice(total)
-};
-`;
+import { DEFAULT_EXAMPLE, type Example } from './examples';
 
 /** Maple's own defaults, repeated here so the settings form can show and restore them. */
 export const DEFAULT_MAX_OPS = 1_000_000;
@@ -40,6 +9,7 @@ const HOST_CONTEXT_STORAGE_KEY = 'maple-playground-host-context';
 const CODE_STORAGE_KEY = 'maple-playground-code';
 const MAX_OPS_STORAGE_KEY = 'maple-playground-max-ops';
 const MAX_DEPTH_STORAGE_KEY = 'maple-playground-max-depth';
+const WELCOME_SEEN_STORAGE_KEY = 'maple-playground-welcome-seen';
 
 /** How a persisted value is written to and read back from storage. */
 interface Codec<T> {
@@ -50,6 +20,11 @@ interface Codec<T> {
 const TEXT: Codec<string> = {
   parse: (text) => text,
   format: (value) => value
+};
+
+const FLAG: Codec<boolean> = {
+  parse: (text) => text === 'true',
+  format: (value) => String(value)
 };
 
 const POSITIVE_INTEGER: Codec<number> = {
@@ -69,11 +44,11 @@ const POSITIVE_INTEGER: Codec<number> = {
 export class Playground {
   public readonly hostContext = persistedSignal(
     HOST_CONTEXT_STORAGE_KEY,
-    DEFAULT_HOST_CONTEXT,
+    DEFAULT_EXAMPLE.hostContext,
     TEXT
   );
 
-  public readonly codeString = persistedSignal(CODE_STORAGE_KEY, DEFAULT_CODE, TEXT);
+  public readonly codeString = persistedSignal(CODE_STORAGE_KEY, DEFAULT_EXAMPLE.code, TEXT);
 
   public readonly maxOps = persistedSignal(MAX_OPS_STORAGE_KEY, DEFAULT_MAX_OPS, POSITIVE_INTEGER);
 
@@ -83,10 +58,18 @@ export class Playground {
     POSITIVE_INTEGER
   );
 
-  /** Restores every default, which also clears the values from storage. */
+  /** Whether the visitor has closed the welcome dialog once; Reset leaves it alone. */
+  public readonly welcomeSeen = persistedSignal(WELCOME_SEEN_STORAGE_KEY, false, FLAG);
+
+  /** Replaces the host context and the script with an example's. */
+  public load(example: Example): void {
+    this.hostContext.set(example.hostContext);
+    this.codeString.set(example.code);
+  }
+
+  /** Restores every default but the welcome flag, which also clears the values from storage. */
   public reset(): void {
-    this.hostContext.set(DEFAULT_HOST_CONTEXT);
-    this.codeString.set(DEFAULT_CODE);
+    this.load(DEFAULT_EXAMPLE);
     this.maxOps.set(DEFAULT_MAX_OPS);
     this.maxDepth.set(DEFAULT_MAX_DEPTH);
   }

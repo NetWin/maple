@@ -31,6 +31,14 @@ The two editors stand for the two sides of a Maple integration:
 - **Script** is the untrusted code Maple runs. It reaches the two exports' keys and nothing else; a key of `RUN_DATA`
   shadows the same key of `INSTANCE_DATA`.
 
+## Welcome dialog and examples
+
+A first visit opens **What is Maple?**, a dialog on what Maple is, how it works and how to read the playground; the
+header button reopens it. **Examples** replaces the host context and the script with one of the scripts in
+`src/app/data-access/examples.ts`, each explaining itself in a comment. The first of them is what a first visit and
+**Reset** show. The header also links to GitHub and npm and shows the library's version, read from
+`packages/maple/package.json` at build time.
+
 ## Settings
 
 The **Settings** popover in the header sets the run limits, `maxOps` (default `1000000`) and `maxDepth` (default
