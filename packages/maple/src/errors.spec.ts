@@ -808,6 +808,22 @@ describe('deleting the properties of an error', () => {
     ).toEqual([true, undefined, false]);
   });
 
+  it('reaches the host as the script left it, without repeating a field in properties', () => {
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); delete e.stack; throw e;').sandboxError
+    ).toStrictEqual({ name: 'Error', message: 'm', stack: '' });
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); delete e.stack; e.stack = "s"; throw e;')
+        .sandboxError
+    ).toStrictEqual({ name: 'Error', message: 'm', stack: 's' });
+    expect(
+      run('const e = new Error("m"); delete e.message; e.message = "n"; e.code = 1; return e;')
+    ).toMatchObject({ message: 'n', properties: { code: 1 } });
+    expect(
+      run('const e = new Error("m"); delete e.message; e.message = "n"; return e;')
+    ).not.toHaveProperty('properties');
+  });
+
   it('takes an assignment after the delete as a new own property, listed last', () => {
     expect(
       run(

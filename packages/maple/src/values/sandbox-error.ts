@@ -110,18 +110,25 @@ export class SandboxError extends SandboxObject {
     return {
       name: hostText(this.read('name'), 'Error'),
       message: hostText(this.read('message'), ''),
-      stack: this.stack
+      stack: hostText(this.read('stack'), '')
     };
   }
 
   /**
-   * `name` or `message` as a script reads it: what it was given or assigned, or after `delete`,
-   * what was assigned again or what the prototype has.
+   * `name`, `message` or `stack` as a script reads it: what it was given or assigned, or after
+   * `delete`, what was assigned again or what the prototype has, which for `stack` is nothing.
    */
-  private read(key: 'name' | 'message'): unknown {
+  private read(key: 'name' | 'message' | 'stack'): unknown {
     // The common case, a property the script never deleted, read straight from the field
     if (this.properties.getFixedChange(key)?.deleted !== true) {
-      return key === 'name' ? this.name : this.message;
+      switch (key) {
+        case 'name':
+          return this.name;
+        case 'message':
+          return this.message;
+        case 'stack':
+          return this.stack;
+      }
     }
     return this.readProperty(key, this.properties, NOOP_CALLBACK);
   }
