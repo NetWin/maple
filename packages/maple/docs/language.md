@@ -43,7 +43,7 @@ function declaration that is hoisting time, so the script fails before its first
 
 Reading one of these names also throws `DISALLOWED_SYNTAX`, unless the script or the host binds it:
 
-- Language: `Proxy`, `Reflect`, `Symbol`, `WeakMap`, `WeakSet`, `WeakRef`, `FinalizationRegistry`,
+- Language: `Proxy`, `Reflect`, `Symbol`, `WeakRef`, `FinalizationRegistry`,
   `Promise`, `SharedArrayBuffer`, `Atomics`, `WebAssembly`, `Intl`, `globalThis`, `eval`, `Function`
 - Server runtimes: `require`, `module`, `exports`, `process`, `global`, `Buffer`, `__dirname`,
   `__filename`, `Deno`, `Bun`
@@ -58,12 +58,12 @@ name. `typeof` never throws for a name that is not bound, so `typeof window !== 
 ## Constructors
 
 `new` is allowed for `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`,
-`URIError`, `EvalError`, `Date`, `RegExp`, `Map`, `Set`, `Array` and `Object`. Any other `new`
-target, including a script function or a bound function, is `DISALLOWED_SYNTAX`. There are no
-primitive wrapper objects: `String`, `Number` and `Boolean` are conversion functions only, so
-`new String('a')` is rejected, and `Object('a')` is a `TypeError`.
+`URIError`, `EvalError`, `Date`, `RegExp`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Array` and
+`Object`. Any other `new` target, including a script function or a bound function, is
+`DISALLOWED_SYNTAX`. There are no primitive wrapper objects: `String`, `Number` and `Boolean` are
+conversion functions only, so `new String('a')` is rejected, and `Object('a')` is a `TypeError`.
 
-`instanceof` accepts those thirteen plus `Iterator` on the right-hand side. Any other right-hand
+`instanceof` accepts those fifteen plus `Iterator` on the right-hand side. Any other right-hand
 side, a script function, a bound function or `String` included, throws a `TypeError`.
 
 ## Functions

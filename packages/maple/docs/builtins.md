@@ -12,7 +12,7 @@ data key of the same name shadows them:
 `undefined`, `NaN`, `Infinity`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`,
 `encodeURIComponent`, `decodeURIComponent`, `encodeURI`, `decodeURI`, `escape`, `unescape`,
 `String`, `Number`, `Boolean`, `Array`, `Object`, `Math`, `JSON`, `Date`, `RegExp`, `Map`, `Set`,
-`Iterator`, `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError`,
+`WeakMap`, `WeakSet`, `Iterator`, `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError`,
 `EvalError`, `atob`, `btoa`.
 
 `atob` and `btoa` are web APIs rather than ECMAScript, provided because Node, browsers and workers
@@ -133,6 +133,16 @@ Set: `add`, `has`, `delete`, `clear`, `forEach`, `size`, `keys`, `values`, `entr
 
 The set algebra takes a Set or a Map as the other operand. JavaScript's other set-like objects are
 refused with a `TypeError`, so the host never calls a script `has` or `keys`.
+
+## WeakMap and WeakSet
+
+WeakMap: `get`, `set`, `has`, `delete`.
+
+WeakSet: `add`, `has`, `delete`.
+
+Any object can be a key or an entry, functions and built-ins included. Scripts have no symbols, so
+nothing else can. A WeakMap or WeakSet never comes in with the input and leaves a run as
+`undefined` ([Boundary](boundary.md)).
 
 ## Iterators
 

@@ -57,6 +57,8 @@ describe('escape attempts', () => {
       expect(errorName('/x/.constructor;')).toBe('TypeError');
       expect(errorName('new Date(0).constructor;')).toBe('TypeError');
       expect(errorName('new Map().constructor;')).toBe('TypeError');
+      expect(errorName('new WeakMap().constructor;')).toBe('TypeError');
+      expect(errorName('new WeakSet().constructor;')).toBe('TypeError');
       expect(errorName('new Error().constructor;')).toBe('TypeError');
       expect(errorName('Math.constructor;')).toBe('TypeError');
       expect(errorName('host.constructor;')).toBe('TypeError');
@@ -76,6 +78,9 @@ describe('escape attempts', () => {
       expect(errorName('(() => 1).prototype;')).toBe('TypeError');
       expect(errorName('Array.prototype;')).toBe('TypeError');
       expect(errorName('Object.prototype;')).toBe('TypeError');
+      expect(errorName('WeakMap.prototype;')).toBe('TypeError');
+      expect(errorName('new WeakMap().__proto__;')).toBe('TypeError');
+      expect(errorName('new WeakSet().__proto__;')).toBe('TypeError');
       expect(errorName('const k = ["__proto__"]; ({})[k];')).toBe('TypeError');
       expect(errorName('({}).__proto__ = { polluted: true };')).toBe('TypeError');
       expect(errorName('({})["constructor"] = 1;')).toBe('TypeError');

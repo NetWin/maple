@@ -275,6 +275,34 @@ describe('JSON.parse', () => {
   });
 });
 
+// WeakMap and WeakSet are ES2015; js-interpreter follows ES5 and has neither.
+
+describe('WeakMap', () => {
+  it('has WeakMap', () => {
+    expect(
+      followsJavaScript(
+        'if (typeof WeakMap === "undefined") { return "none"; } var k = {}; return new WeakMap([[k, 1]]).get(k);'
+      )
+    ).toEqual({
+      maple: 1,
+      jsInterpreter: 'none'
+    });
+  });
+});
+
+describe('WeakSet', () => {
+  it('has WeakSet', () => {
+    expect(
+      followsJavaScript(
+        'if (typeof WeakSet === "undefined") { return "none"; } var k = {}; return new WeakSet([k]).has(k);'
+      )
+    ).toEqual({
+      maple: true,
+      jsInterpreter: 'none'
+    });
+  });
+});
+
 // Maple departs from JavaScript on purpose.
 
 // The object model: Maple has no script-visible prototypes. An object's behaviour comes from its

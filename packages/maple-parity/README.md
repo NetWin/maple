@@ -67,6 +67,7 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `f.bind(null, 1)`: Maple names it `bound f` with the rest of `f`'s length, js-interpreter `fBound`, 0 | A bound function's `name` and `length` are ES2015; js-interpreter follows ES5.                                            |
 | `f.apply(null, 1)`, `f.apply(null, 'ab')`                                                             | A primitive is no list of arguments, so it is a `TypeError`. js-interpreter ignores a number and spreads a string.        |
 | `JSON.parse(text, reviver)`: Maple applies the reviver, with the holder as `this`                     | As in JavaScript; js-interpreter ignores the reviver and returns the parsed value as it is.                               |
+| `WeakMap`, `WeakSet`                                                                                  | Both are ES2015 built-ins; js-interpreter follows ES5 and has neither.                                                    |
 
 ### Maple departs from JavaScript
 

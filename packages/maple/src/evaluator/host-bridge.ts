@@ -178,9 +178,9 @@ export class HostBridge {
 
   /**
    * Copies a sandbox value out for the host (see `toHost`): plain data only, with functions left
-   * out. Two values the script built cannot be passed at all, and are a script error at the call
-   * instead: an iterator, which only works inside the sandbox, and a value nested deeper than
-   * `MAX_NESTING` levels.
+   * out. Some values the script built cannot be passed at all, and are a script error at the call
+   * instead: an iterator, a WeakMap and a WeakSet, which only work inside the sandbox, and a value
+   * nested deeper than `MAX_NESTING` levels.
    */
   private toHostArgument(value: unknown, node: Node): unknown {
     try {

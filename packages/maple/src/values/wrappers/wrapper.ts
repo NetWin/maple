@@ -4,13 +4,22 @@ import { IteratorWrapper } from './iterator-wrapper.ts';
 import { MapWrapper } from './map-wrapper.ts';
 import { RegExpWrapper } from './regexp-wrapper.ts';
 import { SetWrapper } from './set-wrapper.ts';
+import { WeakMapWrapper } from './weak-map-wrapper.ts';
+import { WeakSetWrapper } from './weak-set-wrapper.ts';
 
 /**
  * Maple's own classes around host values. A script cannot construct them, so a plain object can
  * never pose as one, and the host value inside is only ever reached through a dispatch table.
  * `readOnly` marks wrappers that came in with the input, whose mutators must refuse.
  */
-export type Wrapper = RegExpWrapper | DateWrapper | MapWrapper | SetWrapper | IteratorWrapper;
+export type Wrapper =
+  | RegExpWrapper
+  | DateWrapper
+  | MapWrapper
+  | SetWrapper
+  | WeakMapWrapper
+  | WeakSetWrapper
+  | IteratorWrapper;
 
 export function isWrapper(value: unknown): value is Wrapper {
   return (
@@ -18,6 +27,8 @@ export function isWrapper(value: unknown): value is Wrapper {
     value instanceof DateWrapper ||
     value instanceof MapWrapper ||
     value instanceof SetWrapper ||
+    value instanceof WeakMapWrapper ||
+    value instanceof WeakSetWrapper ||
     value instanceof IteratorWrapper
   );
 }

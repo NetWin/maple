@@ -1,0 +1,44 @@
+import { canBeHeldWeakly } from '../../support/can-be-held-weakly.ts';
+import { Builtin } from '../../values/builtin.ts';
+import { describeValue } from '../../values/coercion.ts';
+import { iterate } from '../../values/iteration.ts';
+import { WeakMapWrapper } from '../../values/wrappers/weak-map-wrapper.ts';
+import { INVALID_WEAK_MAP_KEY } from './methods/set.ts';
+import { WEAK_MAP_PROTOTYPE } from './weak-map-prototype.ts';
+
+export const WEAK_MAP_BUILTIN: Builtin = new Builtin({
+  name: 'WeakMap',
+  length: WeakMap.length,
+  call: (_args, { fail }) => fail('TypeError', "Constructor WeakMap requires 'new'"),
+  // `new WeakMap(iterable?)`; each entry must be an array of an object key and a value
+  construct: ([iterable], context) => {
+    const wrapper = new WeakMapWrapper();
+    if (iterable === undefined || iterable === null) {
+      return wrapper;
+    }
+
+    const iterator = iterate(iterable);
+    if (!iterator) {
+      return context.fail('TypeError', `${describeValue(iterable)} is not iterable`);
+    }
+
+    for (let step = iterator.next(); !step.done; step = iterator.next()) {
+      const entry: unknown = step.value;
+      if (!Array.isArray(entry)) {
+        return context.fail(
+          'TypeError',
+          `Iterator value ${describeValue(entry)} is not an entry object`
+        );
+      }
+      const key: unknown = entry[0];
+      if (!canBeHeldWeakly(key)) {
+        return context.fail('TypeError', INVALID_WEAK_MAP_KEY);
+      }
+      wrapper.map.set(key, entry[1]);
+    }
+
+    return wrapper;
+  },
+  isInstance: (value) => value instanceof WeakMapWrapper,
+  prototype: WEAK_MAP_PROTOTYPE
+});

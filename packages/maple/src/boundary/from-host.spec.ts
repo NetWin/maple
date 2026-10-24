@@ -129,6 +129,12 @@ describe('fromHost', () => {
     expect(() => fromHost([1, Symbol('s')], 'data')).toThrow(
       new TypeError('Unsupported value at data[1]: symbol')
     );
+    expect(() => fromHost({ cache: new WeakMap() }, 'data')).toThrow(
+      new TypeError('Unsupported value at data.cache: WeakMap')
+    );
+    expect(() => fromHost([new WeakSet()], 'data')).toThrow(
+      new TypeError('Unsupported value at data[0]: WeakSet')
+    );
     expect(() => fromHost(new Uint8Array(1), 'data')).toThrow(
       new TypeError('Unsupported value at data: Uint8Array')
     );
