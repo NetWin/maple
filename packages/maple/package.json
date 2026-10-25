@@ -1,6 +1,6 @@
 {
   "name": "@netwin/maple",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "A secure JavaScript interpreter written in TypeScript",
   "keywords": [
     "interpreter",

@@ -1,3 +1,19 @@
+## [0.6.0](https://github.com/NetWin/maple/compare/0.5.1...0.6.0) (2026-10-25)
+
+### 🚀 Features
+
+* **builtins:** support WeakMap and WeakSet ([4e1af2e](https://github.com/NetWin/maple/commit/4e1af2ebaa033edccd91b3405bbed3bf064f4f33))
+
+### 🩹 Bug Fixes
+
+* **map:** read constructor entries as any object, not only arrays ([91eb05e](https://github.com/NetWin/maple/commit/91eb05ecb6b03e9b4fd2104b062b6736efb0b2e3))
+* **properties:** let scripts delete and replace configurable built-in properties ([2f1ef57](https://github.com/NetWin/maple/commit/2f1ef5727d2a3c835ba4bd620e6a583b65853f1a))
+* **properties:** stop listing type accessors as own properties ([b4d9048](https://github.com/NetWin/maple/commit/b4d9048d85065520a3383d5e0368c3a149d9ef29))
+
+### 🧪 Tests
+
+* **parity:** run Node last so a case can restore what it changes ([c726ab5](https://github.com/NetWin/maple/commit/c726ab5bf9061d2fed11c2f94db229780d2fb9b2))
+
 ## [0.5.1](https://github.com/NetWin/maple/compare/0.5.0...0.5.1) (2026-10-24)
 
 ### 📖 Documentation
