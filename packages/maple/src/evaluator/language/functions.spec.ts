@@ -362,7 +362,31 @@ describe('functions', () => {
     });
 
     it('cannot be written', () => {
-      expect(runAndCatch(maple, 'Math.max.name = "x";').sandboxError?.name).toBe('TypeError');
+      expect(errorMessage('Math.max.name = "x";')).toBe(
+        "Cannot assign to read-only property 'name' of a Function"
+      );
+    });
+
+    it('can be deleted for the run, leaving what Function.prototype has', () => {
+      expect(
+        maple.run('return [delete Math.max.name, Math.max.name, delete Number.name, Number.name];')
+          .value
+      ).toEqual([true, '', true, '']);
+      expect(
+        maple.run(
+          'delete Math.max.name; return [Object.hasOwn(Math.max, "name"), "name" in Math.max];'
+        ).value
+      ).toEqual([false, true]);
+      expect(
+        maple.run(
+          'delete [].push.length; return [[].push.length, Object.getOwnPropertyNames([].push)];'
+        ).value
+      ).toEqual([0, ['name']]);
+      expect(maple.run('return [Math.max.name, Number.name, [].push.length];').value).toEqual([
+        'max',
+        'Number',
+        1
+      ]);
     });
   });
 
@@ -397,6 +421,28 @@ describe('functions', () => {
       expect(runAndCatch(maple, 'const f = () => 1; f.name = "g";').sandboxError?.name).toBe(
         'TypeError'
       );
+    });
+
+    it('can be deleted, leaving what Function.prototype has, which cannot be written either', () => {
+      expect(
+        maple.run('function f(a, b) {} return [delete f.name, f.name, delete f.length, f.length];')
+          .value
+      ).toEqual([true, '', true, 0]);
+      expect(
+        maple.run(
+          'function f() {} delete f.name; return [Object.getOwnPropertyNames(f), "name" in f, Object.hasOwn(f, "name")];'
+        ).value
+      ).toEqual([['length'], true, false]);
+      expect(errorMessage('function f() {} delete f.name; f.name = "g";')).toBe(
+        "Cannot assign to read-only property 'name' of a Function"
+      );
+      expect(errorMessage('function f() {} Object.freeze(f); delete f.name;')).toBe(
+        "Cannot delete property 'name' of [function]"
+      );
+      expect(
+        maple.run('function f() {} delete f.name; Object.freeze(f); return Object.isFrozen(f);')
+          .value
+      ).toBe(true);
     });
   });
 

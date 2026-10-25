@@ -792,3 +792,46 @@ describe('errors from conversions', () => {
     expect(error.line).toBeUndefined();
   });
 });
+
+describe('deleting the properties of an error', () => {
+  it('leaves what the prototype has, as JavaScript does', () => {
+    expect(
+      run(
+        'const e = new TypeError("m"); return [delete e.message, e.message, "message" in e, Object.hasOwn(e, "message"), String(e)];'
+      )
+    ).toEqual([true, '', true, false, 'TypeError']);
+    expect(
+      run('const e = new TypeError("m"); e.name = "X"; delete e.name; return [e.name, String(e)];')
+    ).toEqual(['TypeError', 'TypeError: m']);
+    expect(
+      run('const e = new Error("m"); return [delete e.stack, e.stack, "stack" in e];')
+    ).toEqual([true, undefined, false]);
+  });
+
+  it('reaches the host as the script left it, without repeating a field in properties', () => {
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); delete e.stack; throw e;').sandboxError
+    ).toStrictEqual({ name: 'Error', message: 'm', stack: '' });
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); delete e.stack; e.stack = "s"; throw e;')
+        .sandboxError
+    ).toStrictEqual({ name: 'Error', message: 'm', stack: 's' });
+    expect(
+      run('const e = new Error("m"); delete e.message; e.message = "n"; e.code = 1; return e;')
+    ).toMatchObject({ message: 'n', properties: { code: 1 } });
+    expect(
+      run('const e = new Error("m"); delete e.message; e.message = "n"; return e;')
+    ).not.toHaveProperty('properties');
+  });
+
+  it('takes an assignment after the delete as a new own property, listed last', () => {
+    expect(
+      run(
+        'const e = new Error("m"); delete e.message; e.message = "n"; return [String(e), Object.keys(e), Object.getOwnPropertyNames(e)];'
+      )
+    ).toEqual(['Error: n', ['message'], ['name', 'stack', 'message']]);
+    expect(
+      runAndCatch(maple, 'const e = new Error("m"); delete e.message; e.message = "n"; throw e;')
+    ).toMatchObject({ message: 'n', sandboxError: { name: 'Error', message: 'n' } });
+  });
+});

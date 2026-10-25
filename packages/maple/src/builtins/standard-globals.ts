@@ -25,6 +25,8 @@ import { OBJECT_BUILTIN } from './object/object.ts';
 import { REGEXP_BUILTIN } from './regexp/regexp.ts';
 import { SET_BUILTIN } from './set/set.ts';
 import { STRING_BUILTIN } from './string/string.ts';
+import { WEAK_MAP_BUILTIN } from './weak-map/weak-map.ts';
+import { WEAK_SET_BUILTIN } from './weak-set/weak-set.ts';
 
 // The library is typechecked without host libs; these web APIs exist in Node, browsers and workers
 declare const atob: (data: string) => string;
@@ -67,6 +69,8 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   RegExp: REGEXP_BUILTIN,
   Map: MAP_BUILTIN,
   Set: SET_BUILTIN,
+  WeakMap: WEAK_MAP_BUILTIN,
+  WeakSet: WEAK_SET_BUILTIN,
   Iterator: ITERATOR_BUILTIN
 });
 

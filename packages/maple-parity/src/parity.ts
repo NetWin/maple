@@ -2,16 +2,20 @@ import { MapleError, MapleErrorCode } from '@netwin/maple';
 import { expect } from 'vitest';
 import { type Outcome, runJsInterpreter, runMaple, runNode } from './engines.ts';
 
+// Node runs last in every helper. It runs in this process, so a case that changes a built-in
+// (`Math.max = ...`) changes it here until the case restores it, and no other engine may run
+// in the meantime: js-interpreter and Maple use the host's built-ins themselves.
+
 /**
  * Runs `code` in all three engines, asserts that Maple returns what Node and js-interpreter
  * return, and hands that value back so the test can spell out what it is.
  */
 export function parity(code: string, data?: Record<string, unknown>): unknown {
   const value = valueOf(runMaple(code, data), 'Maple');
-  expect(value, 'Node').toStrictEqual(valueOf(runNode(code, data), 'Node'));
-  expect(value, 'js-interpreter').toStrictEqual(
-    valueOf(runJsInterpreter(code, data), 'js-interpreter')
-  );
+  const jsInterpreter = valueOf(runJsInterpreter(code, data), 'js-interpreter');
+  const node = valueOf(runNode(code, data), 'Node');
+  expect(value, 'Node').toStrictEqual(node);
+  expect(value, 'js-interpreter').toStrictEqual(jsInterpreter);
   return value;
 }
 
@@ -46,8 +50,9 @@ export function allThrow(code: string, data?: Record<string, unknown>): string {
  */
 export function rejected(code: string, { sloppy = false } = {}): MapleErrorCode {
   valueOf(runJsInterpreter(code, {}, !sloppy), 'js-interpreter');
+  const rejection = rejectionOf(runMaple(code));
   valueOf(runNode(code, {}, !sloppy), 'Node');
-  return rejectionOf(runMaple(code));
+  return rejection;
 }
 
 /**

@@ -10,6 +10,8 @@ import { IteratorWrapper } from '../values/wrappers/iterator-wrapper.ts';
 import { MapWrapper } from '../values/wrappers/map-wrapper.ts';
 import { RegExpWrapper } from '../values/wrappers/regexp-wrapper.ts';
 import { SetWrapper } from '../values/wrappers/set-wrapper.ts';
+import { WeakMapWrapper } from '../values/wrappers/weak-map-wrapper.ts';
+import { WeakSetWrapper } from '../values/wrappers/weak-set-wrapper.ts';
 import type { SandboxErrorInfo } from './maple-error.ts';
 
 /**
@@ -18,7 +20,7 @@ import type { SandboxErrorInfo } from './maple-error.ts';
  */
 export const MAX_ERROR_PROPERTIES_SIZE = 65_536;
 
-type UnconvertibleKind = 'iterator' | 'cyclic value';
+type UnconvertibleKind = 'iterator' | 'WeakMap' | 'WeakSet' | 'cyclic value';
 
 /**
  * Keys a copy leaves out. Host code that copies by assignment would turn an own `__proto__` into
@@ -26,6 +28,9 @@ type UnconvertibleKind = 'iterator' | 'cyclic value';
  * `constructor.prototype`. The sandbox cannot read either key, so nothing is lost.
  */
 const DROPPED_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor']);
+
+/** What an error hands the host as fields of its own, so not again among its `properties`. */
+const ERROR_FIELDS: ReadonlySet<string> = new Set(['name', 'message', 'stack', 'cause']);
 
 /** Thrown by a strict `toHost` for a value that must not leave the sandbox. */
 export class UnconvertibleValueError extends Error {
@@ -49,9 +54,10 @@ export class NestingLimitError extends RangeError {
 
 /**
  * Copies a sandbox value out for the host: a fresh, mutable structure that shares nothing with the
- * run and contains nothing executable. Functions become `undefined`. Iterators become `undefined`
- * and cycles are preserved, or, when `strict` as for host function arguments, both throw an
- * `UnconvertibleValueError`. Throws a plain error for a value the sandbox could not have produced.
+ * run and contains nothing executable. Functions become `undefined`. Iterators, WeakMaps and
+ * WeakSets become `undefined` and cycles are preserved, or, when `strict` as for host function
+ * arguments, all four throw an `UnconvertibleValueError`. Throws a plain error for a value the
+ * sandbox could not have produced.
  */
 export function toHost(value: unknown, strict: boolean = false): unknown {
   return convert(value, { copies: new Map(), open: new Set(), strict, acyclic: false }, 0);
@@ -113,6 +119,12 @@ function convert(value: unknown, walk: Walk, depth: number): unknown {
   if (value instanceof IteratorWrapper) {
     if (walk.strict) {
       throw new UnconvertibleValueError('iterator');
+    }
+    return undefined;
+  }
+  if (value instanceof WeakMapWrapper || value instanceof WeakSetWrapper) {
+    if (walk.strict) {
+      throw new UnconvertibleValueError(value.tag);
     }
     return undefined;
   }
@@ -209,8 +221,10 @@ function copyContainer(value: object, walk: Walk, depth: number): unknown {
 
 /**
  * `properties` is there only when the script added any, and `cause` only when the error has one,
- * so an error without them keeps the shape it always had. `cause` has its own field whether it is
- * enumerable or not, and never repeats in `properties`. A wrapper's added properties stay behind:
+ * so an error without them keeps the shape it always had. `name`, `message`, `stack` and `cause`
+ * have fields of their own and never repeat in `properties`, not even when the script deleted one
+ * and assigned it again, which makes it an added property. `cause` has its field whether it is
+ * enumerable or not. A wrapper's added properties stay behind:
  * a Date or a Map leaves as the host's own.
  */
 function copyError(error: SandboxError, walk: Walk, depth: number): SandboxErrorInfo {
@@ -222,7 +236,7 @@ function copyError(error: SandboxError, walk: Walk, depth: number): SandboxError
 
   walk.copies.set(error, copy);
 
-  const keys = error.properties.enumerableKeys().filter((key) => key !== 'cause');
+  const keys = error.properties.enumerableKeys().filter((key) => !ERROR_FIELDS.has(key));
   const cause = error.properties.getAdded('cause');
   if (keys.length === 0 && cause === undefined) {
     return copy;

@@ -67,6 +67,9 @@ js-interpreter differs from JavaScript here; Maple does what Node does.
 | `f.bind(null, 1)`: Maple names it `bound f` with the rest of `f`'s length, js-interpreter `fBound`, 0 | A bound function's `name` and `length` are ES2015; js-interpreter follows ES5.                                            |
 | `f.apply(null, 1)`, `f.apply(null, 'ab')`                                                             | A primitive is no list of arguments, so it is a `TypeError`. js-interpreter ignores a number and spreads a string.        |
 | `JSON.parse(text, reviver)`: Maple applies the reviver, with the holder as `this`                     | As in JavaScript; js-interpreter ignores the reviver and returns the parsed value as it is.                               |
+| `Object.getOwnPropertyNames(/a/g)`: Maple lists only `lastIndex`, and `delete r.source` keeps it      | `source` and the flags are accessors on the prototype since ES2015; js-interpreter follows ES5, where they are own.       |
+| `delete f.name`: Maple leaves `''`, which cannot be written, js-interpreter `undefined`, which can    | `Function.prototype.name` is `''` and read-only since ES2015; js-interpreter follows ES5, which has no `name`.            |
+| `delete Math.PI`, `delete r.lastIndex`: Maple throws a `TypeError`                                    | Neither can be deleted, which strict mode reports; js-interpreter throws for neither and deletes `lastIndex`.             |
 
 ### Maple departs from JavaScript
 

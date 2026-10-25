@@ -18,6 +18,16 @@ export class RunState {
    */
   readonly #templateObjects = new WeakMap<TemplateLiteral, ReadonlyArray<string | undefined>>();
 
+  /**
+   * What this run changed on `value`, or `undefined` while it changed nothing. For reads, which
+   * leave no entry behind, so reading `Math.max` costs no allocation.
+   */
+  public peekOwnPropertiesOf(value: SandboxObject): OwnProperties | undefined {
+    // Most runs change no shared value, which spares every read the lookup
+    return this.#ownProperties.size === 0 ? undefined : this.#ownProperties.get(value);
+  }
+
+  /** What this run changed on `value`, with an entry made on the first call, for writes. */
   public getOwnPropertiesOf(value: SandboxObject): OwnProperties {
     let properties = this.#ownProperties.get(value);
     if (properties === undefined) {

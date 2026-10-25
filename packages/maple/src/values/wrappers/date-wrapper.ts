@@ -21,6 +21,11 @@ export class DateWrapper extends SandboxObject {
   }
 
   /** The one value that converts differently for a number than for a string. */
+  /** JavaScript names a Date as `[object Date]` when a `delete` fails on it. */
+  public override describe(): string {
+    return `[object Date]`;
+  }
+
   public override toPrimitive(hint: PrimitiveHint): Primitive {
     return hint === 'number' ? this.date.getTime() : this.date.toString();
   }

@@ -60,7 +60,7 @@ describe('Math', () => {
     expect(run('return Math.SQRT2;')).toBe(Math.SQRT2);
   });
 
-  it('is a read-only namespace', () => {
+  it('is a namespace whose constants cannot be written or deleted', () => {
     expect(run('return typeof Math;')).toBe('object');
     expect(run('return typeof Math.max;')).toBe('function');
     expect(run('return Math.foo;')).toBeUndefined();
@@ -70,9 +70,35 @@ describe('Math', () => {
     expect(runAndCatch(maple, 'Math.PI = 3;').sandboxError?.message).toBe(
       "Cannot assign to read-only property 'PI' of a Math"
     );
-    expect(runAndCatch(maple, 'delete Math.PI;').sandboxError?.name).toBe('TypeError');
+    expect(runAndCatch(maple, 'delete Math.PI;').sandboxError?.message).toBe(
+      "Cannot delete property 'PI' of #<Object>"
+    );
     expect(runAndCatch(maple, 'new Math();').code).toBe('DISALLOWED_SYNTAX');
     expect(runAndCatch(maple, 'Math();').sandboxError?.message).toBe('Math is not a function');
+  });
+
+  it('lets a run replace and delete its methods, as JavaScript does', () => {
+    expect(
+      run(
+        'Math.max = () => 0; return [Math.max(1, 2), Object.keys(Math), Object.hasOwn(Math, "max")];'
+      )
+    ).toEqual([0, [], true]);
+    expect(run('return [delete Math.max, Math.max, "max" in Math];')).toEqual([
+      true,
+      undefined,
+      false
+    ]);
+    expect(run('delete Math.max; Math.max = 1; return [Math.max, Object.keys(Math)];')).toEqual([
+      1,
+      ['max']
+    ]);
+    expect(run('const max = Math.max; Math.max = 1; return [max(1, 2), Math.min(1, 2)];')).toEqual([
+      2, 1
+    ]);
+    expect(runAndCatch(maple, 'Object.freeze(Math); Math.max = 1;').sandboxError?.message).toBe(
+      "Cannot assign to read-only property 'max' of a Math"
+    );
+    expect(run('return Math.max(1, 2);')).toBe(2);
   });
 
   it('never leaves the sandbox', () => {

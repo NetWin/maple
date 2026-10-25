@@ -43,7 +43,7 @@ function declaration that is hoisting time, so the script fails before its first
 
 Reading one of these names also throws `DISALLOWED_SYNTAX`, unless the script or the host binds it:
 
-- Language: `Proxy`, `Reflect`, `Symbol`, `WeakMap`, `WeakSet`, `WeakRef`, `FinalizationRegistry`,
+- Language: `Proxy`, `Reflect`, `Symbol`, `WeakRef`, `FinalizationRegistry`,
   `Promise`, `SharedArrayBuffer`, `Atomics`, `WebAssembly`, `Intl`, `globalThis`, `eval`, `Function`
 - Server runtimes: `require`, `module`, `exports`, `process`, `global`, `Buffer`, `__dirname`,
   `__filename`, `Deno`, `Bun`
@@ -58,18 +58,19 @@ name. `typeof` never throws for a name that is not bound, so `typeof window !== 
 ## Constructors
 
 `new` is allowed for `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`,
-`URIError`, `EvalError`, `Date`, `RegExp`, `Map`, `Set`, `Array` and `Object`. Any other `new`
-target, including a script function or a bound function, is `DISALLOWED_SYNTAX`. There are no
-primitive wrapper objects: `String`, `Number` and `Boolean` are conversion functions only, so
-`new String('a')` is rejected, and `Object('a')` is a `TypeError`.
+`URIError`, `EvalError`, `Date`, `RegExp`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Array` and
+`Object`. Any other `new` target, including a script function or a bound function, is
+`DISALLOWED_SYNTAX`. There are no primitive wrapper objects: `String`, `Number` and `Boolean` are
+conversion functions only, so `new String('a')` is rejected, and `Object('a')` is a `TypeError`.
 
-`instanceof` accepts those thirteen plus `Iterator` on the right-hand side. Any other right-hand
+`instanceof` accepts those fifteen plus `Iterator` on the right-hand side. Any other right-hand
 side, a script function, a bound function or `String` included, throws a `TypeError`.
 
 ## Functions
 
-Script functions and built-in functions have JavaScript's read-only `length` and `name`, names
-inferred from bindings included. Host functions, and functions bound from them, have no properties
+Script functions and built-in functions have JavaScript's `length` and `name`, names inferred from
+bindings included. Neither can be written, but both can be deleted, which leaves what
+`Function.prototype` has: `0` and `''`, which cannot be written either. Host functions, and functions bound from them, have no properties
 at all. Every function answers to `toString`, which gives `[function]`, `valueOf`, `call`, `apply`
 and `bind` ([Functions](builtins.md#functions)). The receiver these pass on reaches a built-in
 method, which checks it as for any method call, so `''.trim.call('  b ')` is `'b'`, and a script
@@ -84,8 +85,10 @@ At the top level of the script `this` is `undefined`, since there is no global o
 function still cannot be constructed ([Constructors](#constructors)).
 
 Every function, and every namespace such as `Math`, takes the properties a script adds, as in
-`fn.cache = {}`. Built-ins, host functions and namespaces are shared by every run, so what a run
-adds to one, or `freeze`s on it, is gone when the next run starts.
+`fn.cache = {}`. As in JavaScript, the methods of a built-in can be replaced and deleted, as in
+`Math.max = fn`, while its constants, such as `Math.PI` or `Number.EPSILON`, can be neither.
+Built-ins, host functions and namespaces are shared by every run, so what a run adds to one,
+replaces on it, deletes from it or `freeze`s on it is gone when the next run starts.
 
 A tagged template `` tag`a${x}b` `` calls `tag` with the strings array and then each substitution as
 a value, not converted to a string, with `this` bound as for a call of the same form. The strings
@@ -98,22 +101,24 @@ arrays of its own, even for the same source.
 
 Inside the sandbox exactly these values exist:
 
-| Kind           | Representation                                                            | `typeof`     |
-| -------------- | ------------------------------------------------------------------------- | ------------ |
-| Primitives     | Host primitives: `undefined`, `null`, booleans, numbers, strings          | as in JS     |
-| Plain objects  | Host objects created by Maple or by the input copy; own properties only   | `'object'`   |
-| Arrays         | Host arrays created by Maple or by the input copy                         | `'object'`   |
-| Closures       | Maple's own function objects                                              | `'function'` |
-| Host functions | Branded wrappers; the native function is not reachable                    | `'function'` |
-| Intrinsics     | Branded wrappers, same surface as host functions                          | `'function'` |
-| Wrappers       | Branded wrappers around a native `RegExp`, `Date`, `Map`, `Set`, iterator | `'object'`   |
-| Errors         | Maple's own error objects with `name` and `message`                       | `'object'`   |
+| Kind           | Representation                                                                                  | `typeof`     |
+| -------------- | ----------------------------------------------------------------------------------------------- | ------------ |
+| Primitives     | Host primitives: `undefined`, `null`, booleans, numbers, strings                                | as in JS     |
+| Plain objects  | Host objects created by Maple or by the input copy; own properties only                         | `'object'`   |
+| Arrays         | Host arrays created by Maple or by the input copy                                               | `'object'`   |
+| Closures       | Maple's own function objects                                                                    | `'function'` |
+| Host functions | Branded wrappers; the native function is not reachable                                          | `'function'` |
+| Intrinsics     | Branded wrappers, same surface as host functions                                                | `'function'` |
+| Wrappers       | Branded wrappers around a native `RegExp`, `Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, iterator | `'object'`   |
+| Errors         | Maple's own error objects with `name` and `message`                                             | `'object'`   |
 
 Wrappers are instances of Maple's own classes, which a script cannot construct, so a plain object
 can never pose as one. The native value inside is never exposed; every method goes through a
-dispatch table. A wrapper has no own properties except the few listed with its type (`size`, the
-RegExp flags and `lastIndex`), plus the ones the script adds, which are kept apart from the native
-value.
+dispatch table. A wrapper's only own property is a RegExp's `lastIndex`, plus the ones the script
+adds, which are kept apart from the native value. `size` and the RegExp flags and `source` are
+properties of the type, as JavaScript keeps them on the prototype: every value answers to them and
+`in` finds them, but `Object.hasOwn` and `Object.getOwnPropertyNames` leave them out, and deleting
+one changes nothing.
 
 ## Methods
 

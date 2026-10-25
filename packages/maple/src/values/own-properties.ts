@@ -13,10 +13,25 @@ export interface AddedProperty {
   configurable: boolean;
 }
 
-/** What `seal` or `freeze` took from a fixed property of this value. */
+/**
+ * What happened to a fixed property on this one value, where it departs from what its kind gives
+ * it:
+ *
+ * - `seal` or `freeze` took `writable` or `configurable` away;
+ * - `delete` removed it, as in `delete fn.name`;
+ * - The script wrote a property that keeps no value of its own, as in `Math.max = fn`.
+ */
 export interface FixedChange {
   writable?: false;
   configurable?: false;
+  /**
+   * `delete` removed it. A read then finds what the script added under the key afterwards, or
+   * otherwise what JavaScript inherits from the prototype, such as `''` for a function's
+   * `name`.
+   */
+  deleted?: true;
+  /** What the script wrote, for a writable fixed property without a `set`, such as `Math.max`. */
+  replaced?: { readonly value: unknown };
 }
 
 /**

@@ -56,6 +56,18 @@ describe('Map', () => {
     expect(run(`${setup} const [[k]] = m; return k;`)).toBe('b');
   });
 
+  it('reads each entry like entry[0] and entry[1], so any object is a pair', () => {
+    expect(run('return new Map([{ 0: "a", 1: 1 }]).get("a");')).toBe(1);
+    expect(run('return new Map([{}]).get(undefined);')).toBeUndefined();
+    expect(run('return new Map([{}]).has(undefined);')).toBe(true);
+    expect(
+      run('const pair = new Set(); pair[0] = "k"; pair[1] = 7; return new Map([pair]).get("k");')
+    ).toBe(7);
+    expect(run('try { new Map([1]); } catch (e) { return e.message; }')).toBe(
+      'Iterator value 1 is not an entry object'
+    );
+  });
+
   it('forEach calls its callback with the thisArg as this', () => {
     expect(
       run(
@@ -75,7 +87,7 @@ describe('Map', () => {
     expect(run('return new Map().forEach.length;')).toBe(1);
   });
 
-  it('has no own properties besides size but takes the ones a script adds', () => {
+  it('has no own properties but takes the ones a script adds', () => {
     expect(run('return ["size" in new Map(), "get" in new Map()];')).toEqual([true, true]);
     expect(run('return new Map().foo;')).toBeUndefined();
     expect(run('return Object.keys(new Map([[1, 2]]));')).toEqual([]);
@@ -92,6 +104,18 @@ describe('Map', () => {
     );
     expect(run('return new Map() + "";')).toBe('[object Map]');
     expect(run('return JSON.stringify(new Map([[1, 2]]));')).toBe('{}');
+  });
+
+  it('answers to size without having it as its own, as JavaScript keeps it on the prototype', () => {
+    expect(run('return Object.hasOwn(new Map(), "size");')).toBe(false);
+    expect(run('return Object.getOwnPropertyNames(new Map([[1, 2]]));')).toEqual([]);
+    expect(run('const m = new Map([[1, 2]]); return [delete m.size, m.size];')).toEqual([true, 1]);
+    expect(run('const m = new Map(); Object.freeze(m); return Object.isFrozen(m);')).toBe(true);
+    expect(run('const s = new Set([1]); return [Object.hasOwn(s, "size"), "size" in s];')).toEqual([
+      false,
+      true
+    ]);
+    expect(run('const s = new Set([1]); return [delete s.size, s.size];')).toEqual([true, 1]);
   });
 
   it('crosses the boundary as a native Map and is read-only from frozen input', () => {

@@ -11,6 +11,7 @@ globals), the arguments of a host function, its return value, and the result of 
 | Sandbox error                  | –                  | plain object       | –                    | plain object    |
 | Function                       | host function      | `undefined`        | `INTERNAL_ERROR`     | `undefined`     |
 | Iterator                       | –                  | `TypeError`        | –                    | `undefined`     |
+| `WeakMap`, `WeakSet`           | `TypeError` before | `TypeError`        | `INTERNAL_ERROR`     | `undefined`     |
 | Anything else                  | `TypeError` before | –                  | `INTERNAL_ERROR`     | –               |
 | Value reached twice            | shared             | shared             | shared               | shared          |
 | Cycle                          | kept               | `TypeError`        | kept                 | kept            |
@@ -131,8 +132,10 @@ safe to pass to `JSON.stringify`. `undefined` at the top level is returned as `u
 
 A sandbox error becomes a plain object with `name`, `message` and `stack`, and with `properties`
 holding what the script added to it, absent when it added nothing. An error with an own `cause`
-carries it as `cause`. `name` and `message` arrive as strings, as `toString()` reads them. The
-properties a script added to a wrapper stay behind, since a native `Date` or `Map` takes its place.
+carries it as `cause`. `name`, `message` and `stack` arrive as strings, as the script left them: a
+deleted `stack` arrives as `''`, and one the script deleted and assigned again arrives in its own
+field, not in `properties`. The properties a script added to a wrapper stay behind, since a native
+`Date` or `Map` takes its place.
 
 A result nested deeper than 1000 levels ends the run with `RUNTIME_ERROR` and a `RangeError`
 without a position, since the program has already finished. In a nested run, the intrinsic receives

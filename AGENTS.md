@@ -57,6 +57,8 @@ oxlint and oxfmt enforce most of the style. Fix what they report; don't silence 
   `expect(followsJavaScript(code)).toEqual({ maple, jsInterpreter })`, and what Maple rejects as
   `expect(rejected(code)).toBe(code)`. Both assert all three engines; add the reason to the README. A divergence where
   Maple follows JavaScript needs no discussion; one where Maple departs from it does.
+- Node runs in the test process, last in every helper. A case that changes a built-in (`Math.max = ...`) restores it in a
+  `finally` with its original descriptor.
 - `@netwin/maple` maps to `packages/maple/src/index.ts` through tsconfig `paths`, which Vitest reads too.
 
 ## Conventions

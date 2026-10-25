@@ -12,7 +12,7 @@ data key of the same name shadows them:
 `undefined`, `NaN`, `Infinity`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`,
 `encodeURIComponent`, `decodeURIComponent`, `encodeURI`, `decodeURI`, `escape`, `unescape`,
 `String`, `Number`, `Boolean`, `Array`, `Object`, `Math`, `JSON`, `Date`, `RegExp`, `Map`, `Set`,
-`Iterator`, `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError`,
+`WeakMap`, `WeakSet`, `Iterator`, `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError`,
 `EvalError`, `atob`, `btoa`.
 
 `atob` and `btoa` are web APIs rather than ECMAScript, provided because Node, browsers and workers
@@ -134,6 +134,16 @@ Set: `add`, `has`, `delete`, `clear`, `forEach`, `size`, `keys`, `values`, `entr
 The set algebra takes a Set or a Map as the other operand. JavaScript's other set-like objects are
 refused with a `TypeError`, so the host never calls a script `has` or `keys`.
 
+## WeakMap and WeakSet
+
+WeakMap: `get`, `set`, `has`, `delete`.
+
+WeakSet: `add`, `has`, `delete`.
+
+Any object can be a key or an entry, functions and built-ins included. Scripts have no symbols, so
+nothing else can. A WeakMap or WeakSet never comes in with the input and leaves a run as
+`undefined` ([Boundary](boundary.md)).
+
 ## Iterators
 
 `keys`, `values` and `entries` of arrays, Maps and Sets, and `matchAll`, return iterators with
@@ -165,6 +175,10 @@ on the right-hand side of `instanceof`, and it adds no frame to `stack`.
 `Error`, `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError`, `URIError` and `EvalError`,
 with or without `new`. Errors Maple raises itself are the same kind of object, so a script can
 catch and inspect them.
+
+`name`, `message` and `stack` can be deleted. Deleting `message` leaves `''` and deleting `name`
+leaves the constructor's name, as the prototype has them in JavaScript; deleting `stack` leaves
+nothing. Assigning one of them afterwards adds an own property, which `Object.keys` lists.
 
 `stack` is read-only and fixed when the error is created. It lists the script's own frames and
 nothing of the host, innermost first:
