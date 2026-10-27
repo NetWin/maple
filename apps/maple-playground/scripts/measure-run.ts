@@ -70,6 +70,7 @@ async function main(options: Options): Promise<void> {
   const shared = options.astCache ? new Maple({ ...LIMITS, astCache: true }) : undefined;
   const engines: Array<[string, () => string]> = [
     ['Maple', (): string => runMaple(options, shared)],
+    ['Node', (): string => runNode(options.code, options.context)],
     ['js-interpreter', (): string => runJsInterpreter(options.code, options.context)]
   ];
   const outcomes: Array<Outcome> = [];
@@ -84,6 +85,13 @@ async function main(options: Options): Promise<void> {
 function runMaple({ code, context }: Options, shared: Maple | undefined): string {
   const maple = shared ?? new Maple(LIMITS);
   return JSON.stringify(maple.run(code, context).value) ?? 'undefined';
+}
+
+export function runNode(code: string, data: Record<string, unknown> = {}, strict = true): string {
+  const keys = Object.keys(data);
+  // oxlint-disable-next-line typescript/no-implied-eval -- the host is the reference engine here
+  const run = new Function(...keys, `${strict ? "'use strict';\n" : ''}${code}`);
+  return String(run(...keys.map((key) => data[key])));
 }
 
 async function measure(
@@ -173,9 +181,14 @@ function print(
     };
   });
   console.table(rows);
-  const [maple, jsInterpreter] = outcomes;
+  const [maple, node, jsInterpreter] = outcomes;
   if (maple && jsInterpreter && 'durations' in maple && 'durations' in jsInterpreter) {
-    console.log(`\n${comparison(median(maple.durations), median(jsInterpreter.durations))}`);
+    console.log(
+      `\n${jsInterpreterComparison(median(maple.durations), median(jsInterpreter.durations))}`
+    );
+  }
+  if (maple && node && 'durations' in maple && 'durations' in node) {
+    console.log(`\n${nodeComparison(median(maple.durations), median(node.durations))}`);
   }
   const values = outcomes.flatMap((outcome) => ('value' in outcome ? [outcome.value] : []));
   if (values.length === 2 && values[0] !== values[1]) {
@@ -187,19 +200,30 @@ function print(
     }
   }
 
+  const lines = code.split('\n');
   console.log(
-    `\nCode:\n\n  ${code.split('\n').join('\n  ').slice(0, 200)}${code.length > 200 ? '...' : ''}`
+    `\nCode (${lines.length} lines):\n\n  ${lines.join('\n  ').slice(0, 200)}${code.length > 200 ? '...' : ''}`
   );
 }
 
 /** How Maple's median time compares with js-interpreter's, phrased so the factor is at least 1. */
-function comparison(maple: number, jsInterpreter: number): string {
+function jsInterpreterComparison(maple: number, jsInterpreter: number): string {
   if (maple === jsInterpreter) {
     return 'Maple is as fast as js-interpreter (median).';
   }
   return maple < jsInterpreter
     ? `Maple is ${(jsInterpreter / maple).toFixed(2)}× faster than js-interpreter (median).`
     : `Maple is ${(maple / jsInterpreter).toFixed(2)}× slower than js-interpreter (median).`;
+}
+
+/** How Maple's median time compares with Node's, phrased so the factor is at least 1. */
+function nodeComparison(maple: number, node: number): string {
+  if (maple === node) {
+    return 'Maple is as fast as Node (median).';
+  }
+  return maple < node
+    ? `Maple is ${(node / maple).toFixed(2)}× faster than Node (median).`
+    : `Maple is ${(maple / node).toFixed(2)}× slower than Node (median).`;
 }
 
 function median(values: ReadonlyArray<number>): number {
