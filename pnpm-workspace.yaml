@@ -11,3 +11,5 @@ allowBuilds:
 
 minimumReleaseAge: 10080
 autoDedupe: true
+trustPolicyExcludePrune: true
+minimumReleaseAgeExcludePrune: true
