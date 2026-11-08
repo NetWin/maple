@@ -1,3 +1,23 @@
+## [0.7.0](https://github.com/NetWin/maple/compare/0.6.0...0.7.0) (2026-11-08)
+
+### 🚀 Features
+
+* **build:** export maple as cjs as well ([b624ca5](https://github.com/NetWin/maple/commit/b624ca5ccef430c916c557361bc0afacc11f17f3))
+
+### 🧪 Tests
+
+* add node comparison to measure-run script ([a2e4068](https://github.com/NetWin/maple/commit/a2e4068b55262b170935010ecb7cbcb82dfedb5a))
+
+### 🏗 Dependency Updates
+
+* **deps:** remove minimumReleaseAgeExclude from pnpm-workspace ([eb38290](https://github.com/NetWin/maple/commit/eb38290445f7ad176db8c05d1ceed594579d4a2e))
+* **deps:** update dependencies ([91f2fd1](https://github.com/NetWin/maple/commit/91f2fd1ecdb5519a7a4e37bb14f7545b360f9f71))
+* **deps:** update dependencies ([fdbb85b](https://github.com/NetWin/maple/commit/fdbb85b0c29d3b48461137dfd29fcb81d69cc0a5))
+
+### 📦 Build System
+
+* **pnpm:** update pnpm workspace configuration ([bd6919e](https://github.com/NetWin/maple/commit/bd6919ea0ebcb26a00fd33fe1e19e6119d867f73))
+
 ## [0.6.0](https://github.com/NetWin/maple/compare/0.5.1...0.6.0) (2026-10-25)
 
 ### 🚀 Features
