@@ -22,7 +22,7 @@ untrusted code in a worker you can terminate if you need that.
 pnpm add @netwin/maple acorn
 ```
 
-Maple ships as ESM only and requires Node >= 22, or any modern browser or web worker.
+Maple requires Node >= 22, or any modern browser or web worker.
 
 ## Usage
 
