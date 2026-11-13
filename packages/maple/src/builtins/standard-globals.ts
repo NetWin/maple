@@ -1,5 +1,3 @@
-import { toNumber, toString } from '../values/coercion.ts';
-import { guardHostErrors, NativeFunction } from '../values/native.ts';
 import { ARRAY_BUILTIN } from './array/array.ts';
 import { BOOLEAN_BUILTIN } from './boolean/boolean.ts';
 import { DATE_BUILTIN } from './date/date.ts';
@@ -12,6 +10,14 @@ import {
   TYPE_ERROR_BUILTIN,
   URI_ERROR_BUILTIN
 } from './error/error.ts';
+import { GLOBAL_ATOB } from './global/atob.ts';
+import { GLOBAL_BTOA } from './global/btoa.ts';
+import { GLOBAL_DECODE_URI_COMPONENT } from './global/decode-uri-component.ts';
+import { GLOBAL_DECODE_URI } from './global/decode-uri.ts';
+import { GLOBAL_ENCODE_URI_COMPONENT } from './global/encode-uri-component.ts';
+import { GLOBAL_ENCODE_URI } from './global/encode-uri.ts';
+import { GLOBAL_IS_FINITE } from './global/is-finite.ts';
+import { GLOBAL_IS_NAN } from './global/is-nan.ts';
 import { ITERATOR_BUILTIN } from './iterator/iterator.ts';
 import { JSON_BUILTIN } from './json/json.ts';
 import { GLOBAL_ESCAPE } from './legacy/escape.ts';
@@ -28,10 +34,6 @@ import { STRING_BUILTIN } from './string/string.ts';
 import { WEAK_MAP_BUILTIN } from './weak-map/weak-map.ts';
 import { WEAK_SET_BUILTIN } from './weak-set/weak-set.ts';
 
-// The library is typechecked without host libs; these web APIs exist in Node, browsers and workers
-declare const atob: (data: string) => string;
-declare const btoa: (data: string) => string;
-
 /** Always present below the host's layers, so a global of the same name shadows them. */
 export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze({
   undefined,
@@ -39,24 +41,16 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   Infinity: Number.POSITIVE_INFINITY,
   parseInt: NUMBER_STATIC_PARSE_INT,
   parseFloat: NUMBER_STATIC_PARSE_FLOAT,
-  isNaN: new NativeFunction(
-    'isNaN',
-    () => isNaN.length,
-    (_, [value]) => Number.isNaN(toNumber(value))
-  ),
-  isFinite: new NativeFunction(
-    'isFinite',
-    () => isFinite.length,
-    (_, [value]) => Number.isFinite(toNumber(value))
-  ),
-  encodeURIComponent: uriFunction('encodeURIComponent', encodeURIComponent),
-  decodeURIComponent: uriFunction('decodeURIComponent', decodeURIComponent),
-  encodeURI: uriFunction('encodeURI', encodeURI),
-  decodeURI: uriFunction('decodeURI', decodeURI),
+  isNaN: GLOBAL_IS_NAN,
+  isFinite: GLOBAL_IS_FINITE,
+  encodeURIComponent: GLOBAL_ENCODE_URI_COMPONENT,
+  decodeURIComponent: GLOBAL_DECODE_URI_COMPONENT,
+  encodeURI: GLOBAL_ENCODE_URI,
+  decodeURI: GLOBAL_DECODE_URI,
   escape: GLOBAL_ESCAPE,
   unescape: GLOBAL_UNESCAPE,
-  atob: base64Function('atob', atob),
-  btoa: base64Function('btoa', btoa),
+  atob: GLOBAL_ATOB,
+  btoa: GLOBAL_BTOA,
   String: STRING_BUILTIN,
   Number: NUMBER_BUILTIN,
   Boolean: BOOLEAN_BUILTIN,
@@ -79,33 +73,3 @@ export const STANDARD_GLOBALS: Readonly<Record<string, unknown>> = Object.freeze
   WeakSet: WEAK_SET_BUILTIN,
   Iterator: ITERATOR_BUILTIN
 });
-
-/**
- * `atob` and `btoa` throw a `DOMException` for input outside their alphabet, which becomes a
- * catchable error under the host's name, `InvalidCharacterError`.
- */
-function base64Function(name: string, host: (text: string) => string): NativeFunction {
-  return new NativeFunction(
-    name,
-    () => host.length,
-    (_, [text], { fail }) => {
-      try {
-        return host(toString(text));
-      } catch (error) {
-        if (error instanceof Error) {
-          return fail(error.name, error.message);
-        }
-        throw error;
-      }
-    }
-  );
-}
-
-/** The URI functions throw `URIError` on malformed input, which the script may catch. */
-function uriFunction(name: string, host: (text: string) => string): NativeFunction {
-  return new NativeFunction(
-    name,
-    () => host.length,
-    (_, [text], { fail }) => guardHostErrors(fail, () => host(toString(text)))
-  );
-}

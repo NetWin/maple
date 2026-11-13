@@ -142,6 +142,21 @@ export function guardIntlErrors<T>(fail: Fail, run: () => T): T {
   }
 }
 
+/**
+ * Runs `atob` or `btoa`, which throw a `DOMException` for input outside their alphabet, and turns
+ * it into a catchable error under the host's name, `InvalidCharacterError`.
+ */
+export function guardBase64Errors<T>(fail: Fail, run: () => T): T {
+  try {
+    return run();
+  } catch (error) {
+    if (error instanceof Error) {
+      return fail(error.name, error.message);
+    }
+    throw error;
+  }
+}
+
 // Engines report an exhausted stack only through the message, as a RangeError in V8 and JSC
 function isStackOverflow(error: RangeError): boolean {
   return /call stack/i.test(error.message);
