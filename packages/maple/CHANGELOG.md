@@ -1,3 +1,18 @@
+## [0.7.1](https://github.com/NetWin/maple/compare/0.7.0...0.7.1) (2026-11-13)
+
+### 🩹 Bug Fixes
+
+* **builtins:** look up toSpliced only when a script calls it ([392d32d](https://github.com/NetWin/maple/commit/392d32dd0498a9e39525786e098c124833241652))
+* **builtins:** read host arities lazily so maple loads on hosts without newer built-ins ([6396e67](https://github.com/NetWin/maple/commit/6396e67f3649225fdf5c7249857d62e84235bac1))
+
+### 🛠️ Code Refactoring
+
+* **builtins:** move the global functions into their own files ([7be0949](https://github.com/NetWin/maple/commit/7be09495c45a9d084b7287b60dc8e7cba07a983f))
+
+### 🧪 Tests
+
+* cover runs that use missing built-ins in the host support spec ([2071d38](https://github.com/NetWin/maple/commit/2071d38fee5ef970011a01025e213a49e3d12ebb))
+
 ## [0.7.0](https://github.com/NetWin/maple/compare/0.6.0...0.7.0) (2026-11-08)
 
 ### 🚀 Features
