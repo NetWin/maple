@@ -10,7 +10,7 @@ const toSplicedWithItems: (
 ) => Array<unknown> = Array.prototype.toSpliced;
 
 export const ARRAY_METHOD_TO_SPLICED: Method<Array<unknown>> = method(
-  Array.prototype.toSpliced.length,
+  () => Array.prototype.toSpliced.length,
   (a, args) => {
     return splice(a, args, (start, count, items) => {
       return count === undefined

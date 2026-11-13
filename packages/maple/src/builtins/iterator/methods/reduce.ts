@@ -5,7 +5,7 @@ import { iteratorCallback } from '../utils/iterator-callback.ts';
 
 /** In-house, so an empty iterator without a start value is a catchable `TypeError`. */
 export const ITERATOR_METHOD_REDUCE: Method<IteratorWrapper> = method(
-  Iterator.prototype.reduce.length,
+  () => Iterator.prototype.reduce.length,
   (iter, args, context) => {
     const call = iteratorCallback(args[0], iter, context);
     let index = 0;

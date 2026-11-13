@@ -9,7 +9,7 @@ import { asObjectCoercibleOrThrow } from '../../object/utils/as-object-coercible
  */
 export const STRING_STATIC_RAW: NativeFunction = new NativeFunction(
   'raw',
-  String.raw.length,
+  () => String.raw.length,
   (_, [template, ...substitutions], context) => {
     const { fail } = context;
     const cooked = asObjectCoercibleOrThrow(template, fail);

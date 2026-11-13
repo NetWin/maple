@@ -3,6 +3,6 @@ import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 import { setter } from '../utils/setter.ts';
 
 export const DATE_METHOD_SET_UTC_DATE: Method<DateWrapper> = method(
-  Date.prototype.setUTCDate.length,
+  () => Date.prototype.setUTCDate.length,
   setter('setUTCDate', (date) => date.setUTCDate.bind(date))
 );

@@ -5,6 +5,6 @@ import { matchToSandbox } from '../utils/match-to-sandbox.ts';
 import { matcherOf } from '../utils/matcher-of.ts';
 
 export const REGEXP_METHOD_EXEC: Method<RegExpWrapper> = method(
-  RegExp.prototype.exec.length,
+  () => RegExp.prototype.exec.length,
   (r, [text], context) => matchToSandbox(matcherOf(r, context).exec(toString(text)))
 );

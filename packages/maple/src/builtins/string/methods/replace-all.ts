@@ -5,7 +5,7 @@ import { matcherOf } from '../../regexp/utils/matcher-of.ts';
 
 /** A function replacement runs as a script callback; a string one uses the host's `$` patterns. */
 export const STRING_METHOD_REPLACE_ALL: Method<string> = method(
-  String.prototype.replaceAll.length,
+  () => String.prototype.replaceAll.length,
   (s, [pattern, replacement], context) => {
     if (pattern instanceof RegExpWrapper && !pattern.regexp.global) {
       return context.fail('TypeError', 'replaceAll must be called with a global RegExp');

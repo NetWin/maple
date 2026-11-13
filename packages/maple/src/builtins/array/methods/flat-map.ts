@@ -4,7 +4,7 @@ import { presentEntries } from '../utils/entries.ts';
 import { flattenInto } from '../utils/flatten-into.ts';
 
 export const ARRAY_METHOD_FLAT_MAP: Method<Array<unknown>> = method(
-  Array.prototype.flatMap.length,
+  () => Array.prototype.flatMap.length,
   (a, [fn, thisArg], context) => {
     const call = arrayCallback(fn, context, thisArg);
     const result: Array<unknown> = [];

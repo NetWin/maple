@@ -3,6 +3,6 @@ import type { MapWrapper } from '../../../values/wrappers/map-wrapper.ts';
 import { asMutableOrThrow } from '../../../values/wrappers/wrapper.ts';
 
 export const MAP_METHOD_DELETE: Method<MapWrapper> = method(
-  Map.prototype.delete.length,
+  () => Map.prototype.delete.length,
   (m, [key], { fail }) => asMutableOrThrow(m, fail, 'delete').map.delete(key)
 );

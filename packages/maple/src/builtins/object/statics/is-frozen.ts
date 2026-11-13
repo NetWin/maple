@@ -8,7 +8,7 @@ import { SandboxObject } from '../../../values/sandbox-object.ts';
  */
 export const OBJECT_STATIC_IS_FROZEN: NativeFunction = new NativeFunction(
   'isFrozen',
-  Object.isFrozen.length,
+  () => Object.isFrozen.length,
   (_, [target], { runState }) => {
     if (Array.isArray(target) || isPlainObject(target)) {
       return Object.isFrozen(target);

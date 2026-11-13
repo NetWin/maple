@@ -3,7 +3,7 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const OBJECT_STATIC_ASSIGN: NativeFunction = new NativeFunction(
   'assign',
-  Object.assign.length,
+  () => Object.assign.length,
   (_, [target, ...sources], context) => {
     if (typeof target !== 'object' || target === null) {
       return context.fail('TypeError', 'Object.assign needs an object as its target');

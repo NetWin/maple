@@ -6,7 +6,7 @@ import { REGEXP_PROTOTYPE } from './regexp-prototype.ts';
 
 export const REGEXP_BUILTIN: Builtin = new Builtin({
   name: 'RegExp',
-  length: RegExp.length,
+  arity: () => RegExp.length,
   call: constructRegExp,
   construct: constructRegExp,
   isInstance: (value) => value instanceof RegExpWrapper,

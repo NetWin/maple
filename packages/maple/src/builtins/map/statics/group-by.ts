@@ -6,7 +6,7 @@ import { MapWrapper } from '../../../values/wrappers/map-wrapper.ts';
 /** Keys keep their identity, as in a Map built by hand. */
 export const MAP_STATIC_GROUP_BY: NativeFunction = new NativeFunction(
   'groupBy',
-  Map.groupBy.length,
+  () => Map.groupBy.length,
   (_, [items, callback], context) => {
     const iterable = asHostIterable(items);
     if (!iterable) {

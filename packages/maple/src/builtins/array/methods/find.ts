@@ -4,7 +4,7 @@ import { indexedEntries } from '../utils/entries.ts';
 import { findEntryBy } from '../utils/find-entry-by.ts';
 
 export const ARRAY_METHOD_FIND: Method<Array<unknown>> = method(
-  Array.prototype.find.length,
+  () => Array.prototype.find.length,
   (a, [fn, thisArg], context) =>
     findEntryBy(a, indexedEntries(a), arrayCallback(fn, context, thisArg), true)?.[1]
 );

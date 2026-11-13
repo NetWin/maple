@@ -6,7 +6,7 @@ export const INVALID_WEAK_MAP_KEY = 'Invalid value used as weak map key';
 
 /** A primitive key throws, as in JavaScript: `new WeakMap().set('a', 1)`. */
 export const WEAK_MAP_METHOD_SET: Method<WeakMapWrapper> = method(
-  WeakMap.prototype.set.length,
+  () => WeakMap.prototype.set.length,
   (m, [key, value], { fail }) => {
     if (!canBeHeldWeakly(key)) {
       return fail('TypeError', INVALID_WEAK_MAP_KEY);

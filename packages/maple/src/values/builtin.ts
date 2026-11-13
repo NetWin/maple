@@ -1,5 +1,5 @@
 import { FUNCTION_PLACEHOLDER, type Primitive, type PrimitiveHint } from './coercion.ts';
-import type { CallContext } from './native.ts';
+import type { Arity, CallContext } from './native.ts';
 import type { Prototype } from './prototype.ts';
 import {
   FUNCTION_PROPERTIES,
@@ -12,11 +12,8 @@ export type BuiltinCall = (args: ReadonlyArray<unknown>, context: CallContext) =
 
 export interface BuiltinOptions {
   name: string;
-  /**
-   * What JavaScript gives a callable global as `length`,
-   * read off the host's own; `Math` has none.
-   */
-  length?: number;
+  /** What JavaScript gives a callable global as `length`. */
+  arity?: Arity;
   /**
    * Static members such as `Math.max` and `Math.PI`. As in JavaScript, a method can be replaced and
    * deleted, as in `Math.max = fn`, and a constant can be neither.
@@ -39,7 +36,7 @@ export interface BuiltinOptions {
 export class Builtin extends SandboxObject {
   public readonly name: string;
 
-  public readonly length: number | undefined;
+  readonly #arity: Arity | undefined;
 
   public readonly call: BuiltinCall | undefined;
 
@@ -60,20 +57,22 @@ export class Builtin extends SandboxObject {
   constructor(options: BuiltinOptions) {
     super(true);
     this.name = options.name;
-    this.length = options.length;
+    this.#arity = options.arity;
     const members = Object.entries(options.members ?? {}).map(
       ([key, member]): [string, FixedProperty<Builtin>] => [key, memberProperty(member)]
     );
-    this.fixed = new Map([
-      ...(options.length === undefined ? [] : FUNCTION_PROPERTIES),
-      ...members
-    ]);
+    this.fixed = new Map([...(options.arity === undefined ? [] : FUNCTION_PROPERTIES), ...members]);
     this.call = options.call;
     this.construct = options.construct;
     this.isInstance = options.isInstance;
     this.prototype = options.prototype;
     this.isCallable = options.call !== undefined || options.construct !== undefined;
     this.tag = this.isCallable ? 'Function' : options.name;
+  }
+
+  /** What JavaScript gives a callable global as `length`; `undefined` for a namespace. */
+  public get length(): number | undefined {
+    return this.#arity?.();
   }
 
   /** A namespace such as `Math` is a plain object in JavaScript, so it is named `#<Object>`. */

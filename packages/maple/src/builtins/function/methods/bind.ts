@@ -1,4 +1,4 @@
-import { method, type Method, NativeFunction } from '../../../values/native.ts';
+import { type Arity, method, type Method, NativeFunction } from '../../../values/native.ts';
 import type { SandboxFunction } from '../function-prototype.ts';
 
 /**
@@ -6,16 +6,22 @@ import type { SandboxFunction } from '../function-prototype.ts';
  * properties, as host functions do.
  */
 export const FUNCTION_METHOD_BIND: Method<SandboxFunction> = method(
-  Function.prototype.bind.length,
-  (fn, [thisArg, ...boundArgs]) =>
-    new NativeFunction(
+  () => Function.prototype.bind.length,
+  (fn, [thisArg, ...boundArgs]) => {
+    const targetLength = fn.length;
+    const arity: Arity | undefined =
+      targetLength === undefined
+        ? undefined
+        : (): number => Math.max(0, targetLength - boundArgs.length);
+    return new NativeFunction(
       `bound ${fn.name}`,
-      fn.length === undefined ? undefined : Math.max(0, fn.length - boundArgs.length),
+      arity,
       (_, args, context) => {
         // Copying the bound arguments into each call costs one operation apiece
         context.charge(boundArgs.length);
         return context.call(thisArg, fn, [...boundArgs, ...args]);
       },
       false
-    )
+    );
+  }
 );

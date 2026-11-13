@@ -4,7 +4,7 @@ import { method, type Method } from '../../../values/native.ts';
 
 /** A missing length stays missing, since `NaN` would mean an empty result. */
 export const STRING_METHOD_SUBSTR: Method<string> = method(
-  String.prototype.substr.length,
+  () => String.prototype.substr.length,
   (s, [start, length]) =>
     s.substr(toNumber(start), length === undefined ? undefined : toNumber(length))
 );

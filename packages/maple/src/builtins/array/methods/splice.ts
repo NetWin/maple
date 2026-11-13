@@ -6,7 +6,7 @@ import { splice } from '../utils/splice.ts';
 const spliceToEnd: (this: Array<unknown>, start: number) => Array<unknown> = Array.prototype.splice;
 
 export const ARRAY_METHOD_SPLICE: Method<Array<unknown>> = method(
-  Array.prototype.splice.length,
+  () => Array.prototype.splice.length,
   (a, args, context) => {
     return splice(a, args, (start, count, items) => {
       return guardIntegrityErrors(context.fail, a, () =>

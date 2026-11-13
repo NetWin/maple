@@ -6,7 +6,7 @@ import { toRegExp } from '../../regexp/utils/to-regexp.ts';
 
 /** The host matches on a copy of a regexp, so the wrapper's own is never written to. */
 export const STRING_METHOD_MATCH_ALL: Method<string> = method(
-  String.prototype.matchAll.length,
+  () => String.prototype.matchAll.length,
   (s, [pattern], context) => {
     const regexp =
       pattern instanceof RegExpWrapper ? pattern.regexp : toRegExp(pattern, 'g', context);

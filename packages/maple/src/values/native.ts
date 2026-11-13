@@ -37,6 +37,12 @@ export type NativeImplementation = (
 ) => unknown;
 
 /**
+ * The `length` JavaScript gives a built-in, read off the host's own function
+ * only when a script asks for it.
+ */
+export type Arity = () => number;
+
+/**
  * A built-in or host function as a value, such as `Math.max`, `trim` read off a string, or a
  * function from `globals`. A built-in shows its `name` and `length` to the script; a host
  * function has an `undefined` length and shows no properties at all, since its name and arity
@@ -46,8 +52,7 @@ export type NativeImplementation = (
 export class NativeFunction extends SandboxObject {
   public readonly name: string;
 
-  /** What JavaScript gives the built-in as `length`, read off the host's own function. */
-  public readonly length: number | undefined;
+  readonly #arity: Arity | undefined;
 
   public readonly invoke: NativeImplementation;
 
@@ -59,15 +64,20 @@ export class NativeFunction extends SandboxObject {
 
   constructor(
     name: string,
-    length: number | undefined,
+    arity: Arity | undefined,
     invoke: NativeImplementation,
     isShared: boolean = true
   ) {
     super(isShared);
     this.name = name;
-    this.length = length;
+    this.#arity = arity;
     this.invoke = invoke;
-    this.fixed = length === undefined ? NO_FIXED_PROPERTIES : FUNCTION_PROPERTIES;
+    this.fixed = arity === undefined ? NO_FIXED_PROPERTIES : FUNCTION_PROPERTIES;
+  }
+
+  /** What JavaScript gives the built-in as `length`; `undefined` for a host function. */
+  public get length(): number | undefined {
+    return this.#arity?.();
   }
 
   public override toPrimitive(): Primitive {
@@ -83,13 +93,13 @@ export type MethodCall<Receiver> = (
 
 /** A dispatch-table entry: a method of one receiver type and the `length` JavaScript gives it. */
 export interface Method<Receiver> {
-  readonly length: number;
+  readonly arity: Arity;
   readonly call: MethodCall<Receiver>;
 }
 
-/** Writes a dispatch-table entry, as `method(String.prototype.trim.length, (s) => s.trim())`. */
-export function method<Receiver>(length: number, call: MethodCall<Receiver>): Method<Receiver> {
-  return { length, call };
+/** Writes a dispatch-table entry, as `method(() => String.prototype.trim.length, (s) => s.trim())`. */
+export function method<Receiver>(arity: Arity, call: MethodCall<Receiver>): Method<Receiver> {
+  return { arity, call };
 }
 
 export function isCallable(value: unknown): boolean {

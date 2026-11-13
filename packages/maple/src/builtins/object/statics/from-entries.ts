@@ -8,7 +8,7 @@ import { getMember } from '../../method-dispatch.ts';
 /** Each entry is read like `entry[0]` and `entry[1]` would be, so any array-like pair works. */
 export const OBJECT_STATIC_FROM_ENTRIES: NativeFunction = new NativeFunction(
   'fromEntries',
-  Object.fromEntries.length,
+  () => Object.fromEntries.length,
   (_, [iterable], context) => {
     const fail = context.fail;
     const iterator = iterate(iterable);

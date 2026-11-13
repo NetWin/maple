@@ -4,7 +4,7 @@ import { guardIntlErrors, method, type Method } from '../../../values/native.ts'
 import { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 
 export const ARRAY_METHOD_TO_LOCALE_STRING: Method<Array<unknown>> = method(
-  Array.prototype.toLocaleString.length,
+  () => Array.prototype.toLocaleString.length,
   (a, [locales, options], { fail }) => {
     const tags = localesArgument(locales);
     const intlOptions = intlOptionsArgument(options);
