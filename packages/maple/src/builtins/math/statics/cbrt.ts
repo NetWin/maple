@@ -3,6 +3,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const MATH_STATIC_CBRT: NativeFunction = new NativeFunction(
   'cbrt',
-  Math.cbrt.length,
+  () => Math.cbrt.length,
   (_, [x]) => Math.cbrt(toNumber(x))
 );

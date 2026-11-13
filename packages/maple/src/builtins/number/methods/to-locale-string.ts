@@ -2,7 +2,7 @@ import { intlOptionsArgument, localesArgument } from '../../../values/arguments.
 import { guardIntlErrors, method, type Method } from '../../../values/native.ts';
 
 export const NUMBER_METHOD_TO_LOCALE_STRING: Method<number> = method(
-  Number.prototype.toLocaleString.length,
+  () => Number.prototype.toLocaleString.length,
   (n, [locales, options], { fail }) => {
     const tags = localesArgument(locales);
     const intlOptions = intlOptionsArgument(options);

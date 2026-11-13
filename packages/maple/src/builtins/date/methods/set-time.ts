@@ -3,6 +3,6 @@ import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 import { setter } from '../utils/setter.ts';
 
 export const DATE_METHOD_SET_TIME: Method<DateWrapper> = method(
-  Date.prototype.setTime.length,
+  () => Date.prototype.setTime.length,
   setter('setTime', (date) => date.setTime.bind(date))
 );

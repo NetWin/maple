@@ -3,7 +3,7 @@ import { SetWrapper } from '../../../values/wrappers/set-wrapper.ts';
 import { asSetLikeOrThrow } from '../utils/as-set-like-or-throw.ts';
 
 export const SET_METHOD_DIFFERENCE: Method<SetWrapper> = method(
-  Set.prototype.difference.length,
+  () => Set.prototype.difference.length,
   (s, [other], { fail }) =>
     new SetWrapper(s.set.difference(asSetLikeOrThrow(other, fail, 'difference')))
 );

@@ -3,7 +3,7 @@ import { guardIntlErrors, type Method, method } from '../../../values/native.ts'
 import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 
 export const DATE_METHOD_TO_LOCALE_TIME_STRING: Method<DateWrapper> = method(
-  Date.prototype.toLocaleTimeString.length,
+  () => Date.prototype.toLocaleTimeString.length,
   (d, [locales, options], { fail }) => {
     const tags = localesArgument(locales);
     const intlOptions = intlOptionsArgument(options);

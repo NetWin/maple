@@ -8,7 +8,7 @@ import { SandboxObject } from '../../../values/sandbox-object.ts';
  */
 export const OBJECT_STATIC_SEAL: NativeFunction = new NativeFunction(
   'seal',
-  Object.seal.length,
+  () => Object.seal.length,
   (_, [target], { runState }) => {
     if (Array.isArray(target) || isPlainObject(target)) {
       Object.seal(target);

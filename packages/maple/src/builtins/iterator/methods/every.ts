@@ -5,7 +5,7 @@ import { helpers } from '../utils/helpers.ts';
 import { iteratorCallback } from '../utils/iterator-callback.ts';
 
 export const ITERATOR_METHOD_EVERY: Method<IteratorWrapper> = method(
-  Iterator.prototype.every.length,
+  () => Iterator.prototype.every.length,
   (i, [fn], context) => {
     const call = iteratorCallback(fn, i, context);
     return helpers(i).every((value, index) => toBoolean(call(value, index)));

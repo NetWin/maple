@@ -3,6 +3,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const MATH_STATIC_ATANH: NativeFunction = new NativeFunction(
   'atanh',
-  Math.atanh.length,
+  () => Math.atanh.length,
   (_, [x]) => Math.atanh(toNumber(x))
 );

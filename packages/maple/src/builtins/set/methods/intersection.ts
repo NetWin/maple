@@ -3,7 +3,7 @@ import { SetWrapper } from '../../../values/wrappers/set-wrapper.ts';
 import { asSetLikeOrThrow } from '../utils/as-set-like-or-throw.ts';
 
 export const SET_METHOD_INTERSECTION: Method<SetWrapper> = method(
-  Set.prototype.intersection.length,
+  () => Set.prototype.intersection.length,
   (s, [other], { fail }) =>
     new SetWrapper(s.set.intersection(asSetLikeOrThrow(other, fail, 'intersection')))
 );

@@ -4,7 +4,7 @@ import { indexedEntriesFromEnd } from '../utils/entries.ts';
 import { findEntryBy } from '../utils/find-entry-by.ts';
 
 export const ARRAY_METHOD_FIND_LAST: Method<Array<unknown>> = method(
-  Array.prototype.findLast.length,
+  () => Array.prototype.findLast.length,
   (a, [fn, thisArg], context) =>
     findEntryBy(a, indexedEntriesFromEnd(a), arrayCallback(fn, context, thisArg), true)?.[1]
 );

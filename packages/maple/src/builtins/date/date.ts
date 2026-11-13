@@ -7,7 +7,7 @@ import { dateComponents } from './utils/date-components.ts';
 
 export const DATE_BUILTIN: Builtin = new Builtin({
   name: 'Date',
-  length: Date.length,
+  arity: () => Date.length,
   call: () => new Date().toString(),
   // `new Date()`, `new Date(value)` and `new Date(year, month, ...)`, as JavaScript distinguishes them
   construct: (args) => {

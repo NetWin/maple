@@ -3,6 +3,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const MATH_STATIC_CEIL: NativeFunction = new NativeFunction(
   'ceil',
-  Math.ceil.length,
+  () => Math.ceil.length,
   (_, [x]) => Math.ceil(toNumber(x))
 );

@@ -3,6 +3,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const MATH_STATIC_TRUNC: NativeFunction = new NativeFunction(
   'trunc',
-  Math.trunc.length,
+  () => Math.trunc.length,
   (_, [x]) => Math.trunc(toNumber(x))
 );

@@ -28,7 +28,7 @@ interface Serialization {
  */
 export const JSON_STATIC_STRINGIFY: NativeFunction = new NativeFunction(
   'stringify',
-  JSON.stringify.length,
+  () => JSON.stringify.length,
   (_, [value, replacer, space], context) => {
     // The value is serialized as the property '' of a fresh object, which a replacer sees as this
     const root: Record<string, unknown> = {};

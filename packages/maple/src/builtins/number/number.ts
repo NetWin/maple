@@ -5,7 +5,7 @@ import { NUMBER_STATICS } from './number-statics.ts';
 
 export const NUMBER_BUILTIN: Builtin = new Builtin({
   name: 'Number',
-  length: Number.length,
+  arity: () => Number.length,
   call: (args) => (args.length === 0 ? 0 : toNumber(args[0])),
   members: NUMBER_STATICS,
   prototype: NUMBER_PROTOTYPE

@@ -6,7 +6,7 @@ import { OBJECT_STATICS } from './object-statics.ts';
 
 export const OBJECT_BUILTIN: Builtin = new Builtin({
   name: 'Object',
-  length: Object.length,
+  arity: () => Object.length,
   call: constructObject,
   construct: constructObject,
   isInstance: (value) => typeof value === 'object' && value !== null && !isPrototypeless(value),

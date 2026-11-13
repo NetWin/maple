@@ -4,7 +4,7 @@ import { getMember } from '../../method-dispatch.ts';
 import type { SandboxFunction } from '../function-prototype.ts';
 
 export const FUNCTION_METHOD_APPLY: Method<SandboxFunction> = method(
-  Function.prototype.apply.length,
+  () => Function.prototype.apply.length,
   (fn, [thisArg, argArray], context) => {
     const list: Array<unknown> = [];
 

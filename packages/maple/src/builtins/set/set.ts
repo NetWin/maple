@@ -6,7 +6,7 @@ import { SET_PROTOTYPE } from './set-prototype.ts';
 
 export const SET_BUILTIN: Builtin = new Builtin({
   name: 'Set',
-  length: Set.length,
+  arity: () => Set.length,
   call: (_args, { fail }) => fail('TypeError', "Constructor Set requires 'new'"),
   construct: ([iterable], context) => {
     const set = new Set<unknown>();

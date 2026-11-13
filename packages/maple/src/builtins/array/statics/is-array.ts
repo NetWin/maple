@@ -2,6 +2,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const ARRAY_STATIC_IS_ARRAY: NativeFunction = new NativeFunction(
   'isArray',
-  Array.isArray.length,
+  () => Array.isArray.length,
   (_, [value]) => Array.isArray(value)
 );

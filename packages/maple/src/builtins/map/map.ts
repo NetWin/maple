@@ -8,7 +8,7 @@ import { MAP_STATICS } from './map-statics.ts';
 
 export const MAP_BUILTIN: Builtin = new Builtin({
   name: 'Map',
-  length: Map.length,
+  arity: () => Map.length,
   call: (_args, { fail }) => fail('TypeError', "Constructor Map requires 'new'"),
   // `new Map(iterable?)`; each entry is read like `entry[0]` and `entry[1]`, so any object works
   // as a pair
