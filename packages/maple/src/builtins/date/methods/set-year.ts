@@ -8,7 +8,7 @@ import { asMutableOrThrow } from '../../../values/wrappers/wrapper.ts';
  * invalid date starts over from local midnight on 1 January, as `setFullYear` does.
  */
 export const DATE_METHOD_SET_YEAR: Method<DateWrapper> = method(
-  1 /* Annex B, not in TypeScript's lib */,
+  () => 1 /* Annex B, not in TypeScript's lib */,
   (d, [year], { fail }) => {
     const date = asMutableOrThrow(d, fail, 'setYear').date;
     const value = toNumber(year);

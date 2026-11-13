@@ -6,7 +6,7 @@ export const INVALID_WEAK_SET_VALUE = 'Invalid value used in weak set';
 
 /** A primitive throws, as in JavaScript: `new WeakSet().add('a')`. */
 export const WEAK_SET_METHOD_ADD: Method<WeakSetWrapper> = method(
-  WeakSet.prototype.add.length,
+  () => WeakSet.prototype.add.length,
   (s, [value], { fail }) => {
     if (!canBeHeldWeakly(value)) {
       return fail('TypeError', INVALID_WEAK_SET_VALUE);

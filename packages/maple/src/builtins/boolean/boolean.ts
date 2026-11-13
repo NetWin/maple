@@ -4,7 +4,7 @@ import { BOOLEAN_PROTOTYPE } from './boolean-prototype.ts';
 
 export const BOOLEAN_BUILTIN: Builtin = new Builtin({
   name: 'Boolean',
-  length: Boolean.length,
+  arity: () => Boolean.length,
   call: ([value]) => toBoolean(value),
   prototype: BOOLEAN_PROTOTYPE
 });

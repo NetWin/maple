@@ -5,7 +5,7 @@ import { STRING_STATICS } from './string-statics.ts';
 
 export const STRING_BUILTIN: Builtin = new Builtin({
   name: 'String',
-  length: String.length,
+  arity: () => String.length,
   call: (args) => (args.length === 0 ? '' : toString(args[0])),
   members: STRING_STATICS,
   prototype: STRING_PROTOTYPE

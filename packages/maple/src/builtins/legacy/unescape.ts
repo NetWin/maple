@@ -5,6 +5,6 @@ import { NativeFunction } from '../../values/native.ts';
 /** Reverses `escape`; anything that is no escape sequence stays as it is. */
 export const GLOBAL_UNESCAPE: NativeFunction = new NativeFunction(
   'unescape',
-  unescape.length,
+  () => unescape.length,
   (_, [value]) => unescape(toString(value))
 );

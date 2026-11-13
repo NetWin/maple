@@ -6,7 +6,7 @@ import { helpers } from '../utils/helpers.ts';
 import { iteratorCallback } from '../utils/iterator-callback.ts';
 
 export const ITERATOR_METHOD_FLAT_MAP: Method<IteratorWrapper> = method(
-  Iterator.prototype.flatMap.length,
+  () => Iterator.prototype.flatMap.length,
   (i, [fn], context) => {
     const call = iteratorCallback(fn, i, context);
     return new IteratorWrapper(

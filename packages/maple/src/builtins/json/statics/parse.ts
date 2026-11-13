@@ -12,7 +12,7 @@ import {
 /** The host's parser, whose output is exactly the sandbox's value model. */
 export const JSON_STATIC_PARSE: NativeFunction = new NativeFunction(
   'parse',
-  JSON.parse.length,
+  () => JSON.parse.length,
   (_, [text, reviver], context) => {
     const parsed: unknown = guardHostErrors(context.fail, () => JSON.parse(toString(text)));
     if (!isCallable(reviver)) {

@@ -3,7 +3,7 @@ import { isCallable, method, type Method } from '../../../values/native.ts';
 import type { MapWrapper } from '../../../values/wrappers/map-wrapper.ts';
 
 export const MAP_METHOD_FOR_EACH: Method<MapWrapper> = method(
-  Map.prototype.forEach.length,
+  () => Map.prototype.forEach.length,
   (m, [fn, thisArg], context) => {
     if (!isCallable(fn)) {
       return context.fail('TypeError', `${describeValue(fn)} is not a function`);

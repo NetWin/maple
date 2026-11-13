@@ -8,7 +8,7 @@ export const ARRAY_MAX_LENGTH: number = 2 ** 32 - 1;
 
 export const ARRAY_BUILTIN: Builtin = new Builtin({
   name: 'Array',
-  length: Array.length,
+  arity: () => Array.length,
   call: constructArray,
   construct: constructArray,
   isInstance: (arr) => Array.isArray(arr),

@@ -25,7 +25,7 @@ export class Prototype<Receiver = unknown> {
     this.#functions = new Map(
       Object.entries(methods).map(([key, method]) => [
         key,
-        new NativeFunction(key, method.length, (receiver, args, context) => {
+        new NativeFunction(key, method.arity, (receiver, args, context) => {
           if (!receives(receiver)) {
             return context.fail(
               'TypeError',

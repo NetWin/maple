@@ -4,7 +4,7 @@ import { comparator } from '../utils/comparator.ts';
 import { presentEntries } from '../utils/entries.ts';
 
 export const ARRAY_METHOD_SORT: Method<Array<unknown>> = method(
-  Array.prototype.sort.length,
+  () => Array.prototype.sort.length,
   (a, [fn], context) => {
     const length = a.length;
     // Only the elements that are there get sorted, all collected before the first comparison as

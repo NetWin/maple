@@ -9,7 +9,7 @@ import { ERROR_PROTOTYPE } from './error-prototype.ts';
 /** Matches every error; the subtypes below match by the constructor they were made with. */
 export const ERROR_BUILTIN: Builtin = new Builtin({
   name: 'Error',
-  length: Error.length,
+  arity: () => Error.length,
   call: ([message, options], context) => createError('Error', message, options, context),
   construct: ([message, options], context) => createError('Error', message, options, context),
   isInstance: (value) => value instanceof SandboxError,
@@ -18,7 +18,7 @@ export const ERROR_BUILTIN: Builtin = new Builtin({
 
 export const TYPE_ERROR_BUILTIN: Builtin = new Builtin({
   name: 'TypeError',
-  length: TypeError.length,
+  arity: () => TypeError.length,
   call: ([message, options], context) => createError('TypeError', message, options, context),
   construct: ([message, options], context) => createError('TypeError', message, options, context),
   isInstance: (value) => value instanceof SandboxError && value.kind === 'TypeError',
@@ -27,7 +27,7 @@ export const TYPE_ERROR_BUILTIN: Builtin = new Builtin({
 
 export const RANGE_ERROR_BUILTIN: Builtin = new Builtin({
   name: 'RangeError',
-  length: RangeError.length,
+  arity: () => RangeError.length,
   call: ([message, options], context) => createError('RangeError', message, options, context),
   construct: ([message, options], context) => createError('RangeError', message, options, context),
   isInstance: (value) => value instanceof SandboxError && value.kind === 'RangeError',
@@ -36,7 +36,7 @@ export const RANGE_ERROR_BUILTIN: Builtin = new Builtin({
 
 export const REFERENCE_ERROR_BUILTIN: Builtin = new Builtin({
   name: 'ReferenceError',
-  length: ReferenceError.length,
+  arity: () => ReferenceError.length,
   call: ([message, options], context) => createError('ReferenceError', message, options, context),
   construct: ([message, options], context) =>
     createError('ReferenceError', message, options, context),
@@ -46,7 +46,7 @@ export const REFERENCE_ERROR_BUILTIN: Builtin = new Builtin({
 
 export const SYNTAX_ERROR_BUILTIN: Builtin = new Builtin({
   name: 'SyntaxError',
-  length: SyntaxError.length,
+  arity: () => SyntaxError.length,
   call: ([message, options], context) => createError('SyntaxError', message, options, context),
   construct: ([message, options], context) => createError('SyntaxError', message, options, context),
   isInstance: (value) => value instanceof SandboxError && value.kind === 'SyntaxError',
@@ -55,7 +55,7 @@ export const SYNTAX_ERROR_BUILTIN: Builtin = new Builtin({
 
 export const URI_ERROR_BUILTIN: Builtin = new Builtin({
   name: 'URIError',
-  length: URIError.length,
+  arity: () => URIError.length,
   call: ([message, options], context) => createError('URIError', message, options, context),
   construct: ([message, options], context) => createError('URIError', message, options, context),
   isInstance: (value) => value instanceof SandboxError && value.kind === 'URIError',
@@ -64,7 +64,7 @@ export const URI_ERROR_BUILTIN: Builtin = new Builtin({
 
 export const EVAL_ERROR_BUILTIN: Builtin = new Builtin({
   name: 'EvalError',
-  length: EvalError.length,
+  arity: () => EvalError.length,
   call: ([message, options], context) => createError('EvalError', message, options, context),
   construct: ([message, options], context) => createError('EvalError', message, options, context),
   isInstance: (value) => value instanceof SandboxError && value.kind === 'EvalError',

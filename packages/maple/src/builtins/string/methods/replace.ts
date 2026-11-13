@@ -5,7 +5,7 @@ import { matcherOf } from '../../regexp/utils/matcher-of.ts';
 
 /** A function replacement runs as a script callback; a string one uses the host's `$` patterns. */
 export const STRING_METHOD_REPLACE: Method<string> = method(
-  String.prototype.replace.length,
+  () => String.prototype.replace.length,
   (s, [pattern, replacement], context) => {
     const search =
       pattern instanceof RegExpWrapper ? matcherOf(pattern, context) : toString(pattern);

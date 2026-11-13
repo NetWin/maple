@@ -8,7 +8,7 @@ const MAX_SPLIT_LIMIT = 2 ** 32 - 1;
 
 /** The host splits on a copy of a regexp, so the wrapper's own is never written to. */
 export const STRING_METHOD_SPLIT: Method<string> = method(
-  String.prototype.split.length,
+  () => String.prototype.split.length,
   (s, [separator, limit]) => {
     if (separator === undefined) {
       const lim = limit === undefined ? MAX_SPLIT_LIMIT : toNumber(limit) >>> 0;

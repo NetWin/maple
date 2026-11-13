@@ -8,7 +8,7 @@ import { WEAK_SET_PROTOTYPE } from './weak-set-prototype.ts';
 
 export const WEAK_SET_BUILTIN: Builtin = new Builtin({
   name: 'WeakSet',
-  length: WeakSet.length,
+  arity: () => WeakSet.length,
   call: (_args, { fail }) => fail('TypeError', "Constructor WeakSet requires 'new'"),
   // `new WeakSet(iterable?)`; every value must be an object
   construct: ([iterable], context) => {

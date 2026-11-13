@@ -3,6 +3,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const MATH_STATIC_LOG: NativeFunction = new NativeFunction(
   'log',
-  Math.log.length,
+  () => Math.log.length,
   (_, [x]) => Math.log(toNumber(x))
 );

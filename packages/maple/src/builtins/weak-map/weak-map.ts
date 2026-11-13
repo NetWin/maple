@@ -9,7 +9,7 @@ import { WEAK_MAP_PROTOTYPE } from './weak-map-prototype.ts';
 
 export const WEAK_MAP_BUILTIN: Builtin = new Builtin({
   name: 'WeakMap',
-  length: WeakMap.length,
+  arity: () => WeakMap.length,
   call: (_args, { fail }) => fail('TypeError', "Constructor WeakMap requires 'new'"),
   // `new WeakMap(iterable?)`; each entry is read like `entry[0]` and `entry[1]`, so any object
   // works as a pair, and its key must be an object

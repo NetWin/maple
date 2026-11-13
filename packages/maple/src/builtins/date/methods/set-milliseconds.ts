@@ -3,6 +3,6 @@ import type { DateWrapper } from '../../../values/wrappers/date-wrapper.ts';
 import { setter } from '../utils/setter.ts';
 
 export const DATE_METHOD_SET_MILLISECONDS: Method<DateWrapper> = method(
-  Date.prototype.setMilliseconds.length,
+  () => Date.prototype.setMilliseconds.length,
   setter('setMilliseconds', (date) => date.setMilliseconds.bind(date))
 );

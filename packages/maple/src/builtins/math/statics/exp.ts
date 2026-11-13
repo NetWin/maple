@@ -3,6 +3,6 @@ import { NativeFunction } from '../../../values/native.ts';
 
 export const MATH_STATIC_EXP: NativeFunction = new NativeFunction(
   'exp',
-  Math.exp.length,
+  () => Math.exp.length,
   (_, [x]) => Math.exp(toNumber(x))
 );

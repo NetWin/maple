@@ -3,6 +3,6 @@ import type { IteratorWrapper } from '../../../values/wrappers/iterator-wrapper.
 import { helpers } from '../utils/helpers.ts';
 
 export const ITERATOR_METHOD_TO_ARRAY: Method<IteratorWrapper> = method(
-  Iterator.prototype.toArray.length,
+  () => Iterator.prototype.toArray.length,
   (i) => helpers(i).toArray()
 );

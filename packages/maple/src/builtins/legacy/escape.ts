@@ -5,6 +5,6 @@ import { NativeFunction } from '../../values/native.ts';
 /** The legacy encoding of Annex B, which every host Maple runs on has. */
 export const GLOBAL_ESCAPE: NativeFunction = new NativeFunction(
   'escape',
-  escape.length,
+  () => escape.length,
   (_, [value]) => escape(toString(value))
 );
