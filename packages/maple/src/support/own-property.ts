@@ -23,7 +23,10 @@ export function defineOwn(target: object, key: string, value: unknown): void {
  */
 export function ownDataValue(target: object, key: string): unknown {
   const descriptor = Object.getOwnPropertyDescriptor(target, key);
-  if (descriptor === undefined || !('value' in descriptor)) {
+  // `Object.hasOwn`, not `'value' in descriptor`: the descriptor's own prototype is the host
+  // `Object.prototype`, so `in` would read a `value` the embedding page added there and misread an
+  // accessor as data.
+  if (descriptor === undefined || !Object.hasOwn(descriptor, 'value')) {
     return undefined;
   }
   return descriptor.value;

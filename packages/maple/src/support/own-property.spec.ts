@@ -107,6 +107,27 @@ describe('ownDataValue', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
+  it('returns undefined for an own accessor even when the host prototype carries a value', () => {
+    const get = vi.fn<() => unknown>(() => 'host');
+    const target = Object.defineProperty({}, 'probe', {
+      get,
+      enumerable: true,
+      configurable: true
+    });
+    // oxlint-disable-next-line no-extend-native -- stands in for a host page that polluted the prototype
+    Object.defineProperty(Object.prototype, 'value', { value: 'polluted', configurable: true });
+
+    let result: unknown;
+    try {
+      result = ownDataValue(target, 'probe');
+    } finally {
+      Reflect.deleteProperty(Object.prototype, 'value');
+    }
+
+    expect(result).toBeUndefined();
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it('returns undefined for an array hole and for an index past the end', () => {
     // oxlint-disable-next-line no-sparse-arrays -- the hole is what is being read
     const target = [1, , 3];
