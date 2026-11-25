@@ -15,3 +15,19 @@ export function defineOwn(target: object, key: string, value: unknown): void {
     configurable: true
   });
 }
+
+/**
+ * The target's own data value under `key`, or `undefined` when the key is missing, inherited or an
+ * accessor. Reading own data keeps a visit from falling through to the host prototype when a key
+ * is no longer own.
+ */
+export function ownDataValue(target: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+  // `Object.hasOwn`, not `'value' in descriptor`: the descriptor's own prototype is the host
+  // `Object.prototype`, so `in` would read a `value` the embedding page added there and misread an
+  // accessor as data.
+  if (descriptor === undefined || !Object.hasOwn(descriptor, 'value')) {
+    return undefined;
+  }
+  return descriptor.value;
+}

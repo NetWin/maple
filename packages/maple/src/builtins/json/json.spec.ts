@@ -99,6 +99,40 @@ describe('JSON.parse', () => {
     ).toBe('LIMIT_EXCEEDED');
   });
 
+  it('reads reviver values as own data, never through the host prototype', () => {
+    const code = `
+      const seen = [];
+      JSON.parse('{"a":0,"hasOwnProperty":0}', function (k, v) {
+        if (k === 'a') { delete this.hasOwnProperty; }
+        if (k === 'hasOwnProperty') { seen.push(typeof v); }
+        return v;
+      });
+      return seen;
+    `;
+
+    const seen = run(code);
+
+    expect(seen).toEqual(['undefined']);
+  });
+
+  it('ignores a reviver write-back to a frozen holder, like the host', () => {
+    const array = run(
+      `return JSON.parse('[1,2]', function (k, v) {
+        if (k === '0') { Object.freeze(this); }
+        return typeof v === 'number' ? v + 100 : v;
+      });`
+    );
+    const object = run(
+      `return JSON.parse('{"a":1}', function (k, v) {
+        if (k === 'a') { Object.freeze(this); }
+        return typeof v === 'number' ? v + 100 : v;
+      });`
+    );
+
+    expect(array).toEqual([1, 2]);
+    expect(object).toEqual({ a: 1 });
+  });
+
   it('refuses to revive text nested deeper than 1000 levels with a catchable RangeError', () => {
     const deep = '['.repeat(20_000) + ']'.repeat(20_000);
 
@@ -220,6 +254,49 @@ describe('JSON.stringify', () => {
       runAndCatch(maple, 'JSON.stringify({}, function () { return this.__proto__; });').sandboxError
         ?.name
     ).toBe('TypeError');
+  });
+
+  it('reads replacer values as own data, never through the host prototype', () => {
+    const code = `
+      const seen = [];
+      JSON.stringify({ a: 0, hasOwnProperty: 0 }, function (k, v) {
+        if (k === 'a') { delete this.hasOwnProperty; }
+        if (k === 'hasOwnProperty') { seen.push(typeof v); }
+        return v;
+      });
+      return seen;
+    `;
+
+    const seen = run(code);
+
+    expect(seen).toEqual(['undefined']);
+  });
+
+  it('reads array elements as own data, never through the host prototype', () => {
+    const code = `
+      const seen = [];
+      const text = JSON.stringify([0, 1], function (k, v) {
+        if (k === '0') { delete this[1]; }
+        if (k === '1') { seen.push(typeof v); }
+        return v;
+      });
+      return [text, seen];
+    `;
+    // oxlint-disable-next-line no-extend-native -- stands in for a host page that polluted the prototype
+    Object.defineProperty(Array.prototype, '1', {
+      value: 'host',
+      writable: true,
+      configurable: true
+    });
+
+    let result: unknown;
+    try {
+      result = run(code);
+    } finally {
+      Reflect.deleteProperty(Array.prototype, '1');
+    }
+
+    expect(result).toEqual(['[0,null]', ['undefined']]);
   });
 
   it("writes an array replacer's keys in its order, own properties only", () => {
