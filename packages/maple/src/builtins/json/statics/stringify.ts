@@ -1,6 +1,6 @@
 import { isPlainObject } from '../../../support/is-plain-object.ts';
 import { MAX_NESTING } from '../../../support/nesting-limit.ts';
-import { defineOwn } from '../../../support/own-property.ts';
+import { defineOwn, ownDataValue } from '../../../support/own-property.ts';
 import { getOwnPropertiesOf } from '../../../values/members.ts';
 import { type CallContext, isCallable, NativeFunction } from '../../../values/native.ts';
 import { SandboxObject } from '../../../values/sandbox-object.ts';
@@ -150,7 +150,9 @@ function serialize(
     const parts: Array<string> = [];
     const length = current.length;
     for (let index = 0; index < length; index++) {
-      parts.push(serialize(current, String(index), current[index], inner, serialization) ?? 'null');
+      // A replacer can delete an element the walk has not reached; own data only, as below
+      const element = ownDataValue(current, String(index));
+      parts.push(serialize(current, String(index), element, inner, serialization) ?? 'null');
     }
     result = wrap('[', ']', parts, gap, indent, inner);
   } else {
@@ -160,7 +162,9 @@ function serialize(
     if (isPlainObject(current)) {
       properties = {
         has: (propertyKey: string): boolean => Object.hasOwn(current, propertyKey),
-        get: (propertyKey: string): unknown => current[propertyKey],
+        // A replacer runs with the holder as `this` between the key snapshot and this read; own
+        // data only keeps a deleted key from resolving against the host prototype.
+        get: (propertyKey: string): unknown => ownDataValue(current, propertyKey),
         keys: (): Array<string> => Object.keys(current)
       };
     } else {

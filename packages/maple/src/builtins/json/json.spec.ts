@@ -256,6 +256,49 @@ describe('JSON.stringify', () => {
     ).toBe('TypeError');
   });
 
+  it('reads replacer values as own data, never through the host prototype', () => {
+    const code = `
+      const seen = [];
+      JSON.stringify({ a: 0, hasOwnProperty: 0 }, function (k, v) {
+        if (k === 'a') { delete this.hasOwnProperty; }
+        if (k === 'hasOwnProperty') { seen.push(typeof v); }
+        return v;
+      });
+      return seen;
+    `;
+
+    const seen = run(code);
+
+    expect(seen).toEqual(['undefined']);
+  });
+
+  it('reads array elements as own data, never through the host prototype', () => {
+    const code = `
+      const seen = [];
+      const text = JSON.stringify([0, 1], function (k, v) {
+        if (k === '0') { delete this[1]; }
+        if (k === '1') { seen.push(typeof v); }
+        return v;
+      });
+      return [text, seen];
+    `;
+    // oxlint-disable-next-line no-extend-native -- stands in for a host page that polluted the prototype
+    Object.defineProperty(Array.prototype, '1', {
+      value: 'host',
+      writable: true,
+      configurable: true
+    });
+
+    let result: unknown;
+    try {
+      result = run(code);
+    } finally {
+      Reflect.deleteProperty(Array.prototype, '1');
+    }
+
+    expect(result).toEqual(['[0,null]', ['undefined']]);
+  });
+
   it("writes an array replacer's keys in its order, own properties only", () => {
     expect(run('return JSON.stringify({ a: 1, b: 2 }, ["b", "a", "b"]);')).toBe('{"b":2,"a":1}');
     expect(run('return JSON.stringify({ a: 1 }, ["a", "missing", "toString"]);')).toBe('{"a":1}');
