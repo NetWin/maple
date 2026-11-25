@@ -52,6 +52,9 @@ one that does; the linked section has the detail.
 - Set algebra refuses set-like objects other than Sets and Maps, and `Iterator.from` refuses an
   object with a script `next` ([Built-ins](builtins.md#map-and-set)).
 - A JSON reviver receives no third `context` argument ([JSON](builtins.md#json)).
+- A JSON reviver reads its holder's own data only, so a key a callback deletes before it is
+  visited reads as `undefined`, where native JavaScript would read the host prototype
+  ([Security](security.md#how-the-guarantees-hold)).
 - The legacy `RegExp.$1` statics, the String HTML methods and `Intl` are not available.
 
 ## Errors and limits

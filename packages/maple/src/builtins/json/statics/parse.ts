@@ -1,6 +1,6 @@
 import { isPlainObject } from '../../../support/is-plain-object.ts';
 import { MAX_NESTING } from '../../../support/nesting-limit.ts';
-import { defineOwn } from '../../../support/own-property.ts';
+import { defineOwn, ownDataValue } from '../../../support/own-property.ts';
 import { toString } from '../../../values/coercion.ts';
 import {
   type CallContext,
@@ -41,7 +41,10 @@ function revive(
       `A value nested deeper than ${MAX_NESTING} levels cannot be revived`
     );
   }
-  const value: unknown = Reflect.get(holder, key);
+  // A reviver callback runs with the holder as `this` and can delete a key that the enclosing walk
+  // has already queued. Reading own data only keeps a now-missing key from resolving against the
+  // host prototype and handing the callback a live host reference.
+  const value: unknown = ownDataValue(holder, key);
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index++) {
       const revived = revive(value, String(index), reviver, context, depth + 1);

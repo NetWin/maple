@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { defineOwn } from './own-property.ts';
+import { defineOwn, ownDataValue } from './own-property.ts';
 
 const DATA_PROPERTY = { enumerable: true, writable: true, configurable: true };
 
@@ -77,5 +77,46 @@ describe('defineOwn', () => {
       value: 1,
       ...DATA_PROPERTY
     });
+  });
+});
+
+describe('ownDataValue', () => {
+  it('returns the value of an own data property, enumerable or not', () => {
+    const target = Object.defineProperty({ a: 1 }, 'hidden', { value: 2 });
+
+    const values = [ownDataValue(target, 'a'), ownDataValue(target, 'hidden')];
+
+    expect(values).toEqual([1, 2]);
+  });
+
+  it('returns undefined for a missing key and for one the prototype answers', () => {
+    const target = {};
+
+    const values = [ownDataValue(target, 'a'), ownDataValue(target, 'hasOwnProperty')];
+
+    expect(values).toEqual([undefined, undefined]);
+  });
+
+  it('returns undefined for an own accessor without calling it', () => {
+    const get = vi.fn<() => unknown>(() => 1);
+    const target = Object.defineProperty({}, 'probe', { get });
+
+    const value = ownDataValue(target, 'probe');
+
+    expect(value).toBeUndefined();
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('returns undefined for an array hole and for an index past the end', () => {
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is what is being read
+    const target = [1, , 3];
+
+    const values = [
+      ownDataValue(target, '0'),
+      ownDataValue(target, '1'),
+      ownDataValue(target, '5')
+    ];
+
+    expect(values).toEqual([1, undefined, undefined]);
   });
 });

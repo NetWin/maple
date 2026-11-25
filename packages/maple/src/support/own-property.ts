@@ -15,3 +15,16 @@ export function defineOwn(target: object, key: string, value: unknown): void {
     configurable: true
   });
 }
+
+/**
+ * The target's own data value under `key`, or `undefined` when the key is missing, inherited or an
+ * accessor. Reading own data keeps a visit from falling through to the host prototype when a key
+ * is no longer own.
+ */
+export function ownDataValue(target: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+  if (descriptor === undefined || !('value' in descriptor)) {
+    return undefined;
+  }
+  return descriptor.value;
+}

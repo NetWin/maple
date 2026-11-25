@@ -99,6 +99,22 @@ describe('JSON.parse', () => {
     ).toBe('LIMIT_EXCEEDED');
   });
 
+  it('reads reviver values as own data, never through the host prototype', () => {
+    const code = `
+      const seen = [];
+      JSON.parse('{"a":0,"hasOwnProperty":0}', function (k, v) {
+        if (k === 'a') { delete this.hasOwnProperty; }
+        if (k === 'hasOwnProperty') { seen.push(typeof v); }
+        return v;
+      });
+      return seen;
+    `;
+
+    const seen = run(code);
+
+    expect(seen).toEqual(['undefined']);
+  });
+
   it('refuses to revive text nested deeper than 1000 levels with a catchable RangeError', () => {
     const deep = '['.repeat(20_000) + ']'.repeat(20_000);
 
