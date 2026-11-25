@@ -115,6 +115,24 @@ describe('JSON.parse', () => {
     expect(seen).toEqual(['undefined']);
   });
 
+  it('ignores a reviver write-back to a frozen holder, like the host', () => {
+    const array = run(
+      `return JSON.parse('[1,2]', function (k, v) {
+        if (k === '0') { Object.freeze(this); }
+        return typeof v === 'number' ? v + 100 : v;
+      });`
+    );
+    const object = run(
+      `return JSON.parse('{"a":1}', function (k, v) {
+        if (k === 'a') { Object.freeze(this); }
+        return typeof v === 'number' ? v + 100 : v;
+      });`
+    );
+
+    expect(array).toEqual([1, 2]);
+    expect(object).toEqual({ a: 1 });
+  });
+
   it('refuses to revive text nested deeper than 1000 levels with a catchable RangeError', () => {
     const deep = '['.repeat(20_000) + ']'.repeat(20_000);
 

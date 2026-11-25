@@ -47,22 +47,34 @@ function revive(
   const value: unknown = ownDataValue(holder, key);
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index++) {
-      const revived = revive(value, String(index), reviver, context, depth + 1);
-      if (revived === undefined) {
-        Reflect.deleteProperty(value, String(index));
-      } else {
-        value[index] = revived;
-      }
+      writeBack(value, String(index), revive(value, String(index), reviver, context, depth + 1));
     }
   } else if (isPlainObject(value)) {
     for (const propertyKey of Object.keys(value)) {
-      const revived = revive(value, propertyKey, reviver, context, depth + 1);
-      if (revived === undefined) {
-        Reflect.deleteProperty(value, propertyKey);
-      } else {
-        defineOwn(value, propertyKey, revived);
-      }
+      writeBack(value, propertyKey, revive(value, propertyKey, reviver, context, depth + 1));
     }
   }
   return context.call(holder, reviver, [key, value]);
+}
+
+/**
+ * Writes a revived value back as an own data property, or removes it when the reviver returned
+ * `undefined`. A callback can freeze its holder mid-walk; like the spec's CreateDataProperty, a
+ * write that a frozen holder refuses is left as it is rather than thrown to the host.
+ */
+function writeBack(
+  holder: Record<string, unknown> | Array<unknown>,
+  key: string,
+  revived: unknown
+): void {
+  if (revived === undefined) {
+    Reflect.deleteProperty(holder, key);
+    return;
+  }
+  Reflect.defineProperty(holder, key, {
+    value: revived,
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
 }
