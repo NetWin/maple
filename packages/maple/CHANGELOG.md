@@ -1,3 +1,16 @@
+## [0.7.2](https://github.com/NetWin/maple/compare/0.7.1...0.7.2) (2026-11-25)
+
+### 🩹 Bug Fixes
+
+* **json:** ignore a reviver write-back to a frozen holder instead of throwing ([a4798c1](https://github.com/NetWin/maple/commit/a4798c17f24d9be77a6ca9fbb13f4dd16b8f050f))
+* **json:** read own data with hasOwn so a polluted host prototype can't fake a value ([90be665](https://github.com/NetWin/maple/commit/90be6659506dfc34f66a303ee028a98ac1e356f7))
+* **json:** read reviver values as own data to keep host prototypes out of the sandbox ([8960577](https://github.com/NetWin/maple/commit/89605778eff9f904de126819e4c1f0eeb4fc263f))
+* **json:** read stringify values as own data to keep host prototypes out of the sandbox ([5552ed3](https://github.com/NetWin/maple/commit/5552ed36d35d18913a9b57c0f60cd2cb5907c393))
+
+### 🏗 Dependency Updates
+
+* **deps:** update dependencies ([7810563](https://github.com/NetWin/maple/commit/7810563ff22b08bfc9e1a2735c6d0a5310be2ab3))
+
 ## [0.7.1](https://github.com/NetWin/maple/compare/0.7.0...0.7.1) (2026-11-13)
 
 ### 🩹 Bug Fixes
